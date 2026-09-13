@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>人工智能训练师三级 - 实操训练系统</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--line:#dfe5ee;--text:#1f2937;--muted:#64748b;--primary:#2563eb;--ok:#15803d;--bad:#b91c1c;--warn:#b45309}
+*{box-sizing:border-box}body{margin:0;font-family:"Microsoft YaHei",Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:#0f172a;color:#fff;padding:14px 20px;display:flex;gap:18px;align-items:center;position:sticky;top:0;z-index:5}header h1{font-size:18px;margin:0}header .sub{font-size:13px;color:#cbd5e1}
+.layout{display:grid;grid-template-columns:280px minmax(0,1fr) 320px;gap:14px;padding:14px;max-width:1600px;margin:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}.sidebar{position:sticky;top:64px;height:calc(100vh - 78px);overflow:auto}.right{position:sticky;top:64px;height:calc(100vh - 78px);overflow:auto}
+.tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.tab,.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 12px;cursor:pointer}.tab.active,.btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}.btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}.btn.warn{background:#fff7ed;color:var(--warn);border-color:#fed7aa}.btn.small{padding:5px 9px;font-size:12px}
+.qitem{padding:10px;border:1px solid var(--line);border-radius:8px;margin:8px 0;cursor:pointer}.qitem:hover{border-color:#93c5fd}.qitem.active{background:#eff6ff;border-color:#60a5fa}.qid{font-weight:700}.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.tag{font-size:11px;background:#eef2ff;color:#4338ca;border-radius:10px;padding:2px 7px}
+h2{font-size:20px;margin:0 0 8px}h3{font-size:15px;margin:16px 0 8px}.muted{color:var(--muted);font-size:13px}.req{line-height:1.8;margin:8px 0}.code{font-family:Consolas,"Courier New",monospace;background:#0b1220;color:#dbeafe;border-radius:8px;padding:12px;white-space:pre-wrap;line-height:1.75;font-size:14px}.blank{width:min(100%,520px);font-family:Consolas,monospace;border:1px solid #94a3b8;border-radius:5px;padding:6px 8px;margin:3px 0;background:#fff}.blank.ok{border-color:#22c55e;background:#f0fdf4}.blank.bad{border-color:#ef4444;background:#fef2f2}.feedback{font-size:12px;margin:2px 0 7px}.feedback.ok{color:var(--ok)}.feedback.bad{color:var(--bad)}
+.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:9px;text-align:center}.stat b{display:block;font-size:18px}.bar{height:8px;background:#e5e7eb;border-radius:10px;overflow:hidden}.bar>i{display:block;height:100%;background:#3b82f6}.weak{padding:7px 0;border-bottom:1px solid #eef2f7}.weak:last-child{border:0}.hint{background:#fffbeb;border-left:3px solid #f59e0b;padding:9px 10px;font-size:13px;margin:8px 0}.answer{background:#f0fdf4;border-left:3px solid #22c55e;padding:9px 10px;font-size:13px;margin:8px 0;display:none}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.hidden{display:none!important}.func-card{border:1px solid var(--line);border-radius:9px;padding:14px}.func-prompt{font-size:18px;font-weight:700;margin-bottom:10px}.func-answer{font-family:Consolas,monospace;width:100%;padding:10px;border:1px solid #94a3b8;border-radius:6px}.scoreline{margin-top:10px;font-size:13px}.search{width:100%;padding:9px;border:1px solid var(--line);border-radius:7px}.cheat{font-size:13px;line-height:1.75}.cheat code{font-family:Consolas,monospace;background:#eef2f7;padding:1px 4px;border-radius:4px}@media(max-width:1100px){.layout{grid-template-columns:230px 1fr}.right{display:none}}@media(max-width:760px){.layout{display:block}.sidebar{position:static;height:auto;margin-bottom:12px}.qitem{display:inline-block;width:48%;vertical-align:top}.main{margin-bottom:12px}}
+</style>
+</head>
+<body>
+<header><h1>实操训练系统</h1><div class="sub">优先训练 Pandas / NumPy / sklearn 的高频“胶水代码”</div></header>
+<div class="layout">
+  <aside class="card sidebar">
+    <input id="qSearch" class="search" placeholder="搜索题号 / 知识点" oninput="renderQuestionList()">
+    <div id="questionList"></div>
+  </aside>
+  <main class="main">
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" data-mode="fill" onclick="setMode('fill')">代码填空</button>
+        <button class="tab" data-mode="func" onclick="setMode('func')">函数速练</button>
+        <button class="tab" data-mode="exam" onclick="setMode('exam')">模拟考试</button>
+      </div>
+      <div id="taskHead"></div>
+      <div id="fillArea"></div>
+      <div id="funcArea" class="hidden"></div>
+      <div id="examArea" class="hidden"></div>
+    </div>
+  </main>
+  <aside class="card right">
+    <h3 style="margin-top:0">学习统计</h3>
+    <div id="stats" class="statgrid"></div>
+    <h3>薄弱函数</h3>
+    <div id="weakList"></div>
+    <h3>函数速查</h3>
+    <input id="cheatSearch" class="search" placeholder="如：缺失值、划分、CSV" oninput="renderCheats()">
+    <div id="cheats" class="cheat"></div>
+  </aside>
+</div>
+<script>
+const BASE='人工智能训练师三级素材/人工智能训练师三级上网素材/';
+const ANSW='人工智能训练师三级素材/操作题答案/';
+const Q=[
+{id:'1.1.1',title:'智能医疗系统中的业务数据处理流程设计',tags:['pandas','numpy','pd.cut','groupby','value_counts'],req:['读取 patient_data.csv','按住院天数生成高/低风险','按 BMI 区间统计高风险比例与人数','按年龄区间统计高风险比例与人数'],notebook:BASE+'1.1.1/1.1.1.ipynb',answer:ANSW+'1.1.1_答案.md',blanks:[
+{p:'读取 CSV 数据',a:"pd.read_csv('patient_data.csv')",f:'pd.read_csv'},
+{p:'根据条件生成风险等级',a:"np.where(data['DaysInHospital'] > 7, '高风险患者', '低风险患者')",f:'np.where'},
+{p:'统计 RiskLevel 各类别数量',a:"data['RiskLevel'].value_counts()",f:'value_counts'},
+{p:'按 BMI 区间离散化',a:"pd.cut(data['BMI'], bmi_bins, labels=bmi_labels, right=False)",alt:["pd.cut(data['BMI'], bmi_bins, bmi_labels, right=False)"],f:'pd.cut'},
+{p:'按 BMIRange 分组',a:"data.groupby('BMIRange')",f:'groupby'}]},
+{id:'1.1.2',title:'智能农业系统中的业务数据采集和处理流程设计',tags:['pandas','numpy','isin','fillna','drop','to_csv'],req:['统计每种传感器的数据数量和平均值','按位置统计温度和湿度平均值','标记异常温湿度数据','前向/后向填补缺失值并保存'],notebook:BASE+'1.1.2/1.1.2.ipynb',answer:ANSW+'1.1.2_答案.md',blanks:[
+{p:'按传感器类型分组并统计 count / mean',a:"data.groupby('SensorType')['Value'].agg(['count', 'mean'])",f:'groupby/agg'},
+{p:'筛选温度和湿度',a:"data['SensorType'].isin(['Temperature', 'Humidity'])",f:'isin'},
+{p:'统计异常值数量',a:"data['is_abnormal'].sum()",f:'sum'},
+{p:'前向填补缺失值',a:"data['Value'].fillna(method='ffill', inplace=True)",alt:["data['Value'].ffill(inplace=True)"],f:'fillna/ffill'},
+{p:'删除 is_abnormal 列',a:"data.drop(columns=['is_abnormal'])",f:'drop'},
+{p:'保存 CSV 且不保存索引',a:"cleaned_data.to_csv('cleaned_sensor_data.csv', index=False)",f:'to_csv'}]},
+{id:'2.1.1',title:'燃油效率模型的数据清洗和标注流程设计',tags:['pandas','NaN','to_numeric','StandardScaler','train_test_split'],req:['检查并删除缺失值','horsepower 转数值并处理异常','数值特征标准化','划分训练集和测试集','保存清洗结果'],notebook:BASE+'2.1.1/2.1.1.ipynb',answer:ANSW+'2.1.1_答案.md',blanks:[
+{p:'查看前五行',a:'df.head()',alt:['data.head()'],f:'head'},
+{p:'统计各列缺失值',a:'df.isnull().sum()',alt:['df.isna().sum()','data.isnull().sum()','data.isna().sum()'],f:'isnull/isna'},
+{p:'删除包含缺失值的行',a:'df.dropna()',alt:['data.dropna()'],f:'dropna'},
+{p:'horsepower 转数值，非法值转 NaN',a:"pd.to_numeric(df['horsepower'], errors='coerce')",alt:["pd.to_numeric(data['horsepower'], errors='coerce')"],f:'pd.to_numeric'},
+{p:'标准化训练数据',a:'scaler.fit_transform(X_train)',f:'fit_transform'},
+{p:'标准化测试数据',a:'scaler.transform(X_test)',f:'transform'},
+{p:'按 8:2 划分训练/测试集',a:'train_test_split(X, y, test_size=0.2, random_state=42)',f:'train_test_split'},
+{p:'保存 CSV，不保存额外索引',a:"cleaned_data.to_csv('2.1.1_cleaned_data.csv', index=False)",f:'to_csv'}]},
+{id:'2.2.1',title:'智能信用评分 Logistic 回归模型开发与测试',tags:['sklearn','LogisticRegression','fit','predict','metrics'],req:['划分训练集测试集','标准化','训练 LogisticRegression','预测并计算指标','保存模型和结果'],notebook:BASE+'2.2.1/2.2.1.ipynb',answer:ANSW+'2.2.1_答案.md',blanks:[
+{p:'划分训练/测试集',a:'train_test_split(X, y, test_size=0.2, random_state=42)',f:'train_test_split'},
+{p:'初始化 Logistic 回归模型',a:'LogisticRegression(max_iter=1000, random_state=42)',alt:['LogisticRegression()','LogisticRegression(random_state=42)'],f:'LogisticRegression'},
+{p:'训练模型',a:'model.fit(X_train_scaled, y_train)',alt:['model.fit(X_train, y_train)'],f:'fit'},
+{p:'测试集预测',a:'model.predict(X_test_scaled)',alt:['model.predict(X_test)'],f:'predict'},
+{p:'计算准确率',a:'accuracy_score(y_test, y_pred)',f:'accuracy_score'}]}
+];
+const CHEATS=[
+['读取CSV','pd.read_csv("file.csv")'],['保存CSV','df.to_csv("out.csv", index=False)'],['查看前5行','df.head()'],['缺失值统计','df.isna().sum() / df.isnull().sum()'],['删除缺失行','df.dropna()'],['填充缺失值','df.fillna(value) / Series.ffill() / Series.bfill()'],['转数值','pd.to_numeric(s, errors="coerce")'],['类型转换','s.astype(int/float/str)'],['条件筛选','df[df["col"] > 0]'],['分类计数','s.value_counts()'],['分组统计','df.groupby("col")["x"].mean()'],['区间切分','pd.cut(s, bins, labels=labels)'],['数组形状','arr.shape / arr.reshape(...)'],['NaN判断','pd.isna(x) / np.isnan(x)'],['布尔过滤NaN','arr = arr[~pd.isna(arr)]'],['划分数据集','train_test_split(X, y, test_size=0.2, random_state=42)'],['标准化训练集','scaler.fit_transform(X_train)'],['标准化测试集','scaler.transform(X_test)'],['模型训练','model.fit(X_train, y_train)'],['模型预测','model.predict(X_test)'],['词袋模型','CountVectorizer().fit_transform(texts)'],['删除变量','del variable'],['查看变量名','dir()']
+];
+let current=Q[0],mode='fill',funcIndex=0;
+const KEY='ai3_practical_stats_v1';
+function loadStats(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}}
+function saveStats(s){localStorage.setItem(KEY,JSON.stringify(s));renderStats()}
+function norm(s){return (s||'').replace(/\s+/g,'').replace(/"/g,"'").replace(/;$/,'')}
+function accepted(b,v){return [b.a,...(b.alt||[])].some(x=>norm(x)===norm(v))}
+function hit(f,ok){const s=loadStats();s[f]=s[f]||{right:0,total:0};s[f].total++;if(ok)s[f].right++;saveStats(s)}
+function renderQuestionList(){let x=(document.getElementById('qSearch').value||'').toLowerCase();questionList.innerHTML=Q.filter(q=>(q.id+' '+q.title+' '+q.tags.join(' ')).toLowerCase().includes(x)).map(q=>`<div class="qitem ${q.id===current.id?'active':''}" onclick="selectQ('${q.id}')"><div class="qid">${q.id}</div><div>${q.title}</div><div class="tags">${q.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div></div>`).join('')}
+function selectQ(id){current=Q.find(q=>q.id===id);funcIndex=0;renderQuestionList();renderAll()}
+function setMode(m){mode=m;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.mode===m));fillArea.classList.toggle('hidden',m!=='fill');funcArea.classList.toggle('hidden',m!=='func');examArea.classList.toggle('hidden',m!=='exam');renderAll()}
+function renderHead(){taskHead.innerHTML=`<h2>${current.id} ${current.title}</h2><div class="muted">${current.tags.join(' · ')}</div><div class="req"><b>任务：</b><ol>${current.req.map(x=>`<li>${x}</li>`).join('')}</ol></div><div class="toolbar"><a class="btn small" href="${current.notebook}" download>下载原始 Notebook</a><a class="btn small" href="${current.answer}" target="_blank">查看答案 Markdown</a></div>`}
+function renderFill(){fillArea.innerHTML=`<h3>代码填空训练</h3><div class="muted">逐项填写。检查后会记录到“薄弱函数”，便于专项复习。</div>${current.blanks.map((b,i)=>`<div style="margin-top:13px"><div><b>${i+1}. ${b.p}</b> <span class="tag">${b.f}</span></div><input class="blank" id="b${i}" autocomplete="off" placeholder="填写完整表达式"><div id="fb${i}" class="feedback"></div></div>`).join('')}<div class="toolbar"><button class="btn primary" onclick="checkFill()">检查答案</button><button class="btn" onclick="showFillAnswers()">显示答案</button><button class="btn" onclick="resetFill()">重做本题</button></div><div id="fillScore"></div>`}
+function checkFill(){let right=0;current.blanks.forEach((b,i)=>{let el=document.getElementById('b'+i),ok=accepted(b,el.value),fb=document.getElementById('fb'+i);el.className='blank '+(ok?'ok':'bad');fb.className='feedback '+(ok?'ok':'bad');fb.textContent=ok?'✓ 正确':'✗ 正确答案：'+b.a;hit(b.f,ok);if(ok)right++});fillScore.innerHTML=`<div class="hint">本题得分：${right}/${current.blanks.length}。建议对错误函数进入“函数速练”继续练习。</div>`}
+function showFillAnswers(){current.blanks.forEach((b,i)=>document.getElementById('b'+i).value=b.a)}
+function resetFill(){renderFill()}
+function renderFunc(){const pool=current.blanks,b=pool[funcIndex%pool.length];funcArea.innerHTML=`<h3>函数速练</h3><div class="func-card"><div class="muted">${current.id} · ${b.f}</div><div class="func-prompt">${b.p}</div><input id="funcInput" class="func-answer" placeholder="只看中文要求，写出对应 Python 表达式" onkeydown="if(event.key==='Enter')checkFunc()"><div class="toolbar"><button class="btn primary" onclick="checkFunc()">检查</button><button class="btn warn" onclick="showFuncAnswer()">提示答案</button><button class="btn" onclick="nextFunc()">下一题</button></div><div id="funcFeedback"></div></div>`}
+function checkFunc(){let b=current.blanks[funcIndex%current.blanks.length],v=funcInput.value,ok=accepted(b,v);hit(b.f,ok);funcFeedback.innerHTML=ok?`<div class="answer" style="display:block">✓ 正确</div>`:`<div class="hint">不正确。对应函数：<b>${b.f}</b></div>`}
+function showFuncAnswer(){let b=current.blanks[funcIndex%current.blanks.length];funcFeedback.innerHTML=`<div class="answer" style="display:block"><code>${esc(b.a)}</code></div>`}
+function nextFunc(){funcIndex=(funcIndex+1)%current.blanks.length;renderFunc()}
+function renderExam(){examArea.innerHTML=`<h3>模拟考试模式</h3><div class="hint">本模式不显示提示和答案。请下载原始 Notebook，在 Jupyter 中完成后再回到这里核对。</div><div class="toolbar"><a class="btn primary" href="${current.notebook}" download>下载 ${current.id}.ipynb</a><button class="btn" onclick="startTimer()">开始 20 分钟计时</button><button class="btn" onclick="examAnswer.classList.toggle('hidden')">交卷后查看参考答案</button></div><div id="timer" style="font-size:28px;font-weight:700"></div><div id="examAnswer" class="hidden"><div class="answer" style="display:block">参考答案文件：<a href="${current.answer}" target="_blank">${current.id}_答案.md</a></div></div>`}
+let timerId=null;function startTimer(){clearInterval(timerId);let sec=1200;function tick(){timer.textContent=`${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;if(sec--<=0)clearInterval(timerId)}tick();timerId=setInterval(tick,1000)}
+function renderStats(){const s=loadStats(),vals=Object.values(s),total=vals.reduce((a,x)=>a+x.total,0),right=vals.reduce((a,x)=>a+x.right,0),rate=total?Math.round(right/total*100):0;stats.innerHTML=`<div class="stat"><b>${total}</b>作答</div><div class="stat"><b>${right}</b>正确</div><div class="stat"><b>${rate}%</b>正确率</div>`;let arr=Object.entries(s).filter(([,v])=>v.total).map(([f,v])=>({f,...v,rate:v.right/v.total})).sort((a,b)=>a.rate-b.rate||b.total-a.total).slice(0,8);weakList.innerHTML=arr.length?arr.map(x=>`<div class="weak"><div style="display:flex;justify-content:space-between"><span>${x.f}</span><span>${Math.round(x.rate*100)}% (${x.right}/${x.total})</span></div><div class="bar"><i style="width:${x.rate*100}%"></i></div></div>`).join(''):'<div class="muted">完成几次练习后，这里会自动显示薄弱函数。</div>'}
+function renderCheats(){let x=(cheatSearch.value||'').toLowerCase();cheats.innerHTML=CHEATS.filter(([a,b])=>(a+b).toLowerCase().includes(x)).map(([a,b])=>`<div class="weak"><b>${a}</b><br><code>${esc(b)}</code></div>`).join('')}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function renderAll(){renderHead();if(mode==='fill')renderFill();if(mode==='func')renderFunc();if(mode==='exam')renderExam();renderStats();renderCheats()}
+renderQuestionList();renderAll();
+</script>
+</body>
+</html>
