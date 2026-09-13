@@ -20,6 +20,7 @@ TRAY_LOCK_PORT = 7010
 BASE_URL = f"http://127.0.0.1:{PORT}"
 PRACTICE_URL = BASE_URL + "/practice.html"
 STATUS_URL = BASE_URL + "/api/system/status"
+EXAM_STATUS_URL = BASE_URL + "/api/exam/status"
 PYTHON_EXE = ROOT / ".venv" / "Scripts" / "python.exe"
 SERVER_SCRIPT = ROOT / "serve_practice.py"
 LOG_PATH = ROOT / "_trainer_service.log"
@@ -37,6 +38,14 @@ def _message(text: str, title: str = "AI Trainer") -> None:
         ctypes.windll.user32.MessageBoxW(None, text, title, 0x40)
     except Exception:
         pass
+
+
+def _confirm(text: str, title: str = "AI Trainer") -> bool:
+    try:
+        # MB_YESNO | MB_ICONWARNING
+        return ctypes.windll.user32.MessageBoxW(None, text, title, 0x34) == 6
+    except Exception:
+        return True
 
 
 def _get_json(url: str, timeout: float = 1.0) -> dict | None:
@@ -184,6 +193,14 @@ def _stop_server_tree() -> None:
 
 
 def _exit_app(icon, item=None) -> None:
+    exam = _get_json(EXAM_STATUS_URL, timeout=0.6)
+    if exam and exam.get("active"):
+        if not _confirm(
+            "当前有模拟考试正在进行。\n\n退出会关闭训练服务和 Jupyter。未提交的考试不会生成正式评分记录。\n\n确定退出吗？",
+            "AI Trainer",
+        ):
+            return
+
     _stop_server_tree()
     try:
         if LOCK_SOCKET:
