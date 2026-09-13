@@ -4,5 +4,6 @@ ai_2025/
 .venv/
 _exam_workspace/
 _exam_history/
+_trainer_service.log
 __pycache__/
 *.pyc
