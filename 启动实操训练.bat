@@ -11,7 +11,7 @@ echo.
 
 if not exist "%VENV_PY%" (
     echo ERROR: Virtual environment was not found.
-    echo Run [install_env.bat] or [安装环境.bat] first.
+    echo Run install_env.bat first.
     echo.
     pause
     exit /b 1
@@ -20,7 +20,7 @@ if not exist "%VENV_PY%" (
 "%VENV_PY%" -c "import notebook, pandas, numpy, sklearn" >nul 2>&1
 if errorlevel 1 (
     echo ERROR: The virtual environment is incomplete.
-    echo Run [install_env.bat] again.
+    echo Run install_env.bat again.
     echo.
     pause
     exit /b 1
@@ -49,7 +49,7 @@ echo.
 echo Browser opened:
 echo http://127.0.0.1:%PORT%/practice.html
 echo.
-echo Jupyter Notebook will be started automatically on port 7001 when an exam begins.
+echo Jupyter Notebook starts automatically on port 7001 when an exam begins.
 echo Keep the minimized server window running while practicing.
 echo.
 pause
