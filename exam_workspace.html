@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Jupyter 模拟考试工作台</title>
+<style>
+:root{--top:50px;--split:42%;--line:#cbd5e1;--bg:#e2e8f0;--nav:#0f172a;--blue:#2563eb;--green:#15803d;--danger:#b91c1c}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:"Microsoft YaHei",Arial,sans-serif;background:var(--bg);color:#1f2937}
+.topbar{height:var(--top);background:var(--nav);color:#fff;display:flex;align-items:center;gap:10px;padding:0 12px;box-shadow:0 1px 8px rgba(0,0,0,.25);position:relative;z-index:10}
+.brand{font-weight:700;white-space:nowrap}.meta{font-size:12px;color:#cbd5e1;white-space:nowrap}.spacer{flex:1}.timer{font-family:Consolas,monospace;font-size:20px;font-weight:700;min-width:76px;text-align:center;color:#bfdbfe}.timer.danger{color:#fecaca}
+.btn{border:1px solid #475569;background:#1e293b;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px}.btn:hover{background:#334155}.btn.primary{background:var(--blue);border-color:var(--blue)}.btn.submit{background:var(--green);border-color:var(--green)}.btn:disabled{opacity:.55;cursor:not-allowed}
+.workspace{height:calc(100vh - var(--top));display:flex;min-width:0;min-height:0}.pane{min-width:0;min-height:0;background:#fff;position:relative}.left{flex:0 0 var(--split)}.right{flex:1 1 auto}.pane iframe{display:block;width:100%;height:100%;border:0;background:#fff}
+.splitter{flex:0 0 8px;background:#cbd5e1;cursor:col-resize;position:relative;z-index:4}.splitter:hover,.splitter.dragging{background:#60a5fa}.splitter:after{content:"";position:absolute;left:2px;top:45%;width:4px;height:48px;border-radius:4px;background:#94a3b8}
+.workspace.left-hidden .left{display:none}.workspace.left-hidden .splitter{display:none}.workspace.right-hidden .right{display:none}.workspace.right-hidden .splitter{display:none}.workspace.left-hidden .right,.workspace.right-hidden .left{flex:1 1 100%}
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#f8fafc;color:#475569;z-index:2;font-size:14px}.loading.hidden{display:none}
+.notice{position:absolute;left:16px;right:16px;top:16px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:10px 12px;border-radius:8px;z-index:5;font-size:13px;display:none}.notice.show{display:block}
+.mask{display:none;position:fixed;inset:0;background:rgba(15,23,42,.65);z-index:100;padding:30px}.mask.show{display:block}.result{max-width:900px;max-height:calc(100vh - 60px);overflow:auto;margin:auto;background:#fff;border-radius:12px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.35)}.result h2{margin-top:0}.score{font-size:30px;font-weight:700;color:#166534}.check{padding:5px 0}.ok{color:#15803d}.bad{color:#b91c1c}.muted{color:#64748b;font-size:13px}
+@media(max-width:850px){.meta{display:none}.brand{font-size:13px}.btn{padding:6px 8px}.left{flex-basis:45%}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">Jupyter 模拟考试</div>
+  <div id="examMeta" class="meta">正在读取考试信息...</div>
+  <div class="spacer"></div>
+  <div id="timer" class="timer">--:--</div>
+  <button id="leftToggle" class="btn" onclick="toggleLeft()">收起题目</button>
+  <button id="rightToggle" class="btn" onclick="toggleRight()">收起 Jupyter</button>
+  <button class="btn" onclick="resetSplit()">恢复比例</button>
+  <button class="btn" onclick="openJupyterDirect()">单独打开 Jupyter</button>
+  <button id="submitBtn" class="btn submit" onclick="submitExam()">保存后提交</button>
+</div>
+
+<div id="workspace" class="workspace">
+  <section id="leftPane" class="pane left">
+    <div id="questionLoading" class="loading">正在加载题目...</div>
+    <iframe id="questionFrame" title="考试题目"></iframe>
+  </section>
+  <div id="splitter" class="splitter" title="拖动调整左右宽度；双击恢复默认比例"></div>
+  <section id="rightPane" class="pane right">
+    <div id="jupyterLoading" class="loading">正在连接 Jupyter Notebook...</div>
+    <div id="jupyterNotice" class="notice">如果右侧一直空白，可能是旧的 Jupyter 服务未加载嵌入配置。请先关闭旧服务并重新开始考试；也可以点击顶部“单独打开 Jupyter”。</div>
+    <iframe id="jupyterFrame" title="Jupyter Notebook"></iframe>
+  </section>
+</div>
+
+<div id="resultMask" class="mask">
+  <div id="resultBox" class="result"></div>
+</div>
+
+<script>
+let session=null;
+let tickId=null;
+let leftHidden=false,rightHidden=false;
+const workspace=document.getElementById('workspace');
+const splitter=document.getElementById('splitter');
+const questionFrame=document.getElementById('questionFrame');
+const jupyterFrame=document.getElementById('jupyterFrame');
+const leftToggle=document.getElementById('leftToggle');
+const rightToggle=document.getElementById('rightToggle');
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+async function api(method,path,body){
+  const opt={method,cache:'no-store',headers:{}};
+  if(body!==undefined){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body)}
+  const r=await fetch(path,opt);let data={};
+  try{data=await r.json()}catch(_){data={ok:false,message:'服务器返回了无法解析的数据'}}
+  if(!r.ok)throw new Error(data.message||('HTTP '+r.status));
+  return data;
+}
+function fmt(sec){sec=Math.max(0,Math.floor(sec));const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;return h?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+function startTimer(){
+  clearInterval(tickId);
+  const run=()=>{if(!session)return;const left=(session.deadline_ms-Date.now())/1000;const el=document.getElementById('timer');el.textContent=left<=0?'时间到':fmt(left);el.classList.toggle('danger',left<=300);};
+  run();tickId=setInterval(run,1000);
+}
+function loadQuestion(qid){
+  const p='/人工智能训练师三级素材/人工智能训练师三级考试平台模拟界面/'+qid+'.html';
+  questionFrame.src=encodeURI(p);
+  questionFrame.onload=()=>{
+    document.getElementById('questionLoading').classList.add('hidden');
+    try{
+      const d=questionFrame.contentDocument;
+      const right=d.querySelector('.right-column');if(right)right.style.display='none';
+      const left=d.querySelector('.left-column');if(left){left.style.flex='1 1 100%';left.style.width='100%';left.style.maxWidth='none';left.style.padding='18px 22px'}
+      const c=d.querySelector('.container');if(c){c.style.display='block';c.style.height='100vh'}
+      d.documentElement.style.overflow='auto';d.body.style.overflow='auto';
+    }catch(e){console.warn('题目页面样式调整失败',e)}
+  };
+}
+function loadJupyter(url){
+  jupyterFrame.src=url;
+  jupyterFrame.onload=()=>document.getElementById('jupyterLoading').classList.add('hidden');
+  setTimeout(()=>{if(!document.getElementById('jupyterLoading').classList.contains('hidden'))document.getElementById('jupyterNotice').classList.add('show')},7000);
+}
+async function init(){
+  try{
+    const s=await api('GET','/api/exam/status');
+    if(!s.active||!s.session){
+      document.getElementById('examMeta').textContent='当前没有正在进行的考试';
+      document.getElementById('submitBtn').disabled=true;
+      document.getElementById('questionLoading').textContent='没有活动考试，请返回训练系统开始模拟考试';
+      document.getElementById('jupyterLoading').textContent='没有活动考试';
+      return;
+    }
+    session=s.session;
+    document.title=session.qid+' - Jupyter 模拟考试';
+    document.getElementById('examMeta').textContent=`${session.qid} · ${session.notebook} · ${session.duration_minutes} 分钟`;
+    loadQuestion(session.qid);loadJupyter(session.jupyter_url);startTimer();
+    const saved=parseFloat(localStorage.getItem('ai3_exam_split_ratio')||'42');
+    if(Number.isFinite(saved))setSplit(saved);
+  }catch(e){
+    document.getElementById('examMeta').textContent='加载失败：'+e.message;
+  }
+}
+function setSplit(pct){pct=Math.max(15,Math.min(85,pct));document.documentElement.style.setProperty('--split',pct+'%');localStorage.setItem('ai3_exam_split_ratio',String(pct))}
+function resetSplit(){leftHidden=false;rightHidden=false;syncCollapse();setSplit(42)}
+function syncCollapse(){
+  if(leftHidden&&rightHidden)rightHidden=false;
+  workspace.classList.toggle('left-hidden',leftHidden);workspace.classList.toggle('right-hidden',rightHidden);
+  leftToggle.textContent=leftHidden?'展开题目':'收起题目';rightToggle.textContent=rightHidden?'展开 Jupyter':'收起 Jupyter';
+}
+function toggleLeft(){leftHidden=!leftHidden;if(leftHidden)rightHidden=false;syncCollapse()}
+function toggleRight(){rightHidden=!rightHidden;if(rightHidden)leftHidden=false;syncCollapse()}
+function openJupyterDirect(){if(session&&session.jupyter_url)window.open(session.jupyter_url,'ai_trainer_jupyter_direct')}
+
+let dragging=false;
+splitter.addEventListener('pointerdown',e=>{dragging=true;splitter.classList.add('dragging');splitter.setPointerCapture(e.pointerId);e.preventDefault()});
+splitter.addEventListener('pointermove',e=>{if(!dragging)return;const r=workspace.getBoundingClientRect();setSplit((e.clientX-r.left)/r.width*100)});
+splitter.addEventListener('pointerup',e=>{dragging=false;splitter.classList.remove('dragging');try{splitter.releasePointerCapture(e.pointerId)}catch(_){}});
+splitter.addEventListener('dblclick',resetSplit);
+
+async function submitExam(){
+  if(!session)return;
+  if(!confirm('请先在右侧 Jupyter Notebook 中按 Ctrl+S 保存。\n\n提交后 Jupyter 将关闭，不能继续修改本次答卷。'))return;
+  const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='正在提交...';
+  try{
+    const data=await api('POST','/api/exam/submit',{session_id:session.id});
+    clearInterval(tickId);showResult(data.report);
+  }catch(e){alert('提交失败：'+e.message);btn.disabled=false;btn.textContent='保存后提交'}
+}
+function showResult(r){
+  const checks=(r.checks||[]).map(x=>`<div class="check ${x.ok?'ok':'bad'}">${x.ok?'✓':'✗'} ${esc(x.label)}</div>`).join('');
+  const errs=(r.errors||[]).length?(r.errors||[]).map(x=>`<div class="bad">Cell ${x.cell}: ${esc(x.ename)} ${esc(x.evalue)}</div>`).join(''):'<div class="ok">未检测到 Notebook Error 输出</div>';
+  document.getElementById('resultBox').innerHTML=`<h2>考试已提交</h2><div class="score">${esc(r.score)} / 100</div><div class="muted">${esc(r.score_note||'自动初评，仅用于训练自检')}</div><hr><h3>关键代码检查</h3>${checks||'<div class="muted">暂无检查规则</div>'}<h3>Notebook 状态</h3><div>已执行 Cell：${esc(r.executed_cells)} / ${esc(r.code_cells)}</div><div>剩余下划线占位：${esc(r.placeholders)}</div><div>用时：${fmt(r.elapsed_seconds||0)}</div><h3>错误输出</h3>${errs}<div class="muted" style="margin-top:14px">考试记录：${esc(r.history_dir||'')}</div><div style="margin-top:18px"><button class="btn primary" onclick="location.href='/practice.html'">返回训练系统</button></div>`;
+  document.getElementById('resultMask').classList.add('show');
+  document.getElementById('submitBtn').disabled=true;document.getElementById('submitBtn').textContent='已提交';
+}
+
+init();
+</script>
+</body>
+</html>
