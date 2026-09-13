@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-set "PORT=8000"
+set "PORT=7000"
 set "PY_CMD="
 
 where py >nul 2>&1
@@ -38,7 +38,7 @@ if /i "%PY_CMD%"=="py" (
 )
 
 echo Waiting for web server...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ok=$false; for($i=0;$i -lt 20;$i++){ try { $r=Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:8000/practice.html' -TimeoutSec 1; if($r.StatusCode -eq 200){$ok=$true;break} } catch {}; Start-Sleep -Milliseconds 300 }; if($ok){exit 0}else{exit 1}"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ok=$false; for($i=0;$i -lt 20;$i++){ try { $r=Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:7000/practice.html' -TimeoutSec 1; if($r.StatusCode -eq 200){$ok=$true;break} } catch {}; Start-Sleep -Milliseconds 300 }; if($ok){exit 0}else{exit 1}"
 
 if errorlevel 1 (
     echo.
