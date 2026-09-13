@@ -39,10 +39,16 @@ const mask=document.getElementById('answerMask');
 const textBox=document.getElementById('answerText');
 const titleBox=document.getElementById('answerTitle');
 const encodingBox=document.getElementById('answerEncoding');
+let examActive=false;
+let activeSession=null;
+let examTimer=null;
+let examPoll=null;
 
 function closeAnswer(){mask.classList.remove('show')}
 mask.addEventListener('click',e=>{if(e.target===mask)closeAnswer()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAnswer()});
+
+function escHtml(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
 function scoreDecodedText(s){
   let bad=0;
@@ -69,6 +75,10 @@ function decodeAnswer(buf){
 }
 
 async function openAnswer(url,label){
+  if(examActive){
+    alert('模拟考试正在进行。提交考试后才能查看参考答案。');
+    return;
+  }
   mask.classList.add('show');
   titleBox.textContent=label||'参考答案';
   encodingBox.textContent='';
@@ -87,11 +97,245 @@ async function openAnswer(url,label){
   }
 }
 
-function installAnswerInterceptor(){
+async function api(method,path,body){
+  const opt={method,cache:'no-store',headers:{}};
+  if(body!==undefined){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body)}
+  const r=await fetch(path,opt);
+  let data={};
+  try{data=await r.json()}catch(_){data={ok:false,message:'服务器返回了无法解析的数据'}}
+  if(!r.ok){
+    const err=new Error(data.message||('HTTP '+r.status));
+    err.data=data;
+    throw err;
+  }
+  return data;
+}
+
+function childDoc(){return frame.contentDocument}
+function childWin(){return frame.contentWindow}
+function currentQid(){
+  const d=childDoc();
+  const q=d&&d.querySelector('.qitem.active .qid');
+  if(q)return q.textContent.trim();
+  const h=d&&d.querySelector('#taskHead h2');
+  const m=h&&h.textContent.match(/\d+\.\d+\.\d+/);
+  return m?m[0]:'';
+}
+function answerUrlFor(qid){return '人工智能训练师三级素材/操作题答案/'+qid+'_答案.md'}
+
+function applyExamLayout(on){
+  const d=childDoc();
+  if(!d)return;
+  const right=d.querySelector('.right');
+  const layout=d.querySelector('.layout');
+  const headToolbar=d.querySelector('#taskHead .toolbar');
+  if(right)right.style.display=on?'none':'';
+  if(layout)layout.style.gridTemplateColumns=on?'280px minmax(0,1fr)':'';
+  if(headToolbar)headToolbar.style.display=on?'none':'';
+}
+
+function setExamLock(lock){
+  const d=childDoc();
+  if(!d)return;
+  d.querySelectorAll('.tab').forEach(btn=>{
+    if(btn.dataset.mode!=='exam')btn.disabled=lock;
+  });
+  d.querySelectorAll('.qitem').forEach(x=>x.style.pointerEvents=lock?'none':'');
+  const search=d.getElementById('qSearch');
+  if(search)search.disabled=lock;
+}
+
+function examStateBox(){const d=childDoc();return d&&d.getElementById('nbExamState')}
+function examReportBox(){const d=childDoc();return d&&d.getElementById('nbExamReport')}
+
+function formatTime(seconds){
+  seconds=Math.max(0,Math.floor(seconds));
+  const h=Math.floor(seconds/3600),m=Math.floor((seconds%3600)/60),s=seconds%60;
+  return h>0?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function startExamTimer(){
+  clearInterval(examTimer);
+  const tick=()=>{
+    const d=childDoc();
+    const el=d&&d.getElementById('nbExamTimer');
+    if(!el||!activeSession)return;
+    const left=Math.max(0,(activeSession.deadline_ms-Date.now())/1000);
+    el.textContent=formatTime(left);
+    if(left<=0){el.style.color='#b91c1c';el.textContent='时间到：请立即保存并提交'}
+  };
+  tick();
+  examTimer=setInterval(tick,1000);
+}
+
+function renderActiveSession(session){
+  const box=examStateBox();
+  if(!box)return;
+  activeSession=session;
+  examActive=true;
+  setExamLock(true);
+  box.innerHTML=`
+    <div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:14px;margin-top:12px">
+      <div><b>考试进行中：</b>${escHtml(session.qid)}</div>
+      <div style="margin-top:8px">剩余时间：<span id="nbExamTimer" style="font-size:26px;font-weight:700;color:#1d4ed8"></span></div>
+      <div class="muted" style="margin-top:8px">工作目录：${escHtml(session.workspace)}</div>
+      <div class="muted">Notebook：${escHtml(session.notebook)}</div>
+      <div class="toolbar">
+        <button class="btn primary" onclick="parent.reopenJupyter()">重新打开 Jupyter Notebook</button>
+        <button class="btn ok" onclick="parent.submitJupyterExam()">保存后提交考试</button>
+      </div>
+      <div class="hint">交卷前请先回到 Notebook 按 Ctrl+S 保存。提交后 Jupyter 会关闭，并保留本次考试现场。</div>
+    </div>`;
+  startExamTimer();
+}
+
+function renderIdleExam(system,lastResult){
+  const box=examStateBox();
+  if(!box)return;
+  activeSession=null;
+  examActive=false;
+  clearInterval(examTimer);
+  setExamLock(false);
+  const qid=currentQid();
+  const ready=system&&system.notebook_installed;
+  box.innerHTML=`
+    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-top:12px">
+      <div><b>当前题目：</b>${escHtml(qid)}</div>
+      <div class="muted" style="margin-top:6px">Python：${escHtml(system?.python||'检测中')} · Jupyter：${ready?'已安装':'未安装'} · Notebook端口：${escHtml(system?.jupyter_port||7001)}</div>
+      <div class="toolbar">
+        <button class="btn primary" ${ready?'':'disabled'} onclick="parent.startJupyterExam()">开始模拟考试</button>
+      </div>
+      <div class="hint">开始后系统会把原始题目和数据复制到独立考试目录，并自动打开真正的 Jupyter Notebook。考试模式不显示函数速查、提示或参考答案。</div>
+    </div>`;
+  if(lastResult&&lastResult.qid===qid)renderExamReport(lastResult);
+}
+
+function renderExamReport(report){
+  const box=examReportBox();
+  if(!box)return;
+  const checkHtml=(report.checks||[]).map(x=>`<div style="padding:5px 0">${x.ok?'✓':'✗'} ${escHtml(x.label)}</div>`).join('');
+  const errorHtml=(report.errors||[]).length
+    ?`<div class="hint"><b>Notebook 错误输出：</b>${report.errors.map(x=>`<div>Cell ${x.cell}: ${escHtml(x.ename)} ${escHtml(x.evalue)}</div>`).join('')}</div>`
+    :'<div class="answer" style="display:block">未检测到 Notebook Error 输出</div>';
+  const generated=(report.generated_files||[]).length?report.generated_files.map(x=>`<li>${escHtml(x)}</li>`).join(''):'<li>未检测到新增结果文件</li>';
+  box.innerHTML=`
+    <div style="border:1px solid #d1fae5;background:#f0fdf4;border-radius:8px;padding:14px;margin-top:14px">
+      <div style="font-size:22px;font-weight:700">自动初评：${escHtml(report.score)} / 100</div>
+      <div class="muted">${escHtml(report.score_note||'仅用于训练自检')}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px">
+        <div><b>关键代码检查</b>${checkHtml||'<div class="muted">暂无规则</div>'}</div>
+        <div><b>Notebook 状态</b><div>已执行 Cell：${escHtml(report.executed_cells)} / ${escHtml(report.code_cells)}</div><div>剩余下划线占位：${escHtml(report.placeholders)}</div><div>用时：${formatTime(report.elapsed_seconds||0)}</div></div>
+      </div>
+      ${errorHtml}
+      <div style="margin-top:10px"><b>本次新增文件</b><ul>${generated}</ul></div>
+      <div class="muted">考试记录：${escHtml(report.history_dir||'')}</div>
+      <div class="toolbar"><button class="btn" onclick="parent.openAnswer(parent.answerUrlFor('${escHtml(report.qid)}'),'${escHtml(report.qid)} 参考答案')">查看参考答案</button></div>
+    </div>`;
+}
+
+async function refreshExamStatus(){
   try{
-    const doc=frame.contentDocument;
-    if(!doc)return;
-    doc.addEventListener('click',function(e){
+    const [status,sys]=await Promise.all([api('GET','/api/exam/status'),api('GET','/api/system/status')]);
+    if(status.active&&status.session){
+      const qid=currentQid();
+      if(qid!==status.session.qid&&childWin().selectQ){
+        childWin().selectQ(status.session.qid);
+        return;
+      }
+      renderActiveSession(status.session);
+    }else{
+      renderIdleExam(sys.system,status.last_result);
+    }
+  }catch(err){
+    const box=examStateBox();
+    if(box)box.innerHTML=`<div class="hint">环境检测失败：${escHtml(err.message)}</div>`;
+  }
+}
+
+function renderNotebookExam(){
+  const d=childDoc();
+  if(!d)return;
+  applyExamLayout(true);
+  const area=d.getElementById('examArea');
+  if(!area)return;
+  area.innerHTML=`
+    <h3>Jupyter Notebook 模拟考试</h3>
+    <div class="muted">尽可能模拟真实考试：使用原始 .ipynb 与题目数据，在标准 Jupyter Notebook 中独立完成。</div>
+    <div id="nbExamState"><div class="hint">正在检测本地考试环境...</div></div>
+    <div id="nbExamReport"></div>`;
+  refreshExamStatus();
+}
+
+async function startJupyterExam(){
+  const qid=currentQid();
+  if(!qid){alert('无法识别当前题号');return}
+  if(!confirm(`开始 ${qid} 模拟考试？\n\n系统将创建独立考试目录并启动 Jupyter Notebook。`))return;
+
+  const popup=window.open('about:blank','ai_trainer_jupyter');
+  if(popup){
+    popup.document.write('<meta charset="utf-8"><title>正在启动 Jupyter</title><body style="font-family:Arial;padding:30px">正在创建考试环境并启动 Jupyter Notebook，请稍候...</body>');
+  }
+  const box=examStateBox();
+  if(box)box.innerHTML='<div class="hint">正在复制题目素材并启动 Jupyter Notebook，首次启动可能需要数秒...</div>';
+  try{
+    const data=await api('POST','/api/exam/start',{qid});
+    renderActiveSession(data.session);
+    if(popup)popup.location.href=data.session.jupyter_url;
+    else window.open(data.session.jupyter_url,'_blank');
+    clearInterval(examPoll);
+    examPoll=setInterval(()=>{if(examActive)api('GET','/api/exam/status').catch(()=>{})},10000);
+  }catch(err){
+    if(popup)popup.close();
+    if(err.data&&err.data.session){
+      renderActiveSession(err.data.session);
+    }else if(box){
+      const log=err.data&&err.data.log?`<pre style="white-space:pre-wrap">${escHtml(err.data.log)}</pre>`:'';
+      box.innerHTML=`<div class="hint"><b>启动失败：</b>${escHtml(err.message)}${log}</div>`;
+    }else alert(err.message);
+  }
+}
+
+function reopenJupyter(){
+  if(activeSession&&activeSession.jupyter_url)window.open(activeSession.jupyter_url,'ai_trainer_jupyter');
+}
+
+async function submitJupyterExam(){
+  if(!activeSession)return;
+  if(!confirm('请确认已经在 Jupyter Notebook 中按 Ctrl+S 保存。\n\n提交后 Jupyter 将关闭，不能继续修改本次答卷。'))return;
+  const box=examStateBox();
+  if(box)box.innerHTML='<div class="hint">正在读取 Notebook 并生成自动检查结果...</div>';
+  try{
+    const data=await api('POST','/api/exam/submit',{session_id:activeSession.id});
+    examActive=false;
+    activeSession=null;
+    clearInterval(examTimer);
+    clearInterval(examPoll);
+    setExamLock(false);
+    if(box)box.innerHTML='<div class="answer" style="display:block">考试已提交，Jupyter Notebook 已关闭。本次答卷已保存到考试历史目录。</div>';
+    renderExamReport(data.report);
+  }catch(err){
+    if(box)box.innerHTML=`<div class="hint"><b>提交失败：</b>${escHtml(err.message)}</div>`;
+  }
+}
+
+function installChildHooks(){
+  try{
+    const d=childDoc(),w=childWin();
+    if(!d||!w||w.__aiTrainerNotebookExamHooked)return;
+    w.__aiTrainerNotebookExamHooked=true;
+
+    // Replace the old download-only exam view with the Jupyter Notebook controller.
+    try{w.renderExam=function(){renderNotebookExam()}}catch(_){}
+
+    d.addEventListener('click',function(e){
+      const tab=e.target.closest&&e.target.closest('.tab');
+      if(tab){
+        setTimeout(()=>{
+          if(tab.dataset.mode==='exam')renderNotebookExam();
+          else if(!examActive)applyExamLayout(false);
+        },0);
+      }
+
       const a=e.target.closest&&e.target.closest('a');
       if(!a)return;
       const raw=a.getAttribute('href')||'';
@@ -101,13 +345,23 @@ function installAnswerInterceptor(){
         e.preventDefault();
         e.stopPropagation();
         if(e.stopImmediatePropagation)e.stopImmediatePropagation();
-        openAnswer(a.href,a.textContent.trim()||'参考答案');
+        if(examActive)alert('模拟考试正在进行。提交考试后才能查看参考答案。');
+        else openAnswer(a.href,a.textContent.trim()||'参考答案');
       }
     },true);
-  }catch(err){console.error('安装答案查看器失败',err)}
+
+    // Restore a running exam after page refresh.
+    api('GET','/api/exam/status').then(status=>{
+      if(status.active&&status.session){
+        examActive=true;
+        activeSession=status.session;
+        setExamLock(true);
+      }
+    }).catch(()=>{});
+  }catch(err){console.error('安装 Jupyter 模拟考试组件失败',err)}
 }
 
-frame.addEventListener('load',installAnswerInterceptor);
+frame.addEventListener('load',installChildHooks);
 </script>
 </body>
 </html>
