@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>考试作答查看</title>
+<style>
+:root{--top:50px;--split:38%;--nav:#0f172a;--bg:#e2e8f0}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:"Microsoft YaHei",Arial,sans-serif;color:#1f2937;background:var(--bg)}
+.top{height:var(--top);background:var(--nav);color:#fff;display:flex;align-items:center;gap:10px;padding:0 12px}.title{font-weight:700}.meta{font-size:12px;color:#cbd5e1}.spacer{flex:1}.btn{border:1px solid #475569;background:#1e293b;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer}
+.workspace{height:calc(100vh - var(--top));display:flex;min-width:0}.pane{min-width:0;background:#fff;position:relative}.left{flex:0 0 var(--split)}.right{flex:1;overflow:auto;background:#f8fafc}.left iframe{width:100%;height:100%;border:0}.split{flex:0 0 8px;background:#cbd5e1;cursor:col-resize}.split:hover,.split.drag{background:#60a5fa}.workspace.left-hidden .left,.workspace.left-hidden .split{display:none}.workspace.left-hidden .right{flex:1 1 100%}
+.nb{max-width:1100px;margin:0 auto;padding:22px}.summary{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:16px}.cell{display:grid;grid-template-columns:70px minmax(0,1fr);gap:8px;margin:12px 0}.prompt{font-family:Consolas,monospace;color:#2563eb;text-align:right;padding-top:10px;font-size:13px}.code,.markdown,.raw{margin:0;white-space:pre-wrap;word-break:break-word;border:1px solid #dbe3ec;border-radius:7px;padding:11px 13px;background:#fff;font:14px/1.62 Consolas,"Cascadia Code","Microsoft YaHei",monospace}.markdown{font-family:"Microsoft YaHei",Arial,sans-serif}.output{margin-top:6px;border-left:3px solid #cbd5e1;padding:7px 10px;background:#fff;white-space:pre-wrap;font:13px/1.55 Consolas,monospace}.output.error{border-left-color:#dc2626;color:#991b1b;background:#fef2f2}.output img{max-width:100%;height:auto}.status{padding:30px;color:#64748b}
+.kw{color:#008000;font-weight:600}.str{color:#ba2121}.com{color:#408080;font-style:italic}.num{color:#080}.attr{color:#795da3}
+body.embed .top,body.embed .left,body.embed .split{display:none}body.embed .workspace{height:100vh}body.embed .right{flex:1 1 100%}
+</style>
+</head>
+<body>
+<div class="top"><div class="title">考试作答查看</div><div id="meta" class="meta">正在读取...</div><div class="spacer"></div><button id="toggleBtn" class="btn" onclick="toggleLeft()">收起题目</button><button class="btn" onclick="location.href='/practice.html'">返回训练系统</button></div>
+<div id="workspace" class="workspace">
+  <section class="pane left"><iframe id="questionFrame" title="题目"></iframe></section>
+  <div id="splitter" class="split"></div>
+  <section class="pane right"><div id="notebook" class="nb"><div class="status">正在读取作答...</div></div></section>
+</div>
+<script>
+const qs=new URLSearchParams(location.search),id=qs.get('id')||'',embed=qs.get('embed')==='1';if(embed)document.body.classList.add('embed');
+const workspace=document.getElementById('workspace'),splitter=document.getElementById('splitter');let leftHidden=false,drag=false;
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+const KW=new Set('and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield True False None'.split(' '));
+function py(code){code=String(code||'');let out='',i=0;const add=(t,c='')=>out+=c?`<span class="${c}">${esc(t)}</span>`:esc(t);while(i<code.length){const ch=code[i];if(ch==='#'){let j=code.indexOf('\n',i);if(j<0)j=code.length;add(code.slice(i,j),'com');i=j;continue}if(ch==='\''||ch==='"'){const q=ch;let j=i+1;while(j<code.length){if(code[j]==='\\'){j+=2;continue}if(code[j]===q){j++;break}j++}add(code.slice(i,j),'str');i=j;continue}if(/[A-Za-z_]/.test(ch)){let j=i+1;while(j<code.length&&/[A-Za-z0-9_]/.test(code[j]))j++;const w=code.slice(i,j);add(w,KW.has(w)?'kw':(i>0&&code[i-1]==='.'?'attr':''));i=j;continue}if(/[0-9]/.test(ch)){let j=i+1;while(j<code.length&&/[0-9._]/.test(code[j]))j++;add(code.slice(i,j),'num');i=j;continue}add(ch);i++}return out}
+function statusName(s){return s==='submitted'?'已提交':s==='active'?'进行中':'未提交'}
+function renderOutput(o){if(o.type==='error')return `<div class="output error"><b>${esc(o.ename)}:</b> ${esc(o.evalue)}${o.text?'\n'+esc(o.text):''}</div>`;let body=o.text?esc(o.text):'';if(o.image_png)body+=`<div><img src="data:image/png;base64,${o.image_png}"></div>`;return body?`<div class="output">${body}</div>`:''}
+function renderCell(c){if(c.cell_type==='code'){const n=c.execution_count==null?' ':c.execution_count;return `<div class="cell"><div class="prompt">In [${esc(n)}]:</div><div><pre class="code">${py(c.source)}</pre>${(c.outputs||[]).map(renderOutput).join('')}</div></div>`}return `<div class="cell"><div></div><pre class="${c.cell_type==='markdown'?'markdown':'raw'}">${esc(c.source)}</pre></div>`}
+async function init(){if(!id){document.getElementById('notebook').innerHTML='<div class="status">缺少记录编号。</div>';return}try{const r=await fetch('/api/exam/record?id='+encodeURIComponent(id),{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.message||('HTTP '+r.status));const x=d.record;document.title=x.qid+' - 作答查看';document.getElementById('meta').textContent=`${x.qid} · ${x.notebook} · ${statusName(x.status)}${x.score&&x.score.score!=null?' · '+x.score.score+' 分':''}`;if(!embed){document.getElementById('questionFrame').src=encodeURI('/人工智能训练师三级素材/人工智能训练师三级考试平台模拟界面/'+x.qid+'.html')}const score=x.score&&x.score.score!=null?`<b>自动初评：</b>${esc(x.score.score)} / 100　`:'';document.getElementById('notebook').innerHTML=`<div class="summary">${score}<b>状态：</b>${statusName(x.status)}　<b>Notebook：</b>${esc(x.notebook)}</div>`+(x.cells||[]).map(renderCell).join('')}catch(e){document.getElementById('notebook').innerHTML='<div class="status">读取失败：'+esc(e.message)+'</div>'}}
+function setSplit(p){p=Math.max(18,Math.min(82,p));document.documentElement.style.setProperty('--split',p+'%')}
+function toggleLeft(){leftHidden=!leftHidden;workspace.classList.toggle('left-hidden',leftHidden);document.getElementById('toggleBtn').textContent=leftHidden?'展开题目':'收起题目'}
+splitter.addEventListener('pointerdown',e=>{drag=true;splitter.classList.add('drag');splitter.setPointerCapture(e.pointerId)});splitter.addEventListener('pointermove',e=>{if(!drag)return;const r=workspace.getBoundingClientRect();setSplit((e.clientX-r.left)/r.width*100)});splitter.addEventListener('pointerup',()=>{drag=false;splitter.classList.remove('drag')});
+init();
+</script>
+</body>
+</html>
