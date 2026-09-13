@@ -50,5 +50,6 @@ function installChildHooks(){try{const d=childDoc(),w=childWin();if(!d||!w||w.__
 window.addEventListener('focus',()=>{if(examActive)refreshExamStatus()});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&examActive)refreshExamStatus()});
 frame.addEventListener('load',installChildHooks);
 </script>
+<script src="question_preview.js"></script>
 </body>
 </html>
