@@ -33,12 +33,20 @@ if not defined PY_CMD (
 
 echo Python command: %PY_CMD%
 
+if exist ".venv\Scripts\python.exe" (
+    ".venv\Scripts\python.exe" -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3,12) else 1)" >nul 2>&1
+    if errorlevel 1 (
+        echo Existing .venv is not Python 3.12. Recreating it...
+        rmdir /s /q ".venv"
+    ) else (
+        echo Existing Python 3.12 virtual environment found: .venv
+    )
+)
+
 if not exist ".venv\Scripts\python.exe" (
     echo Creating virtual environment: .venv
     %PY_CMD% -m venv ".venv"
     if errorlevel 1 goto :fail
-) else (
-    echo Existing virtual environment found: .venv
 )
 
 echo.
@@ -53,13 +61,13 @@ if errorlevel 1 goto :fail
 
 echo.
 echo Verifying Jupyter Notebook environment...
-".venv\Scripts\python.exe" -c "import sys, notebook, jupyter_server, ipykernel, nbformat, numpy, pandas, sklearn; print('Python:', sys.version.split()[0]); print('Notebook:', notebook.__version__); print('pandas:', pandas.__version__); print('numpy:', numpy.__version__); print('scikit-learn:', sklearn.__version__)"
+".venv\Scripts\python.exe" -c "import sys, notebook, jupyter_server, ipykernel, nbformat, numpy, pandas, sklearn; assert sys.version_info[:2] == (3,12); print('Python:', sys.version.split()[0]); print('Notebook:', notebook.__version__); print('pandas:', pandas.__version__); print('numpy:', numpy.__version__); print('scikit-learn:', sklearn.__version__)"
 if errorlevel 1 goto :fail
 
 echo.
 echo =============================================
 echo Installation completed successfully.
-echo Next: run [start_practice.bat] or the Chinese launcher.
+echo Next: run start_practice.bat or the practical trainer launcher.
 echo =============================================
 echo.
 pause
