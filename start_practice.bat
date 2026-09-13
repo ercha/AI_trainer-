@@ -2,6 +2,7 @@
 cd /d "%~dp0"
 set "PY=%~dp0.venv\Scripts\python.exe"
 set "PYW=%~dp0.venv\Scripts\pythonw.exe"
+set "JUPYTERLAB_SETTINGS_DIR=%~dp0jupyter_settings"
 
 if not exist "%PYW%" (
     powershell -NoProfile -WindowStyle Hidden -Command "Add-Type -AssemblyName PresentationFramework; [System.Windows.MessageBox]::Show('Virtual environment not found. Run install_env.bat first.','AI Trainer') | Out-Null"
