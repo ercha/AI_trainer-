@@ -4,6 +4,13 @@ cd /d "%~dp0"
 set "PORT=7000"
 set "VENV_PY=%~dp0.venv\Scripts\python.exe"
 
+rem Let the Jupyter subprocess load the repository-local server config.
+if defined JUPYTER_CONFIG_PATH (
+    set "JUPYTER_CONFIG_PATH=%~dp0;%JUPYTER_CONFIG_PATH%"
+) else (
+    set "JUPYTER_CONFIG_PATH=%~dp0"
+)
+
 echo =============================================
 echo AI Trainer - Practical Training System
 echo =============================================
@@ -50,6 +57,7 @@ echo Browser opened:
 echo http://127.0.0.1:%PORT%/practice.html
 echo.
 echo Jupyter Notebook starts automatically on port 7001 when an exam begins.
+echo The exam opens in a split-screen workspace: question on the left, Jupyter on the right.
 echo Keep the minimized server window running while practicing.
 echo.
 pause
