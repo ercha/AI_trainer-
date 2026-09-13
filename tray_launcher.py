@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from urllib.request import Request, urlopen
-from urllib.error import URLError
+from urllib.request import urlopen
 import ctypes
 import json
 import os
 import socket
 import subprocess
-import sys
 import threading
 import time
 import webbrowser
@@ -95,6 +93,13 @@ def _acquire_single_instance() -> bool:
         return False
 
 
+def _server_environment() -> dict[str, str]:
+    env = os.environ.copy()
+    current = env.get("JUPYTER_CONFIG_PATH", "").strip()
+    env["JUPYTER_CONFIG_PATH"] = str(ROOT) + (os.pathsep + current if current else "")
+    return env
+
+
 def _start_server() -> int:
     global SERVER_PROCESS, SERVER_PID, LOG_HANDLE
 
@@ -120,6 +125,7 @@ def _start_server() -> int:
     SERVER_PROCESS = subprocess.Popen(
         [str(PYTHON_EXE), str(SERVER_SCRIPT), str(PORT)],
         cwd=str(ROOT),
+        env=_server_environment(),
         stdout=LOG_HANDLE,
         stderr=subprocess.STDOUT,
         creationflags=CREATE_NO_WINDOW,
@@ -216,7 +222,6 @@ def _bootstrap(icon: pystray.Icon) -> None:
 
 def main() -> None:
     if not _acquire_single_instance():
-        # Existing tray process: just open the current browser page.
         webbrowser.open(PRACTICE_URL, new=2)
         return
 
