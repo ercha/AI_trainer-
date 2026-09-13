@@ -2,13 +2,112 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0; url=%E5%AE%9E%E6%93%8D%E8%AE%AD%E7%BB%83%E7%B3%BB%E7%BB%9F.html">
-<title>Practical Trainer</title>
-<script>
-window.location.replace('%E5%AE%9E%E6%93%8D%E8%AE%AD%E7%BB%83%E7%B3%BB%E7%BB%9F.html');
-</script>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>人工智能训练师三级 - 实操训练系统</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:"Microsoft YaHei",Arial,sans-serif;background:#f5f7fb}
+#appFrame{display:block;width:100%;height:100%;border:0}
+#answerMask{display:none;position:fixed;inset:0;background:rgba(15,23,42,.62);z-index:99999;padding:28px;box-sizing:border-box}
+#answerMask.show{display:block}
+.answer-panel{max-width:1180px;height:calc(100vh - 56px);margin:0 auto;background:#fff;border-radius:12px;box-shadow:0 24px 70px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}
+.answer-head{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0f172a;color:#fff}
+.answer-title{font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.answer-encoding{font-size:12px;color:#cbd5e1}
+.answer-close{border:1px solid #475569;background:#1e293b;color:#fff;border-radius:6px;padding:6px 12px;cursor:pointer}
+.answer-body{flex:1;overflow:auto;padding:20px;background:#fff}
+#answerText{margin:0;white-space:pre-wrap;word-break:break-word;font-family:Consolas,"Microsoft YaHei",monospace;font-size:14px;line-height:1.75;color:#1f2937}
+.answer-error{color:#b91c1c;font-family:"Microsoft YaHei",Arial,sans-serif}
+</style>
 </head>
 <body>
-<p>Loading practical trainer...</p>
+<iframe id="appFrame" src="%E5%AE%9E%E6%93%8D%E8%AE%AD%E7%BB%83%E7%B3%BB%E7%BB%9F.html"></iframe>
+
+<div id="answerMask" role="dialog" aria-modal="true">
+  <div class="answer-panel">
+    <div class="answer-head">
+      <div id="answerTitle" class="answer-title">参考答案</div>
+      <div id="answerEncoding" class="answer-encoding"></div>
+      <button class="answer-close" onclick="closeAnswer()">关闭</button>
+    </div>
+    <div class="answer-body"><pre id="answerText">正在读取...</pre></div>
+  </div>
+</div>
+
+<script>
+const frame=document.getElementById('appFrame');
+const mask=document.getElementById('answerMask');
+const textBox=document.getElementById('answerText');
+const titleBox=document.getElementById('answerTitle');
+const encodingBox=document.getElementById('answerEncoding');
+
+function closeAnswer(){mask.classList.remove('show')}
+mask.addEventListener('click',e=>{if(e.target===mask)closeAnswer()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAnswer()});
+
+function scoreDecodedText(s){
+  let bad=0;
+  for(const ch of s){
+    if(ch==='\uFFFD') bad+=20;
+    if(ch==='Ã'||ch==='Â'||ch==='锟'||ch==='烫'||ch==='屯') bad+=3;
+  }
+  return bad;
+}
+
+function decodeAnswer(buf){
+  const bytes=new Uint8Array(buf);
+  if(bytes.length>=3&&bytes[0]===0xEF&&bytes[1]===0xBB&&bytes[2]===0xBF){
+    return {text:new TextDecoder('utf-8').decode(bytes.subarray(3)),encoding:'UTF-8 BOM'};
+  }
+  const candidates=[];
+  try{candidates.push({text:new TextDecoder('utf-8',{fatal:true}).decode(bytes),encoding:'UTF-8'})}catch(e){}
+  try{candidates.push({text:new TextDecoder('gb18030',{fatal:true}).decode(bytes),encoding:'GB18030/GBK'})}catch(e){}
+  if(!candidates.length){
+    return {text:new TextDecoder('utf-8').decode(bytes),encoding:'UTF-8（容错）'};
+  }
+  candidates.sort((a,b)=>scoreDecodedText(a.text)-scoreDecodedText(b.text));
+  return candidates[0];
+}
+
+async function openAnswer(url,label){
+  mask.classList.add('show');
+  titleBox.textContent=label||'参考答案';
+  encodingBox.textContent='';
+  textBox.className='';
+  textBox.textContent='正在读取答案...';
+  try{
+    const r=await fetch(url,{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status+' '+r.statusText);
+    const buf=await r.arrayBuffer();
+    const decoded=decodeAnswer(buf);
+    encodingBox.textContent='编码：'+decoded.encoding;
+    textBox.textContent=decoded.text;
+  }catch(err){
+    textBox.className='answer-error';
+    textBox.textContent='答案读取失败：'+err.message+'\n\n地址：'+url;
+  }
+}
+
+function installAnswerInterceptor(){
+  try{
+    const doc=frame.contentDocument;
+    if(!doc)return;
+    doc.addEventListener('click',function(e){
+      const a=e.target.closest&&e.target.closest('a');
+      if(!a)return;
+      const raw=a.getAttribute('href')||'';
+      let pathname='';
+      try{pathname=new URL(a.href,location.href).pathname.toLowerCase()}catch(_){pathname=raw.toLowerCase()}
+      if(pathname.endsWith('.md')||/操作题答案/.test(raw)){
+        e.preventDefault();
+        e.stopPropagation();
+        if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+        openAnswer(a.href,a.textContent.trim()||'参考答案');
+      }
+    },true);
+  }catch(err){console.error('安装答案查看器失败',err)}
+}
+
+frame.addEventListener('load',installAnswerInterceptor);
+</script>
 </body>
 </html>
