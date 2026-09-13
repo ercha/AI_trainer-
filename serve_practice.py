@@ -292,14 +292,30 @@ def _cell_source(cell: dict) -> str:
     return "".join(source) if isinstance(source, list) else str(source or "")
 
 
+def _is_effective_code_cell(cell: dict) -> bool:
+    """Return True only for code cells that contain executable content.
+
+    Empty cells and comment-only cells are ignored for the execution-score denominator,
+    because Jupyter may legitimately leave their execution_count as None.
+    """
+    source = _cell_source(cell)
+    for line in source.splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#"):
+            return True
+    return False
+
+
 def _collect_notebook_state(notebook: dict) -> dict:
-    code_cells = [c for c in notebook.get("cells", []) if c.get("cell_type") == "code"]
+    all_code_cells = [c for c in notebook.get("cells", []) if c.get("cell_type") == "code"]
+    effective_cells = [c for c in all_code_cells if _is_effective_code_cell(c)]
     sources: list[str] = []
     saved_executed = 0
     saved_errors: list[dict] = []
-    for index, cell in enumerate(code_cells, start=1):
+    effective_ids = {id(c) for c in effective_cells}
+    for index, cell in enumerate(all_code_cells, start=1):
         sources.append(_cell_source(cell))
-        if cell.get("execution_count") is not None:
+        if id(cell) in effective_ids and cell.get("execution_count") is not None:
             saved_executed += 1
         for output in cell.get("outputs", []) or []:
             if output.get("output_type") == "error":
@@ -309,7 +325,8 @@ def _collect_notebook_state(notebook: dict) -> dict:
                     "evalue": output.get("evalue", ""),
                 })
     return {
-        "code_cells": code_cells,
+        "code_cells": effective_cells,
+        "total_code_cells": all_code_cells,
         "code": "\n".join(sources),
         "saved_executed_cells": saved_executed,
         "saved_errors": saved_errors,
@@ -322,6 +339,7 @@ def _auto_execute_notebook(workspace: Path, notebook_path: Path) -> dict:
             "available": False,
             "executed_cells": 0,
             "successful_cells": 0,
+            "effective_cells": 0,
             "errors": [],
             "engine_error": "未安装 nbclient/nbformat，无法执行自动运行验证",
         }
@@ -332,8 +350,8 @@ def _auto_execute_notebook(workspace: Path, notebook_path: Path) -> dict:
 
         notebook = nbformat.read(str(notebook_path), as_version=4)
         run_book = deepcopy(notebook)
-        code_cells = [c for c in run_book.cells if c.get("cell_type") == "code"]
-        for cell in code_cells:
+        all_code_cells = [c for c in run_book.cells if c.get("cell_type") == "code"]
+        for cell in all_code_cells:
             cell["execution_count"] = None
             cell["outputs"] = []
 
@@ -356,7 +374,11 @@ def _auto_execute_notebook(workspace: Path, notebook_path: Path) -> dict:
         errors: list[dict] = []
         executed = 0
         successful = 0
+        effective_count = 0
         for index, cell in enumerate([c for c in run_book.cells if c.get("cell_type") == "code"], start=1):
+            if not _is_effective_code_cell(cell):
+                continue
+            effective_count += 1
             if cell.get("execution_count") is not None:
                 executed += 1
             cell_errors = []
@@ -376,6 +398,7 @@ def _auto_execute_notebook(workspace: Path, notebook_path: Path) -> dict:
             "available": True,
             "executed_cells": executed,
             "successful_cells": successful,
+            "effective_cells": effective_count,
             "errors": errors,
             "engine_error": "",
         }
@@ -384,6 +407,7 @@ def _auto_execute_notebook(workspace: Path, notebook_path: Path) -> dict:
             "available": True,
             "executed_cells": 0,
             "successful_cells": 0,
+            "effective_cells": 0,
             "errors": [],
             "engine_error": f"{type(exc).__name__}: {exc}",
         }
@@ -415,8 +439,9 @@ def _analyze_notebook(session: dict) -> dict:
 
     check_score = round(60 * sum(1 for x in checks if x["ok"]) / len(checks)) if checks else 0
     placeholder_score = 15 if placeholders == 0 else max(0, 15 - placeholders * 3)
+    effective_count = len(code_cells)
     if auto["available"] and not auto["engine_error"]:
-        run_score = round(15 * auto["successful_cells"] / len(code_cells)) if code_cells else 0
+        run_score = round(15 * auto["successful_cells"] / effective_count) if effective_count else 15
         error_score = 10 if not auto["errors"] else 0
     else:
         run_score = 0
@@ -432,10 +457,11 @@ def _analyze_notebook(session: dict) -> dict:
 
     return {
         "score": score,
-        "score_note": "自动初评：提交时会重新执行 Notebook 验证；仅用于训练自检，不代表官方评分",
+        "score_note": "自动初评：提交时会重新执行 Notebook 验证；空白/纯注释代码 Cell 不参与执行率扣分；仅用于训练自检，不代表官方评分",
         "checks": checks,
         "placeholders": placeholders,
-        "code_cells": len(code_cells),
+        "code_cells": effective_count,
+        "total_code_cells": len(state["total_code_cells"]),
         "saved_executed_cells": state["saved_executed_cells"],
         "saved_errors": state["saved_errors"],
         "auto_execution_available": auto["available"],
@@ -443,7 +469,6 @@ def _analyze_notebook(session: dict) -> dict:
         "auto_successful_cells": auto["successful_cells"],
         "auto_errors": auto["errors"],
         "auto_engine_error": auto["engine_error"],
-        # Backward-compatible fields used by older pages.
         "executed_cells": auto["successful_cells"],
         "errors": auto["errors"],
         "generated_files": generated,
@@ -495,7 +520,6 @@ def _submit_exam(session_id: str) -> dict:
             report["history_dir"] = str(workspace)
             report["history_warning"] = str(exc)
 
-        # score.json needs the final history path as well.
         final_score_path = Path(report["history_dir"]) / "score.json"
         try:
             final_score_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
