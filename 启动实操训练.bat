@@ -32,9 +32,9 @@ echo Python command: %PY_CMD%
 echo Starting local web server on 127.0.0.1:%PORT% ...
 
 if /i "%PY_CMD%"=="py" (
-    start "AI Trainer Web" /min py -m http.server %PORT% --bind 127.0.0.1
+    start "AI Trainer Web" /min py serve_practice.py %PORT%
 ) else (
-    start "AI Trainer Web" /min python -m http.server %PORT% --bind 127.0.0.1
+    start "AI Trainer Web" /min python serve_practice.py %PORT%
 )
 
 echo Waiting for web server...
@@ -44,7 +44,7 @@ if errorlevel 1 (
     echo.
     echo ERROR: The web server did not start correctly.
     echo Try this command manually in this folder:
-    echo     %PY_CMD% -m http.server %PORT% --bind 127.0.0.1
+    echo     %PY_CMD% serve_practice.py %PORT%
     echo Then open:
     echo     http://127.0.0.1:%PORT%/practice.html
     echo.
@@ -58,6 +58,6 @@ echo.
 echo Browser opened:
 echo http://127.0.0.1:%PORT%/practice.html
 echo.
-echo The web server is running in a separate minimized window.
+echo Markdown answer files are served as UTF-8.
 pause
 endlocal
