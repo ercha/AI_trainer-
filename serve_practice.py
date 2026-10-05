@@ -67,7 +67,7 @@ QUESTION_PROFILES = {
             ("模型预测", (".predict(",)),
             ("准确率", ("accuracy_score",)),
         ],
-    },,
+    },
     "6.1.1": {"duration": 45, "checks": [
         ("Laplacian 清晰度", ("Laplacian",)), ("亮度统计", (".mean(",)),
         ("水平翻转", ("FLIP_LEFT_RIGHT", "transpose")), ("旋转增强", (".rotate(",)),
