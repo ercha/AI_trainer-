@@ -179,6 +179,39 @@ def _list_relative_files(folder: Path) -> set[str]:
     return result
 
 
+def _add_todo_labels_to_notebook(path: Path) -> int:
+    """为旧版下划线填空题增加 TODO x-y 标签；不改变原占位符。"""
+    try:
+        notebook = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return 0
+
+    changed = 0
+    section = 0
+    for cell in notebook.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        section += 1
+        source = cell.get("source", [])
+        text = "".join(source) if isinstance(source, list) else str(source or "")
+        lines = text.splitlines(keepends=True)
+        new_lines = []
+        item = 0
+        for line in lines:
+            if re.search(r"_{5,}", line):
+                item += 1
+                previous = new_lines[-1] if new_lines else ""
+                if not re.search(r"TODO\s+\d+-\d+", previous, flags=re.IGNORECASE):
+                    new_lines.append(f"# TODO {section}-{item}：补全下一行代码空缺\n")
+                    changed += 1
+            new_lines.append(line)
+        cell["source"] = new_lines
+
+    if changed:
+        path.write_text(json.dumps(notebook, ensure_ascii=False, indent=1), encoding="utf-8")
+    return changed
+
+
 def _start_exam(qid: str) -> dict:
     global ACTIVE_SESSION
 
@@ -226,6 +259,8 @@ def _start_exam(qid: str) -> dict:
                 shutil.rmtree(workspace, ignore_errors=True)
                 raise ApiError(404, f"素材目录中没有找到 .ipynb：{qid}")
             notebook = notebooks[0]
+
+        _add_todo_labels_to_notebook(notebook)
 
         profile = QUESTION_PROFILES.get(qid, {})
         duration = int(profile.get("duration", 30))
@@ -442,7 +477,7 @@ def _analyze_notebook(session: dict) -> dict:
     code = state["code"]
     code_cells = state["code_cells"]
     placeholders = len(re.findall(r"_{5,}", code))
-    todo_ids = sorted(set(re.findall(r"TODO\\s+(\\d+-\\d+)", code, flags=re.IGNORECASE)))
+    todo_ids = sorted(set(re.findall(r"TODO\s+(\d+-\d+)", code, flags=re.IGNORECASE)))
 
     profile = QUESTION_PROFILES.get(session["qid"], {})
     checks = []
