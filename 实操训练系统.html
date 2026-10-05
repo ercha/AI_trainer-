@@ -18,7 +18,7 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:15px;margin:16px 0 8px}.muted{colo
 </style>
 </head>
 <body>
-<header><h1>实操训练系统</h1><div class="sub">45 道操作技能题 · 默认使用 Jupyter Notebook 模拟考试</div></header>
+<header><h1>实操训练系统</h1><div class="sub">60 道操作技能题 · 默认使用 Jupyter Notebook 模拟考试</div></header>
 <div class="layout">
   <aside class="card sidebar">
     <input id="qSearch" class="search" placeholder="搜索题号 / 题目 / 章节" oninput="renderQuestionList()">
@@ -60,7 +60,12 @@ const UNITS=[
 {id:'3.2',name:'AI模型推理（ONNX）'},
 {id:'4.1',name:'培训大纲编写'},
 {id:'4.2',name:'数据采集处理方案'},
-{id:'5.1',name:'竞赛专项练习（A-E）'}
+{id:'5.1',name:'竞赛专项练习（A-E）'},
+{id:'6.1',name:'竞赛强化 A·计算机视觉',count:3},
+{id:'6.2',name:'竞赛强化 B·机器学习',count:3},
+{id:'6.3',name:'竞赛强化 C·深度学习',count:3},
+{id:'6.4',name:'竞赛强化 D·自然语言处理',count:3},
+{id:'6.5',name:'竞赛强化 E·AI创新项目',count:3}
 ];
 const DETAILS={
 '1.1.1':{tags:['pandas','numpy','pd.cut','groupby','value_counts'],req:['读取 patient_data.csv','按住院天数生成高/低风险','按 BMI 区间统计高风险比例与人数','按年龄区间统计高风险比例与人数'],blanks:[
@@ -157,11 +162,27 @@ const DETAILS={
     '简答：说明 AI 创新项目完整开发流程、工程化与交付要求，以及生成式 AI/低代码/可视化工具如何辅助开发'
   ]
 }
+'6.1.1':{title:'商品图片质量检查与离线增强',tags:['PIL','图像增强','批处理'],taskText:'从商品拼图中切分原始图片，统一尺寸后完成水平翻转、旋转、亮度增强，并输出增强数据清单。',req:['切分6张原图并统一为128×128','完成水平翻转、旋转12度、亮度1.2倍增强','保存增强图片并生成manifest.csv']},
+'6.1.2':{title:'工业零件缺陷分割与统计',tags:['OpenCV','阈值分割','形态学','轮廓'],taskText:'对工业零件图像完成灰度化、阈值分割、形态学去噪、轮廓检测和缺陷面积统计。',req:['切分8张零件图','阈值分割亮缺陷并做开运算','检测外轮廓、保存标注图和defect_report.csv']},
+'6.1.3':{title:'交通图像质量筛选与类别平衡',tags:['OpenCV','Laplacian','PIL','数据增强'],taskText:'对交通图像进行清晰度检测，过滤低质量样本，再通过旋转和亮度增强实现类别平衡。',req:['切分car/bus/truck样本','使用Laplacian方差评估清晰度','将各类别扩充到相同数量并生成balanced_manifest.csv']},
+'6.2.1':{title:'客户画像K-Means聚类与最佳K选择',tags:['KMeans','StandardScaler','silhouette','PCA'],taskText:'标准化客户特征，遍历K=2~6，以轮廓系数选择最佳K，并通过PCA可视化聚类。',req:['标准化5个数值特征','比较K=2~6轮廓系数','使用最佳K聚类并导出customer_clusters.csv和clusters.png']},
+'6.2.2':{title:'客户流失随机森林分类与参数优化',tags:['RandomForest','GridSearchCV','F1','混淆矩阵'],taskText:'完成类别编码、随机森林分类与评估，并通过GridSearchCV优化参数。',req:['独热编码并分层划分训练测试集','输出classification_report和confusion_matrix','以F1为评分搜索参数并保存churn_best.pkl']},
+'6.2.3':{title:'房价回归多模型比较与选择',tags:['回归','RandomForest','GradientBoosting','RMSE'],taskText:'比较线性回归、随机森林和梯度提升三种回归模型，使用多指标选择最佳模型。',req:['类别特征独热编码','计算MAE、RMSE、R²','输出model_metrics.csv并保存best_house_model.pkl']},
+'6.3.1':{title:'CNN图形图像四分类',tags:['PyTorch','CNN','DataLoader'],taskText:'从单张网格图切分160个图像样本，构造TensorDataset并训练两层CNN完成四分类。',req:['切分16×16图块并转Tensor','搭建两层Conv+ReLU+MaxPool','使用CrossEntropyLoss+Adam并计算准确率']},
+'6.3.2':{title:'数据增强、正则化与最佳模型保存',tags:['PyTorch','BatchNorm','Dropout','Scheduler'],taskText:'在CNN中加入随机增强、BatchNorm、Dropout和学习率调度，并按验证集保存最佳模型。',req:['随机水平翻转/90度旋转','加入BatchNorm和Dropout','StepLR调度、保存best_model.pth并输出混淆矩阵']},
+'6.3.3':{title:'ResNet18模型适配与分阶段微调',tags:['ResNet18','迁移学习','冻结参数'],taskText:'使用ResNet18替换分类层，先冻结骨干训练，再解冻layer4完成分阶段微调。',req:['创建离线ResNet18并冻结骨干','替换fc为4分类','解冻layer4微调并保存resnet18_final.pth']},
+'6.4.1':{title:'TF-IDF新闻分类与关键词分析',tags:['TF-IDF','LinearSVC','F1'],taskText:'使用TF-IDF与LinearSVC完成中文新闻分类，并根据模型权重分析各类别关键词。',req:['1~2gram TF-IDF特征','训练LinearSVC并输出macro F1','提取每类Top8关键词']},
+'6.4.2':{title:'Word2Vec影评向量与情感分类',tags:['Word2Vec','gensim','LogisticRegression'],taskText:'训练Word2Vec，用平均词向量构造句向量，再完成影评情感分类和相似词查询。',req:['训练100维Word2Vec并保存模型','平均有效词向量形成句向量','LogisticRegression分类并查询“精彩”Top5相似词']},
+'6.4.3':{title:'LDA主题建模与相似文档推荐',tags:['LDA','CountVectorizer','cosine_similarity'],taskText:'使用LDA提取主题与关键词，根据文档主题分布计算相似度并生成相关推荐。',req:['CountVectorizer构建词频矩阵','训练5主题LDA并输出Top6主题词','为每篇文档推荐最相似的3篇并保存recommendations.csv']},
+'6.5.1':{title:'电商经营分析与AI经营报告',tags:['pandas','matplotlib','OpenAI兼容API'],taskText:'完成电商经营数据分析和图表输出，再调用OpenAI兼容接口生成四板块Markdown经营报告。',req:['计算profit和return_rate并按品类汇总','输出经营指标图','Prompt必须覆盖数据解读、经营问题、商业结论、优化建议']},
+'6.5.2':{title:'客户投诉分析与结构化AI处置建议',tags:['JSON','response_format','重试','OpenAI兼容API'],taskText:'统计投诉结构，要求大模型严格返回JSON，加入接口重试与JSON解析校验。',req:['统计类别×优先级','发送response_format=json_object','最多重试3次并保存投诉智能分析.json']},
+'6.5.3':{title:'本地知识库检索增强问答RAG',tags:['RAG','TF-IDF','Top-K','OpenAI兼容API'],taskText:'读取本地制度知识库，使用TF-IDF+余弦相似度完成Top-K检索，再将证据注入Prompt生成回答。',req:['读取knowledge目录建立字符级TF-IDF','为每个问题检索Top2证据','调用大模型并保存rag_result.json中的问题、证据和回答']},
+
 };
 const CHEATS=[
 ['读取CSV','pd.read_csv("file.csv")'],['保存CSV','df.to_csv("out.csv", index=False)'],['查看前5行','df.head()'],['缺失值统计','df.isna().sum() / df.isnull().sum()'],['删除缺失行','df.dropna()'],['填充缺失值','df.fillna(value) / Series.ffill() / Series.bfill()'],['转数值','pd.to_numeric(s, errors="coerce")'],['类型转换','s.astype(int/float/str)'],['条件筛选','df[df["col"] > 0]'],['分类计数','s.value_counts()'],['分组统计','df.groupby("col")["x"].mean()'],['区间切分','pd.cut(s, bins, labels=labels)'],['数组形状','arr.shape / arr.reshape(...)'],['NaN判断','pd.isna(x) / np.isnan(x)'],['布尔过滤NaN','arr = arr[~pd.isna(arr)]'],['划分数据集','train_test_split(X, y, test_size=0.2, random_state=42)'],['标准化训练集','scaler.fit_transform(X_train)'],['标准化测试集','scaler.transform(X_test)'],['模型训练','model.fit(X_train, y_train)'],['模型预测','model.predict(X_test)'],['词袋模型','CountVectorizer().fit_transform(texts)'],['删除变量','del variable'],['查看变量名','dir()']
 ];
-const Q=[];for(const u of UNITS){for(let i=1;i<=5;i++){const id=`${u.id}.${i}`,d=DETAILS[id]||{};Q.push({id,unit:u.id,chapter:u.name,title:d.title||`${id} 实操题`,tags:d.tags||[],req:d.req||[],blanks:d.blanks||[],taskText:d.taskText||'',importRequired:!!d.importRequired,notebook:d.notebook||BASE+id+'/'+id+'.ipynb',answer:d.answer||ANSW+id+'_答案.md',notebookAvailable:null})}}
+const Q=[];for(const u of UNITS){for(let i=1;i<=(u.count||5);i++){const id=`${u.id}.${i}`,d=DETAILS[id]||{};Q.push({id,unit:u.id,chapter:u.name,title:d.title||`${id} 实操题`,tags:d.tags||[],req:d.req||[],blanks:d.blanks||[],taskText:d.taskText||'',importRequired:!!d.importRequired,notebook:d.notebook||BASE+id+'/'+id+'.ipynb',answer:d.answer||ANSW+id+'_答案.md',notebookAvailable:null})}}
 let current=Q[0],mode='exam',funcIndex=0;
 const KEY='ai3_practical_stats_v1',UNIT_KEY='ai3_practical_units_v2';
 function loadStats(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}}
