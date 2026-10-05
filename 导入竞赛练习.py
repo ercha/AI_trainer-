@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import shutil
 import sys
@@ -120,6 +121,39 @@ def write_zip_member(zf: zipfile.ZipFile, member: str, target: Path) -> None:
         shutil.copyfileobj(src, dst, length=1024 * 1024)
 
 
+def add_todo_labels(path: Path) -> int:
+    """给导入的竞赛 Notebook 中旧式下划线空缺增加 TODO x-y 标签。"""
+    try:
+        notebook = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return 0
+
+    changed = 0
+    section = 0
+    for cell in notebook.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        section += 1
+        source = cell.get("source", [])
+        text = "".join(source) if isinstance(source, list) else str(source or "")
+        lines = text.splitlines(keepends=True)
+        output = []
+        item = 0
+        for line in lines:
+            if re.search(r"_{5,}", line):
+                item += 1
+                previous = output[-1] if output else ""
+                if not re.search(r"TODO\s+\d+-\d+", previous, flags=re.IGNORECASE):
+                    output.append(f"# TODO {section}-{item}：补全下一行代码空缺\n")
+                    changed += 1
+            output.append(line)
+        cell["source"] = output
+
+    if changed:
+        path.write_text(json.dumps(notebook, ensure_ascii=False, indent=1), encoding="utf-8")
+    return changed
+
+
 def copy_prefix(zf: zipfile.ZipFile, prefix: str, destination: Path) -> int:
     count = 0
     for info in zf.infolist():
@@ -177,6 +211,7 @@ def import_archive(archive: Path) -> None:
             target.mkdir(parents=True)
 
             write_zip_member(zf, names[notebook_member], target / f"{qid}.ipynb")
+            add_todo_labels(target / f"{qid}.ipynb")
 
             asset_count = 0
             for kind, member in spec["assets"]:
