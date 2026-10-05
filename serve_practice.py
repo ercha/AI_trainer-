@@ -67,7 +67,83 @@ QUESTION_PROFILES = {
             ("模型预测", (".predict(",)),
             ("准确率", ("accuracy_score",)),
         ],
-    },
+    },,
+    "6.1.1": {"duration": 45, "checks": [
+        ("Laplacian 清晰度", ("Laplacian",)), ("亮度统计", (".mean(",)),
+        ("水平翻转", ("FLIP_LEFT_RIGHT", "transpose")), ("旋转增强", (".rotate(",)),
+        ("亮度增强", ("ImageEnhance.Brightness",)), ("质量 CSV", ("image_quality.csv",)),
+    ]},
+    "6.1.2": {"duration": 45, "checks": [
+        ("统一尺寸", ("cv2.resize",)), ("高斯滤波", ("GaussianBlur",)),
+        ("Canny 边缘", ("Canny",)), ("形态学闭运算", ("MORPH_CLOSE",)),
+        ("轮廓检测", ("findContours",)), ("ROI 输出", ("roi_output",)),
+    ]},
+    "6.1.3": {"duration": 45, "checks": [
+        ("CLAHE", ("createCLAHE", ".apply(",)), ("阈值分割", ("threshold",)),
+        ("形态学处理", ("morphologyEx",)), ("连通域", ("connectedComponentsWithStats",)),
+        ("缺陷报告", ("defect_report.csv",)),
+    ]},
+    "6.2.1": {"duration": 50, "checks": [
+        ("ColumnTransformer", ("ColumnTransformer",)), ("缺失值处理", ("SimpleImputer",)),
+        ("标准化", ("StandardScaler",)), ("KMeans", ("KMeans",)),
+        ("轮廓系数", ("silhouette_score",)), ("模型保存", ("joblib.dump",)),
+    ]},
+    "6.2.2": {"duration": 55, "checks": [
+        ("分层划分", ("stratify",)), ("随机森林", ("RandomForestClassifier",)),
+        ("F1 指标", ("f1_score",)), ("混淆矩阵", ("confusion_matrix",)),
+        ("GridSearchCV", ("GridSearchCV",)), ("模型保存", ("joblib.dump",)),
+    ]},
+    "6.2.3": {"duration": 50, "checks": [
+        ("特征工程", ("HouseAge", "AreaPerRoom")), ("随机森林回归", ("RandomForestRegressor",)),
+        ("梯度提升回归", ("GradientBoostingRegressor",)), ("RMSE", ("mean_squared_error",)),
+        ("R2", ("r2_score",)), ("最佳模型保存", ("best_house_model.pkl",)),
+    ]},
+    "6.3.1": {"duration": 60, "checks": [
+        ("ImageFolder", ("ImageFolder",)), ("DataLoader", ("DataLoader",)),
+        ("卷积层", ("Conv2d",)), ("最大池化", ("MaxPool2d",)),
+        ("交叉熵", ("CrossEntropyLoss",)), ("Adam", ("torch.optim.Adam",)),
+    ]},
+    "6.3.2": {"duration": 60, "checks": [
+        ("数据增强", ("RandomHorizontalFlip", "RandomRotation", "ColorJitter")),
+        ("BatchNorm", ("BatchNorm2d",)), ("Dropout", ("Dropout",)),
+        ("训练验证", ("train_loader", "val_loader")), ("最佳权重", ("state_dict",)),
+    ]},
+    "6.3.3": {"duration": 65, "checks": [
+        ("ResNet18", ("resnet18",)), ("冻结参数", ("requires_grad",)),
+        ("替换分类头", ("model.fc",)), ("解冻 layer4", ("model.layer4",)),
+        ("模型保存", ("best_resnet18.pt",)), ("权重加载", ("load_state_dict",)),
+    ]},
+    "6.4.1": {"duration": 50, "checks": [
+        ("jieba 分词", ("jieba.cut",)), ("TF-IDF", ("TfidfVectorizer",)),
+        ("逻辑回归", ("LogisticRegression",)), ("分类报告", ("classification_report",)),
+        ("类别关键词", ("get_feature_names_out",)),
+    ]},
+    "6.4.2": {"duration": 55, "checks": [
+        ("jieba 分词", ("jieba.cut",)), ("Word2Vec", ("Word2Vec",)),
+        ("句向量", ("np.mean",)), ("情感分类", ("LogisticRegression",)),
+        ("F1", ("f1_score",)), ("相似词", ("most_similar",)),
+    ]},
+    "6.4.3": {"duration": 55, "checks": [
+        ("词袋模型", ("CountVectorizer",)), ("LDA", ("LatentDirichletAllocation",)),
+        ("主主题", ("dominant_topic",)), ("TF-IDF", ("TfidfVectorizer",)),
+        ("余弦相似度", ("cosine_similarity",)),
+    ]},
+    "6.5.1": {"duration": 60, "checks": [
+        ("JSON 读取", ("read_json",)), ("日期处理", ("to_datetime",)),
+        ("经营指标", ("gmv", "repeat_rate")), ("可视化", ("savefig",)),
+        ("环境变量", ("OPENAI_BASE_URL", "OPENAI_API_KEY", "OPENAI_MODEL")),
+        ("兼容接口", ("chat/completions", "requests.post")),
+    ]},
+    "6.5.2": {"duration": 65, "checks": [
+        ("TF-IDF", ("TfidfVectorizer",)), ("投诉分类", ("LogisticRegression",)),
+        ("优先级", ("priority_score",)), ("JSON 输出", ("response_format", "json_object")),
+        ("异常处理", ("except Exception",)), ("结果导出", ("ai_actions.json",)),
+    ]},
+    "6.5.3": {"duration": 65, "checks": [
+        ("文档遍历", ("knowledge_docs", "glob")), ("TF-IDF 建库", ("TfidfVectorizer",)),
+        ("余弦检索", ("cosine_similarity",)), ("Top-K", ("top_k",)),
+        ("兼容接口", ("chat/completions", "requests.post")), ("自动评测", ("expected_keywords",)),
+    ]},
 }
 
 LOCK = threading.RLock()
