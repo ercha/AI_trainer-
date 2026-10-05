@@ -18,7 +18,7 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:15px;margin:16px 0 8px}.muted{colo
 </style>
 </head>
 <body>
-<header><h1>实操训练系统</h1><div class="sub">40 道操作技能题 · 默认使用 Jupyter Notebook 模拟考试</div></header>
+<header><h1>实操训练系统</h1><div class="sub">45 道操作技能题 · 默认使用 Jupyter Notebook 模拟考试</div></header>
 <div class="layout">
   <aside class="card sidebar">
     <input id="qSearch" class="search" placeholder="搜索题号 / 题目 / 章节" oninput="renderQuestionList()">
@@ -59,7 +59,8 @@ const UNITS=[
 {id:'3.1',name:'产品数据分析与优化'},
 {id:'3.2',name:'AI模型推理（ONNX）'},
 {id:'4.1',name:'培训大纲编写'},
-{id:'4.2',name:'数据采集处理方案'}
+{id:'4.2',name:'数据采集处理方案'},
+{id:'5.1',name:'竞赛专项练习（A-E）'}
 ];
 const DETAILS={
 '1.1.1':{tags:['pandas','numpy','pd.cut','groupby','value_counts'],req:['读取 patient_data.csv','按住院天数生成高/低风险','按 BMI 区间统计高风险比例与人数','按年龄区间统计高风险比例与人数'],blanks:[
@@ -89,12 +90,78 @@ const DETAILS={
 {p:'初始化 Logistic 回归模型',a:'LogisticRegression(max_iter=1000, random_state=42)',alt:['LogisticRegression()','LogisticRegression(random_state=42)'],f:'LogisticRegression'},
 {p:'训练模型',a:'model.fit(X_train_scaled, y_train)',alt:['model.fit(X_train, y_train)'],f:'fit'},
 {p:'测试集预测',a:'model.predict(X_test_scaled)',alt:['model.predict(X_test)'],f:'predict'},
-{p:'计算准确率',a:'accuracy_score(y_test, y_pred)',f:'accuracy_score'}]}
+{p:'计算准确率',a:'accuracy_score(y_test, y_pred)',f:'accuracy_score'}]},
+'5.1.1':{
+  title:'模块A 人脸图像离线数据增强',
+  tags:['PIL','图像增强','数据集扩充'],
+  importRequired:true,
+  taskText:'根据竞赛任务书完成园区人脸门禁训练数据的离线增强。原始样本位于 attendance_face，需要保留原图、随机水平翻转部分样本，并将最终数据集扩充到原始数量的 2 倍。',
+  req:[
+    '补全 PIL.Image 导入、attendance_face 输入目录、输出目录创建、PNG 后缀与空数据判断',
+    '逐张复制原始图片到 aug_face_output；RGBA 图片保存前转换为 RGB',
+    '随机抽取约 20% 原图做水平翻转，并按“原文件名_flip.后缀”保存',
+    '统计当前输出数量，从原图随机补齐到原始数量的 2 倍，并按“原文件名_copy_序号.后缀”保存',
+    '按顺序运行全部 Notebook 单元格，确认复制、翻转和最终数量验证均通过'
+  ]
+},
+'5.1.2':{
+  title:'模块B K-Means 图像分割与新闻主题聚类',
+  tags:['KMeans','TF-IDF','图像分割','文本聚类'],
+  importRequired:true,
+  taskText:'使用 K-Means 完成两项无监督学习任务：对商品模特图片按像素进行前景/背景聚类分割；对中文新闻进行 TF-IDF 向量化后完成 12 类主题聚类。',
+  req:[
+    '将 timg.jpg 转为每行一个 RGB 像素的特征数组 pixels',
+    '使用 KMeans(n_clusters=2, random_state=0) 聚类像素并生成 labels',
+    '将 labels 还原为原图尺寸，用聚类中心颜色生成 uint8 分割图并与原图并排显示',
+    '读取新闻语料和停用词，使用 TfidfVectorizer(stop_words=stop_words, min_df=0.01, max_df=0.5, max_features=500) 生成 news_vectors',
+    '使用 KMeans(n_clusters=12, random_state=0, n_init=10) 聚类新闻，并把标签写入 news["labels"]'
+  ]
+},
+'5.1.3':{
+  title:'模块C CNN 手写数字识别',
+  tags:['PyTorch','CNN','OpenCV','MNIST'],
+  importRequired:true,
+  taskText:'基于提供的 digits.png 手写数字大图，完成 5000 个数字单元切分、训练/测试数据构造、卷积神经网络搭建、训练以及测试准确率计算。',
+  req:[
+    '使用 cv2.imdecode 将字节缓冲区解码为灰度图像',
+    '按 50 行×100 列切分为 5000 个 20×20 数字单元，得到形状 (50,100,20,20) 的数组',
+    '每行前 50 列作为训练集、后 50 列作为测试集，构造浮点型 1×20×20 样本与每类 250 个标签',
+    '在第一层卷积后补全 2×2 最大池化；训练时使用 NLL 分类损失',
+    '测试时取输出最大类别作为预测并累计正确数，完成 10 轮训练与准确率评估'
+  ]
+},
+'5.1.4':{
+  title:'模块D 影评 Word2Vec 词向量训练与语义分析',
+  tags:['jieba','Word2Vec','NLP','词向量'],
+  importRequired:true,
+  taskText:'对豆瓣影评语料进行中文分词和停用词过滤，训练 Word2Vec 词向量模型，并完成模型保存、重新加载、相似词查询和指定词向量查看。',
+  req:[
+    '以 UTF-8 读取 stopwords.dic，去除空白并构建停用词集合',
+    '逐行读取 corpus.txt，使用 jieba.cut(..., cut_all=False) 精确分词并过滤空白词和停用词',
+    '使用 Word2Vec(sentences, vector_size=100, window=5, min_count=1, workers=4) 训练模型',
+    '将模型保存为 word2vec.model，并重新加载验证',
+    '查询与“经典”最相近的 5 个词及相似度，并输出“精彩”词向量的前 10 维'
+  ]
+},
+'5.1.5':{
+  title:'模块E 图书出版数据分析与 AI 智能报告',
+  tags:['pandas','matplotlib','OpenAI兼容接口','数据分析'],
+  importRequired:true,
+  taskText:'基于 500 条图书出版 JSON 数据完成结构化清洗、出版年份统计与可视化，并调用 OpenAI 兼容大模型接口生成四段式市场分析 Markdown 报告；同时完成项目开发流程与工程化交付相关简答分析。',
+  req:[
+    '读取 book_data.json，将出版年份转 int、评分和定价转 float，异常值按要求填充并导出“图书出版数据.xlsx”',
+    '计算图书数量、最早/最晚/平均出版年份，并统计 2010 年以前、2010-2019、2020 年以后三个区间',
+    '绘制带标题、坐标轴标签和柱顶数值的出版年份分布柱状图，保存“图书出版年份分布.png”',
+    '构造包含“数据解读、出版时间分布规律、市场商业结论、选题策划优化建议”四板块的提示词',
+    '实现 OpenAI 兼容 chat/completions 调用并提取 choices[0].message.content，生成“图书出版数据分析报告.md”',
+    '简答：说明 AI 创新项目完整开发流程、工程化与交付要求，以及生成式 AI/低代码/可视化工具如何辅助开发'
+  ]
+}
 };
 const CHEATS=[
 ['读取CSV','pd.read_csv("file.csv")'],['保存CSV','df.to_csv("out.csv", index=False)'],['查看前5行','df.head()'],['缺失值统计','df.isna().sum() / df.isnull().sum()'],['删除缺失行','df.dropna()'],['填充缺失值','df.fillna(value) / Series.ffill() / Series.bfill()'],['转数值','pd.to_numeric(s, errors="coerce")'],['类型转换','s.astype(int/float/str)'],['条件筛选','df[df["col"] > 0]'],['分类计数','s.value_counts()'],['分组统计','df.groupby("col")["x"].mean()'],['区间切分','pd.cut(s, bins, labels=labels)'],['数组形状','arr.shape / arr.reshape(...)'],['NaN判断','pd.isna(x) / np.isnan(x)'],['布尔过滤NaN','arr = arr[~pd.isna(arr)]'],['划分数据集','train_test_split(X, y, test_size=0.2, random_state=42)'],['标准化训练集','scaler.fit_transform(X_train)'],['标准化测试集','scaler.transform(X_test)'],['模型训练','model.fit(X_train, y_train)'],['模型预测','model.predict(X_test)'],['词袋模型','CountVectorizer().fit_transform(texts)'],['删除变量','del variable'],['查看变量名','dir()']
 ];
-const Q=[];for(const u of UNITS){for(let i=1;i<=5;i++){const id=`${u.id}.${i}`,d=DETAILS[id]||{};Q.push({id,unit:u.id,chapter:u.name,title:`${id} 实操题`,tags:d.tags||[],req:d.req||[],blanks:d.blanks||[],notebook:BASE+id+'/'+id+'.ipynb',answer:ANSW+id+'_答案.md',notebookAvailable:null})}}
+const Q=[];for(const u of UNITS){for(let i=1;i<=5;i++){const id=`${u.id}.${i}`,d=DETAILS[id]||{};Q.push({id,unit:u.id,chapter:u.name,title:d.title||`${id} 实操题`,tags:d.tags||[],req:d.req||[],blanks:d.blanks||[],taskText:d.taskText||'',importRequired:!!d.importRequired,notebook:d.notebook||BASE+id+'/'+id+'.ipynb',answer:d.answer||ANSW+id+'_答案.md',notebookAvailable:null})}}
 let current=Q[0],mode='exam',funcIndex=0;
 const KEY='ai3_practical_stats_v1',UNIT_KEY='ai3_practical_units_v2';
 function loadStats(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}}
@@ -105,15 +172,15 @@ function norm(s){return (s||'').replace(/\s+/g,'').replace(/"/g,"'").replace(/;$
 function accepted(b,v){return [b.a,...(b.alt||[])].some(x=>norm(x)===norm(v))}
 function hit(f,ok){const s=loadStats();s[f]=s[f]||{right:0,total:0};s[f].total++;if(ok)s[f].right++;saveStats(s)}
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function decodeTitle(html,id){const m=String(html||'').match(/<title[^>]*>([\s\S]*?)<\/title>/i);if(!m)return id+' 实操题';const t=document.createElement('textarea');t.innerHTML=m[1].trim();return t.value.replace(new RegExp('^'+id.replace(/\./g,'\\.')+'\\s*'),'').trim()||id+' 实操题'}
-async function probeQuestion(q){try{const r=await fetch(encodeURI(MOCK+q.id+'.html'),{cache:'no-store'});if(r.ok)q.title=decodeTitle(await r.text(),q.id)}catch(_){}try{const r=await fetch(encodeURI(q.notebook),{method:'HEAD',cache:'no-store'});q.notebookAvailable=r.ok}catch(_){q.notebookAvailable=false}}
+function decodeQuestionPage(html,id){const raw=String(html||''),m=raw.match(/<title[^>]*>([\s\S]*?)<\/title>/i),t=document.createElement('textarea');let title=id+' 实操题';if(m){t.innerHTML=m[1].trim();title=t.value.replace(new RegExp('^'+id.replace(/\./g,'\\.')+'\\s*'),'').trim()||title}let taskText='';try{const doc=new DOMParser().parseFromString(raw,'text/html');const text=(doc.body?.innerText||'').replace(/\r/g,'').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n');const start=text.indexOf('工作任务'),end=start>=0?text.indexOf('技能要求',start):-1;if(start>=0)taskText=text.slice(start+'工作任务'.length,end>start?end:undefined).trim()}catch(_){}return{title,taskText}}
+async function probeQuestion(q){try{const r=await fetch(encodeURI(MOCK+q.id+'.html'),{cache:'no-store'});if(r.ok){const d=decodeQuestionPage(await r.text(),q.id);q.title=d.title;if(d.taskText)q.taskText=d.taskText}}catch(_){}try{const r=await fetch(encodeURI(q.notebook),{method:'HEAD',cache:'no-store'});q.notebookAvailable=r.ok}catch(_){q.notebookAvailable=false}}
 async function hydrateCatalog(){await Promise.all(Q.map(probeQuestion));renderQuestionList();renderTask();try{if(mode==='exam'&&parent!==window&&typeof parent.renderNotebookExam==='function')parent.renderNotebookExam()}catch(_){}}
 function unitOpen(id,searching){if(searching)return true;const s=loadUnitState();if(id in s)return !!s[id];return id==='1.1'}
 function toggleUnit(id){const s=loadUnitState();s[id]=!unitOpen(id,false);saveUnitState(s);renderQuestionList()}
 function renderQuestionList(){const x=(document.getElementById('qSearch').value||'').trim().toLowerCase(),searching=!!x;let html='';for(const u of UNITS){const rows=Q.filter(q=>q.unit===u.id&&(!x||(q.id+' '+q.title+' '+q.chapter+' '+q.tags.join(' ')).toLowerCase().includes(x)));if(!rows.length)continue;const open=unitOpen(u.id,searching);html+=`<div class="unit ${open?'':'collapsed'}"><div class="unit-head" onclick="toggleUnit('${u.id}')"><span class="unit-arrow">${open?'▼':'▶'}</span><span class="unit-title">${u.id} ${esc(u.name)}</span><span class="unit-count">${rows.length}</span></div><div class="unit-body">`;for(const q of rows){const nb=q.notebookAvailable===true?'<span class="tag notebook">Notebook</span>':q.notebookAvailable===false?'<span class="tag other">非Notebook素材</span>':'<span class="tag">检测中</span>';html+=`<div class="qitem ${q.id===current.id?'active':''}" onclick="selectQ('${q.id}')"><div class="qid">${q.id}</div><div class="qtitle">${esc(q.title)}</div><div class="qmeta">${nb}</div></div>`}html+='</div></div>'}questionList.innerHTML=html||'<div class="loading-list">没有匹配的题目</div>'}
 function selectQ(id){const q=Q.find(x=>x.id===id);if(!q)return;current=q;renderQuestionList();renderTask();if(mode==='exam')renderExam();else if(mode==='fill')renderFill();else renderFunc()}
 function getCurrentQuestion(){return current}
-function renderTask(){taskHead.innerHTML=`<div class="chapter">${esc(current.unit)} ${esc(current.chapter)}</div><h2>${esc(current.id)} ${esc(current.title)}</h2><div class="muted">${current.notebookAvailable===true?'原素材包含 .ipynb，可直接进入 Jupyter 模拟考试':current.notebookAvailable===false?'原始素材未提供 .ipynb，已导入题库，但不能使用 Notebook 模拟考试':'正在检测原始素材类型...'}</div>${current.req.length?`<h3>任务</h3><ol class="req">${current.req.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`:''}`}
+function renderTask(){const material=current.notebookAvailable===true?'原素材包含 .ipynb，可直接进入 Jupyter 模拟考试':current.notebookAvailable===false&&current.importRequired?'竞赛专项素材尚未导入。请先运行“python 导入竞赛练习.py 竞赛题目.zip”，再刷新本页。':current.notebookAvailable===false?'原始素材未提供 .ipynb，已导入题库，但不能使用 Notebook 模拟考试':'正在检测原始素材类型...';taskHead.innerHTML=`<div class="chapter">${esc(current.unit)} ${esc(current.chapter)}</div><h2>${esc(current.id)} ${esc(current.title)}</h2><div class="muted">${esc(material)}</div>${current.taskText?`<h3>完整任务说明</h3><div class="req" style="white-space:pre-line">${esc(current.taskText)}</div>`:''}${current.req.length?`<h3>关键任务</h3><ol class="req">${current.req.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`:''}`}
 function setMode(m){mode=m;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.mode===m));examArea.classList.toggle('hidden',m!=='exam');fillArea.classList.toggle('hidden',m!=='fill');funcArea.classList.toggle('hidden',m!=='func');if(m==='exam')renderExam();if(m==='fill')renderFill();if(m==='func')renderFunc()}
 function renderExam(){examArea.innerHTML=`<h3>Jupyter Notebook 模拟考试</h3><div class="hint">正在载入模拟考试组件...</div>`}
 function renderFill(){if(!current.blanks.length){fillArea.innerHTML=`<div class="hint"><b>${esc(current.id)}</b> 暂未制作网页代码填空模板。该题已导入左侧题库，建议优先使用“模拟考试”查看原始题面和素材。</div><div class="toolbar"><a class="btn" href="${current.answer}" target="_blank">查看参考答案</a></div>`;return}fillArea.innerHTML=`<h3>代码填空</h3><div class="muted">先凭记忆填写，再检查。这里只训练高频关键表达式，完整流程请用“模拟考试”。</div>${current.blanks.map((b,i)=>`<div style="margin-top:12px"><div><b>${i+1}. ${esc(b.p)}</b></div><input id="blank_${i}" class="blank" autocomplete="off" placeholder="输入 Python 表达式"><div id="fb_${i}" class="feedback"></div></div>`).join('')}<div class="toolbar"><button class="btn primary" onclick="checkFill()">检查答案</button><button class="btn" onclick="clearFill()">清空</button><a class="btn" href="${current.notebook}" download>下载原始 Notebook</a><a class="btn" href="${current.answer}" target="_blank">查看参考答案</a></div>`}
