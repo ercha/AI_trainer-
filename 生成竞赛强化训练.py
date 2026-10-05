@@ -632,9 +632,9 @@ monthly=df.groupby("month")["sales"].sum(); category=df.groupby("category")["sal
 fig,ax=plt.subplots(1,2,figsize=(12,4)); monthly.plot(kind="bar",ax=ax[0]); category.plot(kind="bar",ax=ax[1])
 plt.tight_layout(); plt.savefig("dashboard.png",dpi=150)
 df.to_excel("orders_clean.xlsx",index=False)
-prompt=f"""你是经营分析师。根据指标生成 Markdown 报告，必须包含：现状、问题、原因、建议。
-GMV={gmv:.2f}，订单数={orders}，客单价={aov:.2f}，复购率={repeat_rate:.2%}
-品类销售额={category.to_dict()}"""
+prompt=(f"你是经营分析师。根据指标生成 Markdown 报告，必须包含：现状、问题、原因、建议。\\n"
+        f"GMV={gmv:.2f}，订单数={orders}，客单价={aov:.2f}，复购率={repeat_rate:.2%}\\n"
+        f"品类销售额={category.to_dict()}")
 # TODO 3-1：从环境变量读取 BASE_URL/API_KEY/MODEL
 BASE_URL=_____________; API_KEY=_____________; MODEL=_____________
 report="# 电商经营分析\n\n"+prompt
