@@ -1,0 +1,48 @@
+name: Competition Training CI
+
+on:
+  pull_request:
+    paths:
+      - "生成竞赛强化训练.py"
+      - "competition_advanced_catalog.js"
+      - "实操训练系统.html"
+      - "serve_practice.py"
+      - "tray_launcher.py"
+      - "人工智能训练师三级素材/人工智能训练师三级上网素材/**/*.ipynb"
+      - ".github/workflows/competition-training-ci.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install generator dependencies
+        run: python -m pip install --disable-pip-version-check numpy pandas pillow
+      - name: Python syntax
+        run: |
+          python -m py_compile "生成竞赛强化训练.py" serve_practice.py tray_launcher.py
+      - name: Generate all 15 advanced exercises
+        run: python "生成竞赛强化训练.py" --force
+      - name: Validate generated notebooks
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("人工智能训练师三级素材/人工智能训练师三级上网素材")
+          ids=[f"6.{m}.{i}" for m in range(1,6) for i in range(1,4)]
+          assert len(ids)==15
+          for qid in ids:
+              p=root/qid/f"{qid}.ipynb"
+              assert p.is_file(), p
+              nb=json.loads(p.read_text(encoding="utf-8"))
+              text="\n".join("".join(c.get("source",[])) for c in nb["cells"])
+              assert "# TODO " in text, f"{qid} 缺少 TODO"
+              assert "_____________" in text, f"{qid} 缺少待填空"
+          print("validated",len(ids),"notebooks")
+          PY
+      - name: JavaScript syntax
+        run: node --check competition_advanced_catalog.js
