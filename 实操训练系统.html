@@ -18,7 +18,7 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:15px;margin:16px 0 8px}.muted{colo
 </style>
 </head>
 <body>
-<header><h1>实操训练系统</h1><div class="sub">45 道操作技能题 · 默认使用 Jupyter Notebook 模拟考试</div></header>
+<header><h1>实操训练系统</h1><div class="sub">60 道操作技能题 · 含 15 道竞赛强化训练 · 默认使用 Jupyter Notebook 模拟考试</div></header>
 <div class="layout">
   <aside class="card sidebar">
     <input id="qSearch" class="search" placeholder="搜索题号 / 题目 / 章节" oninput="renderQuestionList()">
@@ -47,6 +47,7 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:15px;margin:16px 0 8px}.muted{colo
     <div id="cheats" class="cheat"></div>
   </aside>
 </div>
+<script src="competition_advanced_catalog.js"></script>
 <script>
 const BASE='人工智能训练师三级素材/人工智能训练师三级上网素材/';
 const MOCK='人工智能训练师三级素材/人工智能训练师三级考试平台模拟界面/';
@@ -62,6 +63,7 @@ const UNITS=[
 {id:'4.2',name:'数据采集处理方案'},
 {id:'5.1',name:'竞赛专项练习（A-E）'}
 ];
+UNITS.push(...(window.ADVANCED_UNITS||[]));
 const DETAILS={
 '1.1.1':{tags:['pandas','numpy','pd.cut','groupby','value_counts'],req:['读取 patient_data.csv','按住院天数生成高/低风险','按 BMI 区间统计高风险比例与人数','按年龄区间统计高风险比例与人数'],blanks:[
 {p:'读取 CSV 数据',a:"pd.read_csv('patient_data.csv')",f:'pd.read_csv'},
@@ -158,10 +160,11 @@ const DETAILS={
   ]
 }
 };
+Object.assign(DETAILS,window.ADVANCED_DETAILS||{});
 const CHEATS=[
 ['读取CSV','pd.read_csv("file.csv")'],['保存CSV','df.to_csv("out.csv", index=False)'],['查看前5行','df.head()'],['缺失值统计','df.isna().sum() / df.isnull().sum()'],['删除缺失行','df.dropna()'],['填充缺失值','df.fillna(value) / Series.ffill() / Series.bfill()'],['转数值','pd.to_numeric(s, errors="coerce")'],['类型转换','s.astype(int/float/str)'],['条件筛选','df[df["col"] > 0]'],['分类计数','s.value_counts()'],['分组统计','df.groupby("col")["x"].mean()'],['区间切分','pd.cut(s, bins, labels=labels)'],['数组形状','arr.shape / arr.reshape(...)'],['NaN判断','pd.isna(x) / np.isnan(x)'],['布尔过滤NaN','arr = arr[~pd.isna(arr)]'],['划分数据集','train_test_split(X, y, test_size=0.2, random_state=42)'],['标准化训练集','scaler.fit_transform(X_train)'],['标准化测试集','scaler.transform(X_test)'],['模型训练','model.fit(X_train, y_train)'],['模型预测','model.predict(X_test)'],['词袋模型','CountVectorizer().fit_transform(texts)'],['删除变量','del variable'],['查看变量名','dir()']
 ];
-const Q=[];for(const u of UNITS){for(let i=1;i<=5;i++){const id=`${u.id}.${i}`,d=DETAILS[id]||{};Q.push({id,unit:u.id,chapter:u.name,title:d.title||`${id} 实操题`,tags:d.tags||[],req:d.req||[],blanks:d.blanks||[],taskText:d.taskText||'',importRequired:!!d.importRequired,notebook:d.notebook||BASE+id+'/'+id+'.ipynb',answer:d.answer||ANSW+id+'_答案.md',notebookAvailable:null})}}
+const Q=[];for(const u of UNITS){const count=u.count||5;for(let i=1;i<=count;i++){const id=`${u.id}.${i}`,d=DETAILS[id]||{};Q.push({id,unit:u.id,chapter:u.name,title:d.title||`${id} 实操题`,tags:d.tags||[],req:d.req||[],blanks:d.blanks||[],taskText:d.taskText||'',importRequired:!!d.importRequired,generatedRequired:id.startsWith('6.'),notebook:d.notebook||BASE+id+'/'+id+'.ipynb',answer:d.answer||ANSW+id+'_答案.md',notebookAvailable:null})}}
 let current=Q[0],mode='exam',funcIndex=0;
 const KEY='ai3_practical_stats_v1',UNIT_KEY='ai3_practical_units_v2';
 function loadStats(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}}
@@ -180,7 +183,7 @@ function toggleUnit(id){const s=loadUnitState();s[id]=!unitOpen(id,false);saveUn
 function renderQuestionList(){const x=(document.getElementById('qSearch').value||'').trim().toLowerCase(),searching=!!x;let html='';for(const u of UNITS){const rows=Q.filter(q=>q.unit===u.id&&(!x||(q.id+' '+q.title+' '+q.chapter+' '+q.tags.join(' ')).toLowerCase().includes(x)));if(!rows.length)continue;const open=unitOpen(u.id,searching);html+=`<div class="unit ${open?'':'collapsed'}"><div class="unit-head" onclick="toggleUnit('${u.id}')"><span class="unit-arrow">${open?'▼':'▶'}</span><span class="unit-title">${u.id} ${esc(u.name)}</span><span class="unit-count">${rows.length}</span></div><div class="unit-body">`;for(const q of rows){const nb=q.notebookAvailable===true?'<span class="tag notebook">Notebook</span>':q.notebookAvailable===false?'<span class="tag other">非Notebook素材</span>':'<span class="tag">检测中</span>';html+=`<div class="qitem ${q.id===current.id?'active':''}" onclick="selectQ('${q.id}')"><div class="qid">${q.id}</div><div class="qtitle">${esc(q.title)}</div><div class="qmeta">${nb}</div></div>`}html+='</div></div>'}questionList.innerHTML=html||'<div class="loading-list">没有匹配的题目</div>'}
 function selectQ(id){const q=Q.find(x=>x.id===id);if(!q)return;current=q;renderQuestionList();renderTask();if(mode==='exam')renderExam();else if(mode==='fill')renderFill();else renderFunc()}
 function getCurrentQuestion(){return current}
-function renderTask(){const material=current.notebookAvailable===true?'原素材包含 .ipynb，可直接进入 Jupyter 模拟考试':current.notebookAvailable===false&&current.importRequired?'竞赛专项素材尚未导入。请先运行“python 导入竞赛练习.py 竞赛题目.zip”，再刷新本页。':current.notebookAvailable===false?'原始素材未提供 .ipynb，已导入题库，但不能使用 Notebook 模拟考试':'正在检测原始素材类型...';taskHead.innerHTML=`<div class="chapter">${esc(current.unit)} ${esc(current.chapter)}</div><h2>${esc(current.id)} ${esc(current.title)}</h2><div class="muted">${esc(material)}</div>${current.taskText?`<h3>完整任务说明</h3><div class="req" style="white-space:pre-line">${esc(current.taskText)}</div>`:''}${current.req.length?`<h3>关键任务</h3><ol class="req">${current.req.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`:''}`}
+function renderTask(){const material=current.notebookAvailable===true?'原素材包含 .ipynb，可直接进入 Jupyter 模拟考试':current.notebookAvailable===false&&current.importRequired?'竞赛专项素材尚未导入。请先运行“python 导入竞赛练习.py 竞赛题目.zip”，再刷新本页。':current.notebookAvailable===false&&current.generatedRequired?'强化训练素材尚未生成。运行“python 生成竞赛强化训练.py”，或重新启动训练系统后刷新页面。':current.notebookAvailable===false?'原始素材未提供 .ipynb，已导入题库，但不能使用 Notebook 模拟考试':'正在检测原始素材类型...';taskHead.innerHTML=`<div class="chapter">${esc(current.unit)} ${esc(current.chapter)}</div><h2>${esc(current.id)} ${esc(current.title)}</h2><div class="muted">${esc(material)}</div>${current.taskText?`<h3>完整任务说明</h3><div class="req" style="white-space:pre-line">${esc(current.taskText)}</div>`:''}${current.req.length?`<h3>关键任务</h3><ol class="req">${current.req.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`:''}`}
 function setMode(m){mode=m;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.mode===m));examArea.classList.toggle('hidden',m!=='exam');fillArea.classList.toggle('hidden',m!=='fill');funcArea.classList.toggle('hidden',m!=='func');if(m==='exam')renderExam();if(m==='fill')renderFill();if(m==='func')renderFunc()}
 function renderExam(){examArea.innerHTML=`<h3>Jupyter Notebook 模拟考试</h3><div class="hint">正在载入模拟考试组件...</div>`}
 function renderFill(){if(!current.blanks.length){fillArea.innerHTML=`<div class="hint"><b>${esc(current.id)}</b> 暂未制作网页代码填空模板。该题已导入左侧题库，建议优先使用“模拟考试”查看原始题面和素材。</div><div class="toolbar"><a class="btn" href="${current.answer}" target="_blank">查看参考答案</a></div>`;return}fillArea.innerHTML=`<h3>代码填空</h3><div class="muted">先凭记忆填写，再检查。这里只训练高频关键表达式，完整流程请用“模拟考试”。</div>${current.blanks.map((b,i)=>`<div style="margin-top:12px"><div><b>${i+1}. ${esc(b.p)}</b></div><input id="blank_${i}" class="blank" autocomplete="off" placeholder="输入 Python 表达式"><div id="fb_${i}" class="feedback"></div></div>`).join('')}<div class="toolbar"><button class="btn primary" onclick="checkFill()">检查答案</button><button class="btn" onclick="clearFill()">清空</button><a class="btn" href="${current.notebook}" download>下载原始 Notebook</a><a class="btn" href="${current.answer}" target="_blank">查看参考答案</a></div>`}
