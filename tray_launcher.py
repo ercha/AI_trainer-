@@ -23,6 +23,8 @@ STATUS_URL = BASE_URL + "/api/system/status"
 EXAM_STATUS_URL = BASE_URL + "/api/exam/status"
 PYTHON_EXE = ROOT / ".venv" / "Scripts" / "python.exe"
 SERVER_SCRIPT = ROOT / "serve_practice.py"
+ADVANCED_GENERATOR = ROOT / "生成竞赛强化训练.py"
+ADVANCED_MARKER = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级上网素材" / ".advanced_competition_v1"
 LOG_PATH = ROOT / "_trainer_service.log"
 
 SERVER_PROCESS: subprocess.Popen | None = None
@@ -109,8 +111,29 @@ def _server_environment() -> dict[str, str]:
     return env
 
 
+def _ensure_advanced_questions() -> None:
+    """首次启动时自动生成 15 道竞赛强化训练题；失败不阻断原题库启动。"""
+    if ADVANCED_MARKER.exists() or not ADVANCED_GENERATOR.exists() or not PYTHON_EXE.exists():
+        return
+    try:
+        subprocess.run(
+            [str(PYTHON_EXE), str(ADVANCED_GENERATOR)],
+            cwd=str(ROOT),
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=90,
+            creationflags=CREATE_NO_WINDOW,
+        )
+    except Exception:
+        # 强化题可手工执行生成器补建，不影响原有训练系统。
+        pass
+
+
 def _start_server() -> int:
     global SERVER_PROCESS, SERVER_PID, LOG_HANDLE
+
+    _ensure_advanced_questions()
 
     status = _get_json(STATUS_URL, timeout=0.6)
     if status and status.get("ok"):
