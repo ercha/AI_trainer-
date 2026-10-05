@@ -1,0 +1,8 @@
+# 竞赛强化训练额外依赖
+# 在完成 install_env.bat 后，再运行“安装竞赛强化依赖.bat”。
+
+torch>=2.2,<3
+torchvision>=0.17,<1
+jieba>=0.42,<1
+gensim>=4.3,<5
+requests>=2.31,<3
