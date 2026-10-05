@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import shutil
 import sys
@@ -134,6 +135,49 @@ def copy_prefix(zf: zipfile.ZipFile, prefix: str, destination: Path) -> int:
     return count
 
 
+def add_todo_labels(notebook_path: Path) -> int:
+    """给竞赛原始 Notebook 的下划线填空自动增加 TODO x-x，不改变原代码。"""
+    try:
+        notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
+    except Exception:
+        return 0
+
+    total = 0
+    section = 0
+    for cell in notebook.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        section += 1
+        source = cell.get("source", [])
+        if isinstance(source, str):
+            source = source.splitlines(keepends=True)
+        output = []
+        within = 0
+        for line in source:
+            is_placeholder = re.search(r"_{5,}", line) and not line.lstrip().startswith("#")
+            prev = output[-1] if output else ""
+            if is_placeholder and not re.match(r"\s*#\s*TODO\s+\d+-\d+", prev):
+                within += 1
+                desc = "补全下方代码"
+                for old in reversed(output[-4:]):
+                    m = re.match(r"\s*#\s*(.+?)\s*$", old)
+                    if m and not m.group(1).upper().startswith("TODO"):
+                        desc = re.sub(r"\s*\d+\s*分\s*$", "", m.group(1)).rstrip("：: ").strip()
+                        if desc:
+                            break
+                output.append(f"# TODO {section}-{within}：{desc}\n")
+                total += 1
+            output.append(line)
+        cell["source"] = output
+
+    if total:
+        notebook_path.write_text(
+            json.dumps(notebook, ensure_ascii=False, indent=1) + "\n",
+            encoding="utf-8",
+        )
+    return total
+
+
 def build_answer(qid: str, spec: dict, solution: str) -> str:
     # 不把考试环境提供的密钥字面值写入题库答案。
     solution = re.sub(
@@ -176,7 +220,9 @@ def import_archive(archive: Path) -> None:
                 shutil.rmtree(target)
             target.mkdir(parents=True)
 
-            write_zip_member(zf, names[notebook_member], target / f"{qid}.ipynb")
+            notebook_path = target / f"{qid}.ipynb"
+            write_zip_member(zf, names[notebook_member], notebook_path)
+            todo_count = add_todo_labels(notebook_path)
 
             asset_count = 0
             for kind, member in spec["assets"]:
@@ -192,7 +238,7 @@ def import_archive(archive: Path) -> None:
             answer = build_answer(qid, spec, solution)
             (ANSWER_ROOT / f"{qid}_答案.md").write_text(answer, encoding="utf-8")
 
-            print(f"[完成] {qid} {spec['title']}：Notebook 1 个，素材 {asset_count} 个")
+            print(f"[完成] {qid} {spec['title']}：Notebook 1 个，TODO {todo_count} 个，素材 {asset_count} 个")
 
         # 保存原始竞赛任务书，便于复核题意；不参与模拟考试运行。
         for info in zf.infolist():
