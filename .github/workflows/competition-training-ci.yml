@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "生成竞赛强化训练.py"
+      - "导入竞赛练习.py"
       - "competition_advanced_catalog.js"
       - "实操训练系统.html"
       - "serve_practice.py"
@@ -24,7 +25,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check numpy pandas pillow
       - name: Python syntax
         run: |
-          python -m py_compile "生成竞赛强化训练.py" serve_practice.py tray_launcher.py
+          python -m py_compile "生成竞赛强化训练.py" "导入竞赛练习.py" serve_practice.py tray_launcher.py
       - name: Generate all 15 advanced exercises
         run: python "生成竞赛强化训练.py" --force
       - name: Validate generated notebooks
