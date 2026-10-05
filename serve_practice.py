@@ -67,7 +67,21 @@ QUESTION_PROFILES = {
             ("模型预测", (".predict(",)),
             ("准确率", ("accuracy_score",)),
         ],
-    },
+    },    "6.1.1": {"duration": 45, "checks": [("PIL 图像读取", ("Image.open",)), ("尺寸统一", ("resize(",)), ("亮度增强", ("ImageEnhance.Brightness",)), ("水平翻转", ("ImageOps.mirror", "FLIP_LEFT_RIGHT")), ("生成清单", ("manifest.csv", "csv.writer"))]},
+    "6.1.2": {"duration": 50, "checks": [("OpenCV 读取", ("cv2.imread",)), ("灰度化", ("cvtColor",)), ("阈值分割", ("threshold",)), ("形态学", ("morphologyEx",)), ("轮廓检测", ("findContours",)), ("输出报告", ("defect_report.csv",))]},
+    "6.1.3": {"duration": 55, "checks": [("遍历类别", ("glob",)), ("模糊检测", ("Laplacian",)), ("类别统计", ("Counter", "value_counts")), ("随机增强", ("rotate(", "ImageEnhance")), ("类别平衡", ("target_count",)), ("数据清单", ("balanced_manifest.csv",))]},
+    "6.2.1": {"duration": 50, "checks": [("数据读取", ("pd.read_csv",)), ("标准化", ("StandardScaler",)), ("KMeans", ("KMeans",)), ("轮廓系数", ("silhouette_score",)), ("PCA", ("PCA",)), ("聚类结果", ("cluster",))]},
+    "6.2.2": {"duration": 60, "checks": [("预处理", ("get_dummies", "OneHotEncoder")), ("划分数据", ("train_test_split",)), ("随机森林", ("RandomForestClassifier",)), ("分类报告", ("classification_report",)), ("混淆矩阵", ("confusion_matrix",)), ("参数搜索", ("GridSearchCV",))]},
+    "6.2.3": {"duration": 60, "checks": [("特征处理", ("get_dummies",)), ("线性回归", ("LinearRegression",)), ("随机森林回归", ("RandomForestRegressor",)), ("梯度提升", ("GradientBoostingRegressor",)), ("RMSE", ("mean_squared_error",)), ("R2", ("r2_score",)), ("模型保存", ("joblib.dump",))]},
+    "6.3.1": {"duration": 60, "checks": [("图像切分", ("reshape", "tiles")), ("TensorDataset", ("TensorDataset",)), ("卷积层", ("nn.Conv2d",)), ("池化", ("MaxPool2d",)), ("交叉熵", ("CrossEntropyLoss",)), ("Adam", ("optim.Adam",)), ("准确率", ("correct",))]},
+    "6.3.2": {"duration": 70, "checks": [("数据增强", ("torch.flip", "rot90")), ("BatchNorm", ("BatchNorm2d",)), ("Dropout", ("Dropout",)), ("学习率调度", ("StepLR", "ReduceLROnPlateau")), ("最佳模型", ("best_model.pth",)), ("混淆矩阵", ("confusion_matrix",))]},
+    "6.3.3": {"duration": 75, "checks": [("ResNet18", ("resnet18",)), ("修改分类层", ("model.fc",)), ("冻结参数", ("requires_grad",)), ("解冻微调", ("layer4",)), ("模型保存", ("resnet18_final.pth",)), ("评估", ("classification_report",))]},
+    "6.4.1": {"duration": 55, "checks": [("TF-IDF", ("TfidfVectorizer",)), ("训练测试划分", ("train_test_split",)), ("LinearSVC", ("LinearSVC",)), ("F1", ("f1_score",)), ("分类报告", ("classification_report",)), ("关键词", ("coef_",))]},
+    "6.4.2": {"duration": 65, "checks": [("Word2Vec", ("Word2Vec",)), ("词向量均值", ("np.mean",)), ("LogisticRegression", ("LogisticRegression",)), ("相似词", ("most_similar",)), ("模型保存", ("word2vec.model",)), ("分类报告", ("classification_report",))]},
+    "6.4.3": {"duration": 65, "checks": [("CountVectorizer", ("CountVectorizer",)), ("LDA", ("LatentDirichletAllocation",)), ("主题词", ("components_",)), ("文档主题", ("transform",)), ("余弦相似度", ("cosine_similarity",)), ("推荐结果", ("recommendations.csv",))]},
+    "6.5.1": {"duration": 70, "checks": [("数据清洗", ("dropna", "fillna", "profit")), ("经营指标", ("groupby",)), ("图表", ("savefig",)), ("Prompt", ("prompt",)), ("OpenAI兼容请求", ("/v1/chat/completions", "requests.post")), ("Markdown报告", ("经营分析报告.md",))]},
+    "6.5.2": {"duration": 75, "checks": [("投诉统计", ("groupby", "value_counts")), ("结构化 JSON", ("json.loads", "json.dump")), ("response_format", ("response_format",)), ("重试", ("retry", "attempt")), ("OpenAI兼容请求", ("requests.post",)), ("结果导出", ("投诉智能分析.json",))]},
+    "6.5.3": {"duration": 80, "checks": [("知识库读取", ("knowledge",)), ("TF-IDF检索", ("TfidfVectorizer",)), ("余弦相似度", ("cosine_similarity",)), ("Top-K", ("argsort",)), ("上下文Prompt", ("context", "prompt")), ("OpenAI兼容请求", ("requests.post",)), ("结果留痕", ("rag_result.json",))]},
 }
 
 LOCK = threading.RLock()
@@ -428,6 +442,7 @@ def _analyze_notebook(session: dict) -> dict:
     code = state["code"]
     code_cells = state["code_cells"]
     placeholders = len(re.findall(r"_{5,}", code))
+    todo_ids = sorted(set(re.findall(r"TODO\\s+(\\d+-\\d+)", code, flags=re.IGNORECASE)))
 
     profile = QUESTION_PROFILES.get(session["qid"], {})
     checks = []
@@ -457,9 +472,11 @@ def _analyze_notebook(session: dict) -> dict:
 
     return {
         "score": score,
-        "score_note": "自动初评：提交时会重新执行 Notebook 验证；空白/纯注释代码 Cell 不参与执行率扣分；仅用于训练自检，不代表官方评分",
+        "score_note": "自动初评：TODO 编号用于定位作答点；连续下划线仍视为未完成占位。提交时会重新执行 Notebook 验证；仅用于训练自检，不代表官方评分",
         "checks": checks,
         "placeholders": placeholders,
+        "todo_ids": todo_ids,
+        "todo_total": len(todo_ids),
         "code_cells": effective_count,
         "total_code_cells": len(state["total_code_cells"]),
         "saved_executed_cells": state["saved_executed_cells"],
