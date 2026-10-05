@@ -24,3 +24,10 @@ xgboost>=2.0,<4
 imbalanced-learn>=0.12,<1
 onnxruntime>=1.17,<2
 opencv-python>=4.9,<5
+
+# Competition advanced modules (C/D/E)
+torch>=2.2,<3
+torchvision>=0.17,<1
+gensim>=4.3,<5
+jieba>=0.42,<1
+requests>=2.31,<3
