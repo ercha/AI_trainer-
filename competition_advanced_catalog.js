@@ -16,7 +16,7 @@ window.ADVANCED_DETAILS={
   'TODO 2：使用 copyMakeBorder 为缩放图像增加上下 20、左右 30 像素的白色常量边框',
   'TODO 3：分别使用 5×5 均值滤波、5×5 高斯滤波和核大小 5 的中值滤波处理灰度图',
   'TODO 4：将缩放图、灰度图、边框图及三种滤波结果保存到 processed，并输出 basic_processing.csv',
-  'TODO 5：选取首张图生成原图/灰度/HSV/三种滤波等对比预览，保存 filter_comparison.png'
+  'TODO 5：选取首张图生成原图、缩放图、灰度图、边框图和三种滤波结果对比预览，保存 filter_comparison.png'
  ]
 },
 '6.1.2':{
