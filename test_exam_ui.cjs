@@ -18,6 +18,7 @@ const assert=require('node:assert/strict');
   const proc=spawn(chrome,['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{windowsHide:true,stdio:'ignore'});
   const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   let socket,id=0;
+  const startRequests=[];
   const pending=new Map();
   const send=(method,params={})=>new Promise((resolve,reject)=>{
     const n=++id,timer=setTimeout(()=>{pending.delete(n);reject(new Error(method+' timeout'))},15000);
@@ -44,18 +45,25 @@ const assert=require('node:assert/strict');
     await new Promise((resolve,reject)=>{socket.addEventListener('open',resolve,{once:true});socket.addEventListener('error',reject,{once:true})});
     socket.addEventListener('message',event=>{
       const m=JSON.parse(event.data);
+      if(m.method==='Page.javascriptDialogOpening'){
+        send('Page.handleJavaScriptDialog',{accept:true}).catch(()=>{});
+        return;
+      }
       // 隔离测试中的考试状态，避免连接用户当前正在使用的 Jupyter。
       if(m.method==='Fetch.requestPaused'){
-        send('Fetch.fulfillRequest',{requestId:m.params.requestId,responseCode:200,
+        const isStart=new URL(m.params.request.url).pathname==='/api/exam/start';
+        if(isStart)startRequests.push(JSON.parse(m.params.request.postData));
+        const response=isStart?{ok:false,message:'回归测试已拦截启动请求，未创建真实考试'}:{ok:true,active:false,session:null,last_result:null};
+        send('Fetch.fulfillRequest',{requestId:m.params.requestId,responseCode:isStart?503:200,
           responseHeaders:[{name:'Content-Type',value:'application/json'}],
-          body:Buffer.from(JSON.stringify({ok:true,active:false,session:null,last_result:null})).toString('base64')}).catch(()=>{});
+          body:Buffer.from(JSON.stringify(response)).toString('base64')}).catch(()=>{});
         return;
       }
       const p=pending.get(m.id);if(!p)return;
       clearTimeout(p.timer);pending.delete(m.id);m.error?p.reject(new Error(JSON.stringify(m.error))):p.resolve(m.result);
     });
     await send('Page.enable');
-    await send('Fetch.enable',{patterns:[{urlPattern:'*/api/exam/status',requestStage:'Request'}]});
+    await send('Fetch.enable',{patterns:[{urlPattern:'*/api/exam/status',requestStage:'Request'},{urlPattern:'*/api/exam/start',requestStage:'Request'}]});
     await send('Page.navigate',{url:base+'/exam_workspace.html'});
     await waitFor("typeof showResult==='function' && typeof ExamHelpers==='object'");
     await evaluate('showResult('+JSON.stringify(displayReport)+')');
@@ -88,6 +96,30 @@ const assert=require('node:assert/strict');
     assert.ok(home.answerVisible&&!home.text.includes('代码修改 TODO'),'answer entry remains without code-edit TODO block');
     const coverage=await evaluate(`(()=>{const w=appFrame.contentWindow;return w.eval('Q.filter(q=>q.notebookAvailable).map(q=>({id:q.id}))')})()`);
     assert.equal(coverage.length,40,'forty Notebook questions');
+    for(const [name,width,height] of [['desktop',1440,1000],['mobile',375,900]]){
+      await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
+      await evaluate("appFrame.contentWindow.selectQ('1.1.5');appFrame.contentWindow.setMode('fill');appFrame.contentDocument.querySelector('[data-mode=exam]').click()");
+      await waitFor("appFrame.contentDocument.querySelector('[onclick=\"parent.startJupyterExam()\"]:not([disabled])')");
+      await evaluate("appFrame.contentDocument.querySelector('.tabs').scrollIntoView();appFrame.contentWindow.scrollBy(0,-appFrame.contentDocument.querySelector('header').offsetHeight-12)");
+      const layout=await evaluate(`(()=>{const d=appFrame.contentDocument,rect=s=>d.querySelector(s).getBoundingClientRect();const start=rect('[onclick="parent.startJupyterExam()"]');return{qid:appFrame.contentWindow.getCurrentQuestion().id,available:appFrame.contentWindow.getCurrentQuestion().notebookAvailable,startTop:start.top,startBottom:start.bottom,previewTop:rect('#examQuestionPreview').top,descriptionTop:rect('#taskDescription').top,height:appFrame.clientHeight,overflow:d.documentElement.scrollWidth>d.documentElement.clientWidth,description:d.querySelector('#taskDescription').textContent}})()`);
+      assert.equal(layout.qid,'1.1.5');
+      assert.equal(layout.available,true,'1.1.5 original Notebook exists');
+      assert.ok(layout.startTop>=0&&layout.startBottom<layout.height,name+' start button visible after exam tab click');
+      assert.ok(layout.startBottom<layout.previewTop&&layout.startBottom<layout.descriptionTop,name+' start before preview and long description');
+      assert.ok(layout.description.includes('cleaned_vehicle_traffic_data.csv')&&layout.description.includes('1.1.5-5'),'full task preserved');
+      assert.equal(layout.overflow,false,name+' exam entry overflow');
+      const shot=await send('Page.captureScreenshot',{format:'png'});
+      await fs.writeFile(path.join(output,'exam-entry-'+name+'.png'),Buffer.from(shot.data,'base64'));
+      await evaluate("appFrame.contentDocument.querySelector('[onclick=\"parent.startJupyterExam()\"]').click()");
+      await waitFor("appFrame.contentDocument.getElementById('nbExamState').textContent.includes('回归测试已拦截启动请求')");
+      assert.deepEqual(startRequests.at(-1),{qid:'1.1.5'},name+' start targets selected question');
+    }
+    assert.equal(startRequests.length,2,'both start requests intercepted without starting Jupyter');
+    await evaluate("appFrame.contentWindow.selectQ('4.2.5')");
+    await waitFor("appFrame.contentDocument.querySelector('[onclick=\"parent.startJupyterExam()\"][disabled]')");
+    assert.equal(await evaluate('appFrame.contentWindow.getCurrentQuestion().notebookAvailable'),false,'Word-only question remains unavailable');
+    await evaluate("appFrame.contentWindow.selectQ('1.1.1')");
+    await waitFor("appFrame.contentDocument.querySelector('[onclick=\"parent.startJupyterExam()\"]:not([disabled])')");
     for(const [name,width,height] of [['desktop',1440,1000],['mobile',375,900]]){
       await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
       await delay(150);
@@ -154,7 +186,7 @@ const assert=require('node:assert/strict');
     await waitFor("document.querySelector('.task-description')");
     assert.ok(await evaluate("document.body.innerText.includes('20min')"));
     assert.ok(await evaluate("document.querySelectorAll('.task-requirement').length>0 && document.body.innerText.includes('技能要求') && document.body.innerText.includes('质量指标') && document.body.innerText.includes('2.1.2.html')"),'original question metadata and submissions preserved');
-    console.log(JSON.stringify({output,passed:true,answerCodeCount:40,notebookQuestions:coverage.length,viewports:[1440,375],flows:['home','copy','submitted-report','records','historic-review','noncode','load-error']}));
+    console.log(JSON.stringify({output,passed:true,answerCodeCount:40,notebookQuestions:coverage.length,viewports:[1440,375],flows:['home','exam-entry','intercepted-exam-start','copy','submitted-report','records','historic-review','noncode','load-error']}));
   }finally{
     if(socket&&socket.readyState===WebSocket.OPEN){try{await send('Browser.close')}catch(_){}socket.close()}
     if(proc.exitCode===null){await Promise.race([new Promise(resolve=>proc.once('exit',resolve)),delay(5000)])}

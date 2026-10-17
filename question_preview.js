@@ -39,16 +39,16 @@
     box.id='examQuestionPreview';
     box.style.cssText='border:1px solid #dbe3ef;border-radius:9px;margin:14px 0;background:#fff;overflow:hidden;';
     box.innerHTML=`
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0">
-        <div style="font-weight:700;flex:1">题目预览</div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0">
+        <div style="font-weight:700;flex:1;white-space:nowrap">题目预览</div>
         <div style="font-size:12px;color:#64748b">${qid} · 原始考试题面</div>
-        <button id="examQuestionPreviewToggle" class="btn small" onclick="parent.toggleQuestionPreview()">${open?'收起题目':'展开题目'}</button>
-        <button class="btn small" onclick="parent.openQuestionPreview()">新窗口打开</button>
+        <button id="examQuestionPreviewToggle" class="btn small" style="flex-shrink:0;white-space:nowrap" onclick="parent.toggleQuestionPreview()">${open?'收起题目':'展开题目'}</button>
+        <button class="btn small" style="flex-shrink:0;white-space:nowrap" onclick="parent.openQuestionPreview()">新窗口打开</button>
       </div>
       <div id="examQuestionPreviewBody" style="display:${open?'block':'none'};background:#fff">
         <iframe title="${qid} 题目预览" src="${previewUrl(qid)}" style="display:block;width:100%;height:min(56vh,620px);min-height:420px;border:0;background:#fff"></iframe>
       </div>`;
-    state.parentNode.insertBefore(box,state);
+    state.parentNode.insertBefore(box,state.nextSibling);
   }
 
   const original=window.renderNotebookExam;
