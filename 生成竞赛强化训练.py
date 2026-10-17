@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 """生成 6.1.1~6.5.3 共 15 道竞赛强化训练题。
 
+模块 A 按正式竞赛范围覆盖图像基础操作、颜色空间、边界填充、缩放、三种滤波、
+Canny、阈值分割、轮廓检测和经典 OpenCV 目标区域提取。
+
 特点：
 - 固定随机种子，便于重复训练和自动评分。
 - 每题都有带 TODO x-x 的 Notebook、小型本地素材和参考答案。
@@ -44,81 +47,97 @@ def img_dir(qid,name):
 
 def gen_a1(qid):
     p=img_dir(qid,"input_images")
-    for i in range(30):
-        base=np.random.randint(40,216)
-        arr=np.full((160,160,3),base,dtype=np.uint8)
-        yy,xx=np.ogrid[:160,:160]
-        mask=(xx-80)**2+(yy-80)**2 < (25+i%20)**2
-        arr[mask]=np.clip(base+np.random.randint(-30,60),0,255)
-        im=Image.fromarray(arr)
-        if i%7==0: im=ImageEnhance.Brightness(im).enhance(0.25)
-        if i%11==0: im=ImageEnhance.Brightness(im).enhance(1.8)
-        if i%6==0: im=im.filter(ImageFilter.GaussianBlur(3))
-        im.save(p/f"product_{i:03d}.jpg")
+    for i in range(12):
+        w,h=480,320
+        im=Image.new("RGB",(w,h),(45+i*4,80+i*3,120+i*2))
+        d=ImageDraw.Draw(im)
+        d.rectangle((45,45,180,145),fill=(220,70+i*4,60))
+        d.ellipse((245,70,390,215),fill=(60,190,80+i*5))
+        d.line((30,260,450,235),fill=(245,245,245),width=8)
+        arr=np.asarray(im).copy()
+        rng=np.random.default_rng(SEED+i)
+        ys=rng.integers(0,h,500); xs=rng.integers(0,w,500)
+        arr[ys,xs]=rng.choice([0,255],size=(500,1))
+        Image.fromarray(arr).save(p/f"scene_{i:02d}.jpg")
+
     cells=[
-code_cell("""import cv2, json, random
+code_cell("""import cv2
 from pathlib import Path
-import numpy as np
 import pandas as pd
-from PIL import Image, ImageEnhance
 import matplotlib.pyplot as plt
 
 INPUT=Path("input_images")
-OUTPUT=Path("augmented_images")
-OUTPUT.mkdir(exist_ok=True)
-QUALITY_CSV=Path("image_quality.csv")"""),
+OUTPUT=Path("processed")
+OUTPUT.mkdir(exist_ok=True)"""),
 code_cell("""rows=[]
 for fp in sorted(INPUT.glob("*.jpg")):
     img=cv2.imread(str(fp))
-    gray=cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # TODO 1-1：计算 Laplacian 方差作为清晰度
-    sharpness = _____________
-    # TODO 1-2：计算灰度均值作为亮度
-    brightness = _____________
-    status="合格"
-    if sharpness < 35: status="模糊"
-    elif brightness < 45: status="过暗"
-    elif brightness > 215: status="过亮"
-    rows.append({"file":fp.name,"sharpness":sharpness,"brightness":brightness,"status":status})
-quality=pd.DataFrame(rows)
-quality.to_csv(QUALITY_CSV,index=False,encoding="utf-8-sig")
-quality["status"].value_counts()"""),
-code_cell("""good=quality.loc[quality["status"]=="合格","file"].tolist()
-random.seed(42)
-for name in good:
-    im=Image.open(INPUT/name).convert("RGB")
-    im.save(OUTPUT/name)
-    # TODO 2-1：生成水平翻转图
-    flipped = _____________
-    flipped.save(OUTPUT/f"{Path(name).stem}_flip.jpg")
-    # TODO 2-2：生成 +15 度旋转图
-    rotated = _____________
-    rotated.save(OUTPUT/f"{Path(name).stem}_rot15.jpg")
-    # TODO 2-3：将亮度随机调整到 0.8~1.2
-    factor = _____________
-    bright = ImageEnhance.Brightness(im).enhance(factor)
-    bright.save(OUTPUT/f"{Path(name).stem}_bright.jpg")"""),
-code_cell("""summary={
- "original":len(list(INPUT.glob("*.jpg"))),
- "qualified":len(good),
- "augmented_total":len(list(OUTPUT.glob("*.jpg"))),
- "quality_counts":quality["status"].value_counts().to_dict()
-}
-Path("summary.json").write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding="utf-8")
-files=list(OUTPUT.glob("*.jpg"))
-sample=random.sample(files,min(6,len(files)))
-fig,axes=plt.subplots(2,3,figsize=(10,7))
-for ax,fp in zip(axes.ravel(),sample):
-    ax.imshow(Image.open(fp)); ax.set_title(fp.name,fontsize=8); ax.axis("off")
-plt.tight_layout(); plt.savefig("augmentation_preview.png",dpi=150)
-summary""")]
-    write_nb(qid,"商品图片质量检测与多策略数据增强","完成质量检测、筛选、三类增强、统计和预览图输出。",cells)
-    sol="""sharpness = cv2.Laplacian(gray, cv2.CV_64F).var()
-brightness = gray.mean()
-flipped = im.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
-rotated = im.rotate(15, expand=False)
-factor = random.uniform(0.8, 1.2)"""
-    write_answer(qid,"商品图片质量检测与多策略数据增强",sol)
+    h0,w0=img.shape[:2]
+
+    # TODO 1-1：统一缩放到 320×240（OpenCV 参数顺序是宽、高）
+    resized = _____________
+    # TODO 1-2：BGR 转灰度
+    gray = _____________
+    # TODO 1-3：BGR 转 HSV
+    hsv = _____________
+
+    # TODO 2-1：上下 20、左右 30 像素白色常量边框
+    bordered = _____________
+
+    # TODO 3-1：5×5 均值滤波
+    mean_blur = _____________
+    # TODO 3-2：5×5 高斯滤波
+    gaussian = _____________
+    # TODO 3-3：核大小 5 的中值滤波
+    median = _____________
+
+    stem=fp.stem
+    cv2.imwrite(str(OUTPUT/f"{stem}_resized.jpg"),resized)
+    cv2.imwrite(str(OUTPUT/f"{stem}_gray.jpg"),gray)
+    cv2.imwrite(str(OUTPUT/f"{stem}_border.jpg"),bordered)
+    cv2.imwrite(str(OUTPUT/f"{stem}_mean.jpg"),mean_blur)
+    cv2.imwrite(str(OUTPUT/f"{stem}_gaussian.jpg"),gaussian)
+    cv2.imwrite(str(OUTPUT/f"{stem}_median.jpg"),median)
+
+    rows.append({
+        "file":fp.name,
+        "original_width":w0,
+        "original_height":h0,
+        "resized_width":resized.shape[1],
+        "resized_height":resized.shape[0],
+        "gray_mean":float(gray.mean()),
+        "hue_mean":float(hsv[:,:,0].mean()),
+    })
+
+summary=pd.DataFrame(rows)
+summary.to_csv("basic_processing.csv",index=False,encoding="utf-8-sig")
+summary.head()"""),
+code_cell("""first=sorted(INPUT.glob("*.jpg"))[0]
+stem=first.stem
+items=[
+    ("Original",cv2.cvtColor(cv2.imread(str(first)),cv2.COLOR_BGR2RGB),None),
+    ("Resized",cv2.cvtColor(cv2.imread(str(OUTPUT/f"{stem}_resized.jpg")),cv2.COLOR_BGR2RGB),None),
+    ("Gray",cv2.imread(str(OUTPUT/f"{stem}_gray.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
+    ("Border",cv2.cvtColor(cv2.imread(str(OUTPUT/f"{stem}_border.jpg")),cv2.COLOR_BGR2RGB),None),
+    ("Mean",cv2.imread(str(OUTPUT/f"{stem}_mean.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
+    ("Gaussian",cv2.imread(str(OUTPUT/f"{stem}_gaussian.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
+    ("Median",cv2.imread(str(OUTPUT/f"{stem}_median.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
+]
+fig,axes=plt.subplots(2,4,figsize=(13,7))
+for ax in axes.ravel(): ax.axis("off")
+for ax,(title,image,cmap) in zip(axes.ravel(),items):
+    ax.imshow(image,cmap=cmap); ax.set_title(title); ax.axis("off")
+plt.tight_layout(); plt.savefig("filter_comparison.png",dpi=150)
+plt.show()""")]
+    write_nb(qid,"图像基础处理、颜色空间与三种滤波","完成读取/保存、尺寸统一、颜色空间转换、边界填充和三类经典去噪方法，并生成处理统计和对比图。",cells)
+    sol="""resized = cv2.resize(img,(320,240))
+gray = cv2.cvtColor(resized,cv2.COLOR_BGR2GRAY)
+hsv = cv2.cvtColor(resized,cv2.COLOR_BGR2HSV)
+bordered = cv2.copyMakeBorder(resized,20,20,30,30,cv2.BORDER_CONSTANT,value=(255,255,255))
+mean_blur = cv2.blur(gray,(5,5))
+gaussian = cv2.GaussianBlur(gray,(5,5),0)
+median = cv2.medianBlur(gray,5)"""
+    write_answer(qid,"图像基础处理、颜色空间与三种滤波",sol)
 
 def gen_a2(qid):
     p=img_dir(qid,"road_images")
@@ -135,8 +154,10 @@ code_cell("""import cv2
 from pathlib import Path
 import pandas as pd
 import numpy as np
-INPUT=Path("road_images"); ROI=Path("roi_output"); VIS=Path("visualized")
-ROI.mkdir(exist_ok=True); VIS.mkdir(exist_ok=True)"""),
+INPUT=Path("road_images")
+ROI=Path("roi_output"); VIS=Path("visualized")
+BIN=Path("binary"); EDGE=Path("edges")
+for p in (ROI,VIS,BIN,EDGE): p.mkdir(exist_ok=True)"""),
 code_cell("""records=[]
 for fp in sorted(INPUT.glob("*.jpg")):
     img=cv2.imread(str(fp))
@@ -145,10 +166,16 @@ for fp in sorted(INPUT.glob("*.jpg")):
     gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     # TODO 1-2：5×5 高斯滤波
     blur = _____________
-    # TODO 1-3：Canny(50,150)
+    # TODO 1-3：Otsu 自动阈值二值化
+    binary = _____________
+    # TODO 1-4：Canny(50,150)
     edges = _____________
+
+    cv2.imwrite(str(BIN/fp.name),binary)
+    cv2.imwrite(str(EDGE/fp.name),edges)
+
     kernel=cv2.getStructuringElement(cv2.MORPH_RECT,(9,5))
-    # TODO 1-4：闭运算连接边缘
+    # TODO 2-1：闭运算连接边缘
     closed = _____________
     contours,_=cv2.findContours(closed,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     kept=[]
@@ -164,9 +191,10 @@ for fp in sorted(INPUT.glob("*.jpg")):
                     "area_ratio":sum(w*h for x,y,w,h in kept)/(640*360)})
 pd.DataFrame(records).to_csv("detection_summary.csv",index=False)
 pd.DataFrame(records)""")]
-    write_nb(qid,"道路车辆图像预处理与目标区域提取","完成道路图像预处理、候选区域提取、ROI 保存和汇总统计。",cells)
-    write_answer(qid,"道路车辆图像预处理与目标区域提取","""img=cv2.resize(img,(640,360))
+    write_nb(qid,"道路车辆边缘、阈值、轮廓与目标区域提取","完成道路图像缩放、灰度化、去噪、Otsu 阈值、Canny、轮廓筛选、ROI 保存和汇总统计。",cells)
+    write_answer(qid,"道路车辆边缘、阈值、轮廓与目标区域提取","""img=cv2.resize(img,(640,360))
 blur=cv2.GaussianBlur(gray,(5,5),0)
+binary=cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
 edges=cv2.Canny(blur,50,150)
 closed=cv2.morphologyEx(edges,cv2.MORPH_CLOSE,kernel,iterations=2)""")
 
@@ -757,13 +785,14 @@ sum(k in a for k in keys)/len(keys)"""
 
 def generate(force=False):
     for qid in [f"6.1.{i}" for i in range(1,4)]+[f"6.2.{i}" for i in range(1,4)]+[f"6.3.{i}" for i in range(1,4)]+[f"6.4.{i}" for i in range(1,4)]+[f"6.5.{i}" for i in range(1,4)]:
-        if force and (SRC/qid).exists(): shutil.rmtree(SRC/qid)
+        # 模块 A v2 题面与素材已按正式竞赛考纲重做；升级时主动清理旧 A 题素材。
+        if (force or qid.startswith("6.1.")) and (SRC/qid).exists(): shutil.rmtree(SRC/qid)
     gen_a1("6.1.1"); gen_a2("6.1.2"); gen_a3("6.1.3")
     gen_b("6.2.1","cluster"); gen_b("6.2.2","churn"); gen_b("6.2.3","house")
     gen_c("6.3.1",1); gen_c("6.3.2",2); gen_c("6.3.3",3)
     gen_d("6.4.1",1); gen_d("6.4.2",2); gen_d("6.4.3",3)
     gen_e("6.5.1",1); gen_e("6.5.2",2); gen_e("6.5.3",3)
-    marker=SRC/".advanced_competition_v1"
+    marker=SRC/".advanced_competition_v2"
     marker.write_text("generated\n",encoding="utf-8")
     print("已生成 15 道竞赛强化训练题：6.1.1 ~ 6.5.3")
 
