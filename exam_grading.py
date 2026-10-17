@@ -522,7 +522,7 @@ def result_checks(qid, workspace, snapshot):
     else:
         artifacts = {
             "5.1.4": ["word2vec.model"], "5.1.5": ["图书出版数据.xlsx", "图书出版年份分布.png", "图书出版数据分析报告.md"],
-            "6.1.1": ["image_quality.csv", "summary.json", "augmentation_preview.png"],
+            "6.1.1": ["basic_processing.csv", "filter_comparison.png"],
             "6.1.2": ["detection_summary.csv"], "6.1.3": ["defect_report.csv"],
             "6.2.1": ["customer_clusters.csv", "k_selection.csv", "best_cluster_model.pkl"],
             "6.4.3": ["topics.json", "recommendations.json", "topic_result.csv"],
@@ -539,17 +539,35 @@ def result_checks(qid, workspace, snapshot):
             records = []
             if qid == "6.1.1":
                 for fp in sorted((workspace / "input_images").glob("*.jpg")):
-                    gray = cv2.cvtColor(cv2.imread(str(fp)), cv2.COLOR_BGR2GRAY)
-                    sharpness, brightness = cv2.Laplacian(gray, cv2.CV_64F).var(), gray.mean()
-                    status = "模糊" if sharpness < 35 else "过暗" if brightness < 45 else "过亮" if brightness > 215 else "合格"
-                    records.append(dict(file=fp.name, sharpness=sharpness, brightness=brightness, status=status))
-                expected = pd.DataFrame(records)
-                csv("image_quality.csv", expected)
-                summary = json.loads((workspace / "summary.json").read_text(encoding="utf-8"))
-                good = int((expected.status == "合格").sum())
-                actual = len(list((workspace / "augmented_images").glob("*.jpg")))
-                check("增强图片数量与质量筛选一致", actual == good * 4 and summary.get("original") == len(expected) and summary.get("qualified") == good and summary.get("augmented_total") == actual,
-                      f"原始 {len(expected)}，合格 {good}，增强后 {good * 4}", str(summary))
+                    img = cv2.imread(str(fp))
+                    h0, w0 = img.shape[:2]
+                    resized = cv2.resize(img, (320, 240))
+                    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+                    hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
+                    records.append(dict(
+                        file=fp.name,
+                        original_width=w0,
+                        original_height=h0,
+                        resized_width=320,
+                        resized_height=240,
+                        gray_mean=float(gray.mean()),
+                        hue_mean=float(hsv[:, :, 0].mean()),
+                    ))
+                    stem = fp.stem
+                    border = cv2.imread(str(workspace / "processed" / f"{stem}_border.jpg"))
+                    mean_img = cv2.imread(str(workspace / "processed" / f"{stem}_mean.jpg"), cv2.IMREAD_GRAYSCALE)
+                    gaussian_img = cv2.imread(str(workspace / "processed" / f"{stem}_gaussian.jpg"), cv2.IMREAD_GRAYSCALE)
+                    median_img = cv2.imread(str(workspace / "processed" / f"{stem}_median.jpg"), cv2.IMREAD_GRAYSCALE)
+                    check("边界填充尺寸：" + fp.name,
+                          border is not None and border.shape[:2] == (280, 380),
+                          "缩放后 320×240，上下各 20、左右各 30，输出为 380×280",
+                          "有效" if border is not None else "缺失")
+                    check("三种滤波输出：" + fp.name,
+                          all(x is not None and x.shape == (240, 320)
+                              for x in (mean_img, gaussian_img, median_img)),
+                          "均值/高斯/中值滤波均生成 320×240 灰度结果",
+                          "有效" if all(x is not None for x in (mean_img, gaussian_img, median_img)) else "缺失")
+                csv("basic_processing.csv", pd.DataFrame(records))
             elif qid == "6.1.2":
                 for fp in sorted((workspace / "road_images").glob("*.jpg")):
                     img = cv2.resize(cv2.imread(str(fp)), (640, 360))
@@ -561,7 +579,13 @@ def result_checks(qid, workspace, snapshot):
                     kept = [(x,y,w,h) for x,y,w,h in kept if w*h >= 1200 and 1.2 <= w/max(h,1) <= 5]
                     records.append(dict(file=fp.name, candidates=len(kept), area_ratio=sum(w*h for x,y,w,h in kept)/(640*360)))
                     image = cv2.imread(str(workspace / "visualized" / fp.name))
+                    binary_image = cv2.imread(str(workspace / "binary" / fp.name), cv2.IMREAD_GRAYSCALE)
+                    edge_image = cv2.imread(str(workspace / "edges" / fp.name), cv2.IMREAD_GRAYSCALE)
                     check("可视化图像：" + fp.name, image is not None and image.shape[:2] == (360,640), "640×360 的输出图", "有效" if image is not None else "缺失")
+                    check("阈值与边缘中间结果：" + fp.name,
+                          binary_image is not None and edge_image is not None and binary_image.shape == (360,640) and edge_image.shape == (360,640),
+                          "同时生成 640×360 的 Otsu 二值图和 Canny 边缘图",
+                          "有效" if binary_image is not None and edge_image is not None else "缺失")
                 csv("detection_summary.csv", pd.DataFrame(records))
             else:
                 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
