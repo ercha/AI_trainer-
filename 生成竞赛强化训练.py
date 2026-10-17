@@ -637,13 +637,13 @@ prompt=(f"你是经营分析师。根据指标生成 Markdown 报告，必须包
         f"品类销售额={category.to_dict()}")
 # TODO 3-1：从环境变量读取 BASE_URL/API_KEY/MODEL
 BASE_URL=_____________; API_KEY=_____________; MODEL=_____________
-report="# 电商经营分析\n\n"+prompt
+report="# 电商经营分析\\n\\n"+prompt
 if BASE_URL and API_KEY and MODEL:
     try:
         # TODO 3-2：调用 /v1/chat/completions
         r=_____________
         r.raise_for_status(); report=r.json()["choices"][0]["message"]["content"]
-    except Exception as e: report += f"\n\n> AI 调用失败：{e}"
+    except Exception as e: report += f"\\n\\n> AI 调用失败：{e}"
 open("business_report.md","w",encoding="utf-8").write(report)
 print(report[:1000])"""
         sol="""pd.to_datetime(df["date"],errors="coerce")
@@ -731,8 +731,8 @@ def retrieve(query,top_k=3):
 BASE=os.getenv("OPENAI_BASE_URL",""); KEY=os.getenv("OPENAI_API_KEY",""); MODEL=os.getenv("OPENAI_MODEL","")
 def answer(query):
     refs=retrieve(query,3)
-    context="\n".join(f'[{x["source"]}] {x["text"]}' for x in refs)
-    prompt=f"仅依据资料回答并在句末注明来源文件。\n资料：\n{context}\n\n问题：{query}"
+    context="\\n".join(f'[{x["source"]}] {x["text"]}' for x in refs)
+    prompt=f"仅依据资料回答并在句末注明来源文件。\\n资料：\\n{context}\\n\\n问题：{query}"
     if not (BASE and KEY and MODEL):
         return context,[x["source"] for x in refs]
     # TODO 2-1：调用 OpenAI 兼容接口
@@ -747,7 +747,7 @@ for _,r in pd.read_csv("questions.csv").iterrows():
     score=_____________
     rows.append({"question":r.question,"answer":a,"sources":";".join(sources),"score":score,"latency":time.time()-t})
 out=pd.DataFrame(rows); out.to_csv("rag_results.csv",index=False)
-open("rag_evaluation.md","w",encoding="utf-8").write(f"# RAG 自动评测\n\n平均关键词覆盖率：{out.score.mean():.2%}\n")"""
+open("rag_evaluation.md","w",encoding="utf-8").write(f"# RAG 自动评测\\n\\n平均关键词覆盖率：{out.score.mean():.2%}\\n")"""
         sol="""TfidfVectorizer()
 scores.argsort()[::-1][:top_k]
 requests.post(BASE.rstrip("/")+"/v1/chat/completions",headers={"Authorization":f"Bearer {KEY}"},json={"model":MODEL,"messages":[{"role":"user","content":prompt}],"temperature":0.1},timeout=60).json()["choices"][0]["message"]["content"]

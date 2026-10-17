@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>考试题目</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:22px;font:15px/1.7 "Microsoft YaHei",sans-serif;color:#1f2937;background:#fff}main{max-width:1000px;margin:auto}h1{font-size:23px;margin:0 0 20px}h2{font-size:17px;margin:22px 0 8px}p,li{overflow-wrap:anywhere}li{margin:9px 0}.meta{color:#64748b}code{font-family:Consolas,monospace}
+</style>
+<script src="competition_catalog.js"></script><script src="competition_advanced_catalog.js"></script>
+</head>
+<body><main id="question">正在读取题目...</main>
+<script>
+(async()=>{
+const qid=new URLSearchParams(location.search).get('qid')||'',box=document.getElementById('question');
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+if(!/^\d+\.\d+\.\d+$/.test(qid)){box.textContent='题号格式不正确';return}
+const question=(window.COMPETITION_DETAILS||{})[qid]||(window.ADVANCED_DETAILS||{})[qid];
+if(!question){location.replace(encodeURI('/人工智能训练师三级素材/人工智能训练师三级考试平台模拟界面/'+qid+'.html'));return}
+let minutes='';try{const r=await fetch('/api/exam/question?qid='+encodeURIComponent(qid));if(r.ok)minutes=(await r.json()).duration_minutes}catch(_){}
+document.title=qid+' '+question.title;
+box.innerHTML=`<div class="meta">试题代码 ${esc(qid)}${minutes?' · '+esc(minutes)+' 分钟':''}</div><h1>${esc(question.title)}</h1><h2>工作任务</h2><p>${esc(question.taskText)}</p><h2>考核要求</h2><ol>${(question.req||[]).map(x=>'<li>'+esc(x)+'</li>').join('')}</ol><h2>提交要求</h2><p>按任务要求补全 Notebook，保留代码与运行结果，并保存题目指定的结果文件。</p>`;
+})()
+</script></body></html>

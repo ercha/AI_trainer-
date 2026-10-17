@@ -5,6 +5,7 @@ from datetime import datetime
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
+import ast
 import importlib.util
 import json
 import os
@@ -15,6 +16,9 @@ import subprocess
 import sys
 import threading
 import time
+import tempfile
+
+import exam_grading as grading
 
 ROOT = Path(__file__).resolve().parent
 SOURCE_ROOT = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级上网素材"
@@ -22,129 +26,7 @@ EXAM_ROOT = ROOT / "_exam_workspace"
 HISTORY_ROOT = ROOT / "_exam_history"
 JUPYTER_PORT = 7001
 
-QUESTION_PROFILES = {
-    "1.1.1": {
-        "duration": 30,
-        "checks": [
-            ("读取 CSV", ("pd.read_csv",)),
-            ("条件生成风险等级", ("np.where",)),
-            ("分类计数", ("value_counts",)),
-            ("区间切分", ("pd.cut",)),
-            ("分组统计", ("groupby",)),
-        ],
-    },
-    "1.1.2": {
-        "duration": 30,
-        "checks": [
-            ("读取 CSV", ("pd.read_csv",)),
-            ("分组聚合", ("groupby", "agg")),
-            ("条件筛选", ("isin",)),
-            ("缺失值填充", ("fillna", "ffill", "bfill")),
-            ("删除列", ("drop",)),
-            ("保存 CSV", ("to_csv",)),
-        ],
-    },
-    "2.1.1": {
-        "duration": 20,
-        "checks": [
-            ("读取 CSV", ("pd.read_csv",)),
-            ("缺失值统计", ("isnull", "isna")),
-            ("删除缺失值", ("dropna",)),
-            ("类型转换", ("pd.to_numeric",)),
-            ("标准化", ("StandardScaler",)),
-            ("训练测试集划分", ("train_test_split",)),
-            ("保存 CSV", ("to_csv",)),
-        ],
-    },
-    "2.2.1": {
-        "duration": 20,
-        "checks": [
-            ("读取 CSV", ("pd.read_csv",)),
-            ("训练测试集划分", ("train_test_split",)),
-            ("标准化", ("StandardScaler",)),
-            ("Logistic 回归", ("LogisticRegression",)),
-            ("模型训练", (".fit(",)),
-            ("模型预测", (".predict(",)),
-            ("准确率", ("accuracy_score",)),
-        ],
-    },
-    "6.1.1": {"duration": 45, "checks": [
-        ("Laplacian 清晰度", ("Laplacian",)), ("亮度统计", (".mean(",)),
-        ("水平翻转", ("FLIP_LEFT_RIGHT", "transpose")), ("旋转增强", (".rotate(",)),
-        ("亮度增强", ("ImageEnhance.Brightness",)), ("质量 CSV", ("image_quality.csv",)),
-    ]},
-    "6.1.2": {"duration": 45, "checks": [
-        ("统一尺寸", ("cv2.resize",)), ("高斯滤波", ("GaussianBlur",)),
-        ("Canny 边缘", ("Canny",)), ("形态学闭运算", ("MORPH_CLOSE",)),
-        ("轮廓检测", ("findContours",)), ("ROI 输出", ("roi_output",)),
-    ]},
-    "6.1.3": {"duration": 45, "checks": [
-        ("CLAHE", ("createCLAHE", ".apply(",)), ("阈值分割", ("threshold",)),
-        ("形态学处理", ("morphologyEx",)), ("连通域", ("connectedComponentsWithStats",)),
-        ("缺陷报告", ("defect_report.csv",)),
-    ]},
-    "6.2.1": {"duration": 50, "checks": [
-        ("ColumnTransformer", ("ColumnTransformer",)), ("缺失值处理", ("SimpleImputer",)),
-        ("标准化", ("StandardScaler",)), ("KMeans", ("KMeans",)),
-        ("轮廓系数", ("silhouette_score",)), ("模型保存", ("joblib.dump",)),
-    ]},
-    "6.2.2": {"duration": 55, "checks": [
-        ("分层划分", ("stratify",)), ("随机森林", ("RandomForestClassifier",)),
-        ("F1 指标", ("f1_score",)), ("混淆矩阵", ("confusion_matrix",)),
-        ("GridSearchCV", ("GridSearchCV",)), ("模型保存", ("joblib.dump",)),
-    ]},
-    "6.2.3": {"duration": 50, "checks": [
-        ("特征工程", ("HouseAge", "AreaPerRoom")), ("随机森林回归", ("RandomForestRegressor",)),
-        ("梯度提升回归", ("GradientBoostingRegressor",)), ("RMSE", ("mean_squared_error",)),
-        ("R2", ("r2_score",)), ("最佳模型保存", ("best_house_model.pkl",)),
-    ]},
-    "6.3.1": {"duration": 60, "checks": [
-        ("ImageFolder", ("ImageFolder",)), ("DataLoader", ("DataLoader",)),
-        ("卷积层", ("Conv2d",)), ("最大池化", ("MaxPool2d",)),
-        ("交叉熵", ("CrossEntropyLoss",)), ("Adam", ("torch.optim.Adam",)),
-    ]},
-    "6.3.2": {"duration": 60, "checks": [
-        ("数据增强", ("RandomHorizontalFlip", "RandomRotation", "ColorJitter")),
-        ("BatchNorm", ("BatchNorm2d",)), ("Dropout", ("Dropout",)),
-        ("训练验证", ("train_loader", "val_loader")), ("最佳权重", ("state_dict",)),
-    ]},
-    "6.3.3": {"duration": 65, "checks": [
-        ("ResNet18", ("resnet18",)), ("冻结参数", ("requires_grad",)),
-        ("替换分类头", ("model.fc",)), ("解冻 layer4", ("model.layer4",)),
-        ("模型保存", ("best_resnet18.pt",)), ("权重加载", ("load_state_dict",)),
-    ]},
-    "6.4.1": {"duration": 50, "checks": [
-        ("jieba 分词", ("jieba.cut",)), ("TF-IDF", ("TfidfVectorizer",)),
-        ("逻辑回归", ("LogisticRegression",)), ("分类报告", ("classification_report",)),
-        ("类别关键词", ("get_feature_names_out",)),
-    ]},
-    "6.4.2": {"duration": 55, "checks": [
-        ("jieba 分词", ("jieba.cut",)), ("Word2Vec", ("Word2Vec",)),
-        ("句向量", ("np.mean",)), ("情感分类", ("LogisticRegression",)),
-        ("F1", ("f1_score",)), ("相似词", ("most_similar",)),
-    ]},
-    "6.4.3": {"duration": 55, "checks": [
-        ("词袋模型", ("CountVectorizer",)), ("LDA", ("LatentDirichletAllocation",)),
-        ("主主题", ("dominant_topic",)), ("TF-IDF", ("TfidfVectorizer",)),
-        ("余弦相似度", ("cosine_similarity",)),
-    ]},
-    "6.5.1": {"duration": 60, "checks": [
-        ("JSON 读取", ("read_json",)), ("日期处理", ("to_datetime",)),
-        ("经营指标", ("gmv", "repeat_rate")), ("可视化", ("savefig",)),
-        ("环境变量", ("OPENAI_BASE_URL", "OPENAI_API_KEY", "OPENAI_MODEL")),
-        ("兼容接口", ("chat/completions", "requests.post")),
-    ]},
-    "6.5.2": {"duration": 65, "checks": [
-        ("TF-IDF", ("TfidfVectorizer",)), ("投诉分类", ("LogisticRegression",)),
-        ("优先级", ("priority_score",)), ("JSON 输出", ("response_format", "json_object")),
-        ("异常处理", ("except Exception",)), ("结果导出", ("ai_actions.json",)),
-    ]},
-    "6.5.3": {"duration": 65, "checks": [
-        ("文档遍历", ("knowledge_docs", "glob")), ("TF-IDF 建库", ("TfidfVectorizer",)),
-        ("余弦检索", ("cosine_similarity",)), ("Top-K", ("top_k",)),
-        ("兼容接口", ("chat/completions", "requests.post")), ("自动评测", ("expected_keywords",)),
-    ]},
-}
+QUESTION_PROFILES = {qid: {"duration": grading.duration_minutes(qid), "checker": "reference_and_result"} for qid in grading.QIDS}
 
 LOCK = threading.RLock()
 ACTIVE_SESSION: dict | None = None
@@ -290,7 +172,7 @@ def _start_exam(qid: str) -> dict:
             notebook = notebooks[0]
 
         profile = QUESTION_PROFILES.get(qid, {})
-        duration = int(profile.get("duration", 30))
+        duration = grading.duration_minutes(qid)
         started = _now_ms()
         deadline = started + duration * 60 * 1000
         meta = {
@@ -375,6 +257,12 @@ def _is_effective_code_cell(cell: dict) -> bool:
     because Jupyter may legitimately leave their execution_count as None.
     """
     source = _cell_source(cell)
+    try:
+        tree = ast.parse(source)
+        return any(not isinstance(node, (ast.Import, ast.ImportFrom, ast.Pass)) and
+                   not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant)) for node in tree.body)
+    except SyntaxError:
+        pass
     for line in source.splitlines():
         stripped = line.strip()
         if stripped and not stripped.startswith("#"):
@@ -409,7 +297,36 @@ def _collect_notebook_state(notebook: dict) -> dict:
     }
 
 
-def _auto_execute_notebook(workspace: Path, notebook_path: Path) -> dict:
+def _check_user_behavior(notebook: dict) -> list[dict]:
+    return grading.structure_checks("1.1.4", notebook)
+
+
+def _auto_execute_notebook(workspace: Path, notebook_path: Path, qid: str = "") -> dict:
+    # Recreate only original inputs, not saved student outputs: stale CSV/model files cannot earn points.
+    with tempfile.TemporaryDirectory(prefix="trainer-grading-") as folder:
+        run_dir = Path(folder)
+        source = SOURCE_ROOT / qid
+        original_files = _list_relative_files(source) if qid in grading.QIDS and source.is_dir() else set()
+        for relative in original_files:
+            current = workspace / relative
+            if current.is_file() and not current.is_symlink() and not relative.endswith(".ipynb"):
+                target = run_dir / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(current, target)
+        run_path = run_dir / notebook_path.name
+        shutil.copyfile(notebook_path, run_path)
+        initial = _list_relative_files(run_dir)
+        result = _execute_notebook(run_dir, run_path, qid)
+        for relative in _list_relative_files(run_dir) - initial:
+            generated = run_dir / relative
+            target = (workspace / relative).resolve()
+            if not generated.is_symlink() and target.is_relative_to(workspace.resolve()) and not relative.startswith(".ipynb_checkpoints/"):
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(generated, target)
+        return result
+
+
+def _execute_notebook(workspace: Path, notebook_path: Path, qid: str) -> dict:
     if importlib.util.find_spec("nbclient") is None or importlib.util.find_spec("nbformat") is None:
         return {
             "available": False,
@@ -430,6 +347,9 @@ def _auto_execute_notebook(workspace: Path, notebook_path: Path) -> dict:
         for cell in all_code_cells:
             cell["execution_count"] = None
             cell["outputs"] = []
+        if qid == "5.1.3" or qid.startswith("6.3."):
+            run_book.cells.insert(0, nbformat.v4.new_code_cell(grading.TRAINING_PROBE))
+        run_book.cells.append(nbformat.v4.new_code_cell(grading.PROBE_SOURCE))
 
         kernel_name = (
             run_book.get("metadata", {})
@@ -451,7 +371,7 @@ def _auto_execute_notebook(workspace: Path, notebook_path: Path) -> dict:
         executed = 0
         successful = 0
         effective_count = 0
-        for index, cell in enumerate([c for c in run_book.cells if c.get("cell_type") == "code"], start=1):
+        for index, cell in enumerate(all_code_cells, start=1):
             if not _is_effective_code_cell(cell):
                 continue
             effective_count += 1
@@ -470,6 +390,18 @@ def _auto_execute_notebook(workspace: Path, notebook_path: Path) -> dict:
             if cell.get("execution_count") is not None and not cell_errors:
                 successful += 1
 
+        try:
+            snapshot = grading.extract_snapshot(run_book.cells[-1])
+            if snapshot:
+                snapshot["execution_text"] = "\n".join(str(o.get("text", "")) for cell in all_code_cells for o in cell.get("outputs", []) if o.get("output_type") == "stream")[-12000:]
+            validation = grading.result_checks(qid, workspace, snapshot)
+            for output in run_book.cells[-1].get("outputs", []):
+                if output.get("output_type") == "error":
+                    validation.append({"label": "结果采集诊断", "ok": False, "kind": "result", "expected": "成功采集运行结果",
+                                       "actual": f"{output.get('ename')}: {output.get('evalue')}"})
+        except Exception as exc:
+            validation = [{"label": "结果验收", "kind": "result", "ok": False,
+                           "expected": "能够验证本次运行的计算和交付物", "actual": f"{type(exc).__name__}: {exc}"}]
         return {
             "available": True,
             "executed_cells": executed,
@@ -477,6 +409,7 @@ def _auto_execute_notebook(workspace: Path, notebook_path: Path) -> dict:
             "effective_cells": effective_count,
             "errors": errors,
             "engine_error": "",
+            "result_checks": validation,
         }
     except Exception as exc:
         return {
@@ -503,26 +436,44 @@ def _analyze_notebook(session: dict) -> dict:
     state = _collect_notebook_state(notebook)
     code = state["code"]
     code_cells = state["code_cells"]
-    placeholders = len(re.findall(r"_{5,}", code))
+    placeholders = grading.placeholders(notebook)
 
     profile = QUESTION_PROFILES.get(session["qid"], {})
-    checks = []
-    for label, alternatives in profile.get("checks", []):
-        ok = any(token in code for token in alternatives)
-        checks.append({"label": label, "ok": ok, "tokens": list(alternatives)})
-
-    auto = _auto_execute_notebook(workspace, notebook_path)
-
-    check_score = round(60 * sum(1 for x in checks if x["ok"]) / len(checks)) if checks else 0
-    placeholder_score = 15 if placeholders == 0 else max(0, 15 - placeholders * 3)
+    structure = grading.structure_checks(session["qid"], notebook)
+    auto = _auto_execute_notebook(workspace, notebook_path, session["qid"])
+    results = auto.get("result_checks", [])
+    if not results:
+        results = [{"label": "实际结果验收", "kind": "result", "ok": False,
+                    "expected": "本次运行的有效结果", "actual": auto.get("engine_error") or "没有结果验收证据"}]
+    if session["qid"].startswith(("1.1.", "6.1.")) and results and all(x["ok"] for x in results):
+        for item in structure:
+            if not item["ok"]:
+                item.update(ok=True, verified_by="result", hint="参考写法不同，但本次实际结果验收已通过。")
+    checks = structure + results
+    structural_score = round(30 * sum(x["ok"] for x in structure) / len(structure)) if structure else 0
+    result_score = round(30 * sum(x["ok"] for x in results) / len(results))
+    check_score = structural_score + result_score if profile else None
+    placeholder_score = (15 if placeholders == 0 else max(0, 15 - placeholders * 3)) if code_cells else 0
     effective_count = len(code_cells)
     if auto["available"] and not auto["engine_error"]:
-        run_score = round(15 * auto["successful_cells"] / effective_count) if effective_count else 15
-        error_score = 10 if not auto["errors"] else 0
+        run_score = round(15 * min(auto["successful_cells"], effective_count) / effective_count) if effective_count else 0
+        error_score = 10 if effective_count and auto["successful_cells"] == effective_count and not auto["errors"] else 0
     else:
         run_score = 0
         error_score = 0
-    score = min(100, check_score + placeholder_score + run_score + error_score)
+    subtotal = placeholder_score + run_score + error_score
+    score = min(100, check_score + subtotal) if check_score is not None else None
+    if not effective_count:
+        score = 0 if profile else None
+        check_score = 0 if profile else None
+    # Full marks require all checks; rounding must not hide a single failed criterion.
+    if score is not None and score == 100 and any(not x["ok"] for x in checks):
+        score = 99
+    score_note = "自动初评：提交时会重新执行 Notebook 验证；空白/纯注释代码 Cell 不参与执行率扣分；仅用于训练自检，不代表官方评分"
+    if not profile:
+        score_note += "。本题尚未配置关键代码规则，暂不评定总分；仅展示通用检查结果，不将未评估项目算作 0 分。"
+    else:
+        score_note += "。任务分由框架检查 30 分、实际结果及交付物验收 30 分构成；不是官方评分，也不保证任意等价算法都能自动识别。HTML、截图与书面报告按题面另行验收。"
 
     current_files = _list_relative_files(workspace)
     generated = sorted(
@@ -533,7 +484,11 @@ def _analyze_notebook(session: dict) -> dict:
 
     return {
         "score": score,
-        "score_note": "自动初评：提交时会重新执行 Notebook 验证；空白/纯注释代码 Cell 不参与执行率扣分；仅用于训练自检，不代表官方评分",
+        "score_note": score_note,
+        "score_status": "graded" if profile else "unconfigured",
+        "grading_version": 2,
+        "task_score_parts": {"structure": structural_score, "results": result_score},
+        "generic_subtotal": subtotal,
         "checks": checks,
         "placeholders": placeholders,
         "code_cells": effective_count,
@@ -587,11 +542,20 @@ def _submit_exam(session_id: str) -> dict:
 
         HISTORY_ROOT.mkdir(parents=True, exist_ok=True)
         history_dir = HISTORY_ROOT / session["id"]
-        if history_dir.exists():
-            shutil.rmtree(history_dir)
+        suffix = 1
+        while history_dir.exists():
+            history_dir = HISTORY_ROOT / f"{session['id']}_{suffix}"
+            suffix += 1
+        if not workspace.resolve().is_relative_to(EXAM_ROOT.resolve()) or workspace.resolve() == EXAM_ROOT.resolve():
+            raise ApiError(500, "答卷目录不在考试工作区内，未移动文件")
+        if not history_dir.resolve().is_relative_to(HISTORY_ROOT.resolve()):
+            raise ApiError(500, "归档目录无效，未移动文件")
         try:
             shutil.move(str(workspace), str(history_dir))
             report["history_dir"] = str(history_dir)
+            if history_dir.name != report["id"]:
+                report["original_session_id"] = report["id"]
+                report["id"] = history_dir.name
         except Exception as exc:
             report["history_dir"] = str(workspace)
             report["history_warning"] = str(exc)
@@ -755,6 +719,8 @@ def _get_exam_record(record_id: str) -> dict:
 
 def _system_status() -> dict:
     return {
+        "grading_version": 2,
+        "grading_question_count": len(QUESTION_PROFILES),
         "python": sys.version.split()[0],
         "executable": sys.executable,
         "notebook_installed": importlib.util.find_spec("notebook") is not None,
@@ -802,6 +768,12 @@ class PracticalHandler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         try:
+            if path == "/api/exam/question":
+                qid = (parse_qs(parsed.query).get("qid") or [""])[0]
+                if qid not in QUESTION_PROFILES:
+                    raise ApiError(404, "没有找到题目")
+                self._send_json(200, {"qid": qid, "duration_minutes": grading.duration_minutes(qid)})
+                return
             if path == "/api/system/status":
                 self._send_json(200, {"ok": True, "system": _system_status()})
                 return

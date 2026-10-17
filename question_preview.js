@@ -12,7 +12,7 @@
   function getChildDoc(){try{return typeof childDoc==='function'?childDoc():null}catch(_){return null}}
   function getQid(){try{return typeof currentQid==='function'?currentQid():''}catch(_){return ''}}
 
-  function previewUrl(qid){return MOCK_BASE+encodeURIComponent(qid)+'.html'}
+  function previewUrl(qid){return '/exam_question.html?qid='+encodeURIComponent(qid)}
 
   window.toggleQuestionPreview=function(){
     const d=getChildDoc();if(!d)return;
