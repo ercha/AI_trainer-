@@ -1,5 +1,5 @@
 window.ADVANCED_UNITS=[
-{id:'6.1',name:'竞赛强化 A·计算机视觉',count:3},
+{id:'6.1',name:'竞赛强化 A·图像处理技术',count:3},
 {id:'6.2',name:'竞赛强化 B·机器学习',count:3},
 {id:'6.3',name:'竞赛强化 C·深度学习',count:3},
 {id:'6.4',name:'竞赛强化 D·自然语言处理',count:3},
@@ -8,26 +8,26 @@ window.ADVANCED_UNITS=[
 
 window.ADVANCED_DETAILS={
 '6.1.1':{
- title:'商品图片质量检测与多策略数据增强',
- tags:['OpenCV','PIL','清晰度','亮度','数据增强'],
- taskText:'某电商平台需要扩充商品识别训练集。请批量检测原始商品图片的清晰度与亮度，剔除质量不合格图片，再对合格样本实施水平翻转、旋转和亮度扰动，形成质量可控的增强数据集。',
+ title:'图像基础处理、颜色空间与三种滤波',
+ tags:['OpenCV','颜色空间','边界填充','resize','均值/高斯/中值滤波'],
+ taskText:'围绕竞赛模块 A 的基础高频 API，完成图像读取、尺寸统一、灰度/HSV 颜色空间转换、边界填充以及均值滤波、高斯滤波、中值滤波，并保存处理结果和对比图。',
  req:[
-  'TODO 1：遍历 input_images，读取图片并计算 Laplacian 方差作为清晰度指标、灰度均值作为亮度指标',
-  'TODO 2：按给定阈值标记“过暗/过亮/模糊/合格”，保存 image_quality.csv',
-  'TODO 3：仅对合格图片执行水平翻转、±15°旋转和随机亮度增强，并统一保存为 JPEG',
-  'TODO 4：统计原始、合格、增强后的数量以及各类质量问题数量，打印并保存 summary.json',
-  'TODO 5：随机抽取 6 张增强结果绘制 2×3 预览图，保存 augmentation_preview.png'
+  'TODO 1：批量读取 input_images，统一缩放到 320×240，并完成 BGR→GRAY、BGR→HSV 转换',
+  'TODO 2：使用 copyMakeBorder 为缩放图像增加上下 20、左右 30 像素的白色常量边框',
+  'TODO 3：分别使用 5×5 均值滤波、5×5 高斯滤波和核大小 5 的中值滤波处理灰度图',
+  'TODO 4：将缩放图、灰度图、边框图及三种滤波结果保存到 processed，并输出 basic_processing.csv',
+  'TODO 5：选取首张图生成原图、缩放图、灰度图、边框图和三种滤波结果对比预览，保存 filter_comparison.png'
  ]
 },
 '6.1.2':{
- title:'道路车辆图像预处理与目标区域提取',
- tags:['OpenCV','Canny','形态学','轮廓','ROI'],
- taskText:'为道路车辆检测模型准备输入数据。需要完成统一尺寸、灰度化、降噪、边缘检测、形态学连接、候选轮廓筛选与目标区域裁剪，并输出每张图片的候选区域统计。',
+ title:'道路车辆边缘、阈值、轮廓与目标区域提取',
+ tags:['OpenCV','Canny','Otsu','轮廓','ROI'],
+ taskText:'为道路车辆检测准备输入数据。完成统一尺寸、灰度化、高斯去噪、Otsu 阈值分割、Canny 边缘检测、形态学连接、轮廓筛选与目标区域裁剪，并输出候选区域统计。',
  req:[
-  'TODO 1：批量读取 road_images 并统一缩放到 640×360',
-  'TODO 2：完成灰度化、GaussianBlur 和 Canny 边缘检测',
-  'TODO 3：使用闭运算连接车辆边缘，并通过轮廓面积和宽高比筛选候选区域',
-  'TODO 4：在原图绘制候选框，同时裁剪候选 ROI 保存到 roi_output',
+  'TODO 1：批量读取 road_images 并统一缩放到 640×360，转换为灰度图',
+  'TODO 2：完成 5×5 GaussianBlur、Otsu 二值化和 Canny(50,150) 边缘检测',
+  'TODO 3：使用闭运算连接边缘，并通过 findContours、boundingRect、面积和宽高比筛选候选区域',
+  'TODO 4：保存 binary/edges 中间结果，在原图绘制候选框并裁剪 ROI 保存到 roi_output',
   'TODO 5：汇总每张图候选数量和面积占比，保存 detection_summary.csv'
  ]
 },
