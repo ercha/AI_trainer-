@@ -19,6 +19,7 @@ import time
 import tempfile
 
 import exam_grading as grading
+from reference_answers import get_reference_answer
 
 ROOT = Path(__file__).resolve().parent
 SOURCE_ROOT = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级上网素材"
@@ -768,6 +769,16 @@ class PracticalHandler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         try:
+            if path == "/api/answer":
+                qid = (parse_qs(parsed.query).get("qid") or [""])[0]
+                try:
+                    answer = get_reference_answer(qid, ROOT)
+                except ValueError as exc:
+                    raise ApiError(400, str(exc)) from exc
+                except FileNotFoundError as exc:
+                    raise ApiError(404, "本题参考答案或配套 Notebook 尚未准备好") from exc
+                self._send_json(200, {"ok": True, **answer})
+                return
             if path == "/api/exam/question":
                 qid = (parse_qs(parsed.query).get("qid") or [""])[0]
                 if qid not in QUESTION_PROFILES:

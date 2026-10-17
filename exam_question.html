@@ -4,20 +4,44 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>考试题目</title>
 <style>
-*{box-sizing:border-box}body{margin:0;padding:22px;font:15px/1.7 "Microsoft YaHei",sans-serif;color:#1f2937;background:#fff}main{max-width:1000px;margin:auto}h1{font-size:23px;margin:0 0 20px}h2{font-size:17px;margin:22px 0 8px}p,li{overflow-wrap:anywhere}li{margin:9px 0}.meta{color:#64748b}code{font-family:Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;padding:22px;font:15px/1.7 "Microsoft YaHei",sans-serif;color:#1f2937;background:#fff}main{max-width:1000px;margin:auto}h1{font-size:23px;margin:0 0 20px}h2,h3{font-size:17px;margin:22px 0 8px}p,li{overflow-wrap:anywhere}li{margin:9px 0}.meta{color:#64748b}code{font-family:Consolas,monospace}
+.task-description{line-height:1.85;overflow-wrap:anywhere}.task-description p{margin:0 0 12px}.task-requirement{padding:8px 0 8px 12px;border-left:3px solid #cbd5e1}.todo-label{color:#1d4ed8}.req{padding-left:0;list-style:none}.container{display:flex;gap:24px;align-items:flex-start}.left-column{flex:3;min-width:0}.right-column{flex:2;min-width:0}table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;border:1px solid #dfe5ee;overflow-wrap:anywhere}.pure-button{display:inline-block;padding:5px 8px;border:1px solid #cbd5e1;border-radius:4px;background:#f8fafc;color:#334155;font:inherit}
+@media(max-width:760px){.container{display:block}body{padding:16px}.right-column{margin-top:24px}}
+body.exam-view{padding:18px 22px}.exam-view main{max-width:none}.exam-view .right-column{display:none}.exam-view .container{display:block}.exam-view .left-column{width:100%}
 </style>
 <script src="competition_catalog.js"></script><script src="competition_advanced_catalog.js"></script>
+<script src="task_content.js"></script>
 </head>
 <body><main id="question">正在读取题目...</main>
 <script>
 (async()=>{
 const qid=new URLSearchParams(location.search).get('qid')||'',box=document.getElementById('question');
+if(new URLSearchParams(location.search).get('view')==='exam')document.body.classList.add('exam-view');
 const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 if(!/^\d+\.\d+\.\d+$/.test(qid)){box.textContent='题号格式不正确';return}
 const question=(window.COMPETITION_DETAILS||{})[qid]||(window.ADVANCED_DETAILS||{})[qid];
-if(!question){location.replace(encodeURI('/人工智能训练师三级素材/人工智能训练师三级考试平台模拟界面/'+qid+'.html'));return}
+if(!question){
+  try{
+    const response=await fetch(encodeURI('/人工智能训练师三级素材/人工智能训练师三级考试平台模拟界面/'+qid+'.html'),{cache:'no-store'});
+    if(!response.ok)throw new Error('HTTP '+response.status);
+    const html=await response.text(),source=new DOMParser().parseFromString(html,'text/html');
+    const container=source.querySelector('.container'),left=container?.querySelector('.left-column');
+    if(!left)throw new Error('题目内容不完整');
+    const headings=[...left.querySelectorAll('h1,h2,h3,h4')],heading=headings.find(x=>x.textContent.trim()==='工作任务');
+    if(heading){
+      const next=headings[headings.indexOf(heading)+1],range=source.createRange();
+      range.setStartAfter(heading);if(next)range.setEndBefore(next);else range.setEnd(left,left.childNodes.length);
+      const description=source.createElement('div');description.className='task-description';
+      description.innerHTML=TaskContent.renderTaskParagraphs(TaskContent.decodeQuestionPage(html,qid).taskText);
+      range.deleteContents();range.insertNode(description);
+    }
+    document.title=source.title||qid+' 考试题目';
+    box.replaceChildren(document.importNode(container,true));
+  }catch(error){box.textContent='题目读取失败：'+error.message}
+  return;
+}
 let minutes='';try{const r=await fetch('/api/exam/question?qid='+encodeURIComponent(qid));if(r.ok)minutes=(await r.json()).duration_minutes}catch(_){}
 document.title=qid+' '+question.title;
-box.innerHTML=`<div class="meta">试题代码 ${esc(qid)}${minutes?' · '+esc(minutes)+' 分钟':''}</div><h1>${esc(question.title)}</h1><h2>工作任务</h2><p>${esc(question.taskText)}</p><h2>考核要求</h2><ol>${(question.req||[]).map(x=>'<li>'+esc(x)+'</li>').join('')}</ol><h2>提交要求</h2><p>按任务要求补全 Notebook，保留代码与运行结果，并保存题目指定的结果文件。</p>`;
+box.innerHTML=`<div class="meta">试题代码 ${esc(qid)}${minutes?' · '+esc(minutes)+' 分钟':''}</div><h1>${esc(question.title)}</h1><h2>工作任务</h2><div class="task-description">${TaskContent.renderTaskParagraphs(question.taskText)}</div><h2>考核要求</h2><ol class="req">${TaskContent.renderRequirementList(question.req)}</ol><h2>提交要求</h2><p>按任务要求补全 Notebook，保留代码与运行结果，并保存题目指定的结果文件。</p>`;
 })()
 </script></body></html>
