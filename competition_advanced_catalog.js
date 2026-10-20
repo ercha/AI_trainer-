@@ -307,7 +307,7 @@ window.ADVANCED_DETAILS={
   'TODO 2：实现 Top-K 检索与问答',
   'TODO 3：基于标准答案做功能准确率测试',
   'TODO 4：统计响应时间与吞吐量',
-  'TODO 5：生成 app.py、README.md、benchmark.csv 与 evaluation_results.csv'
+  'TODO 5：生成 app.py、README.md、demo_script.md、benchmark.csv 与 evaluation_results.csv'
  ]
 }
 };
