@@ -799,6 +799,8 @@ def generate(force=False):
     gen_e("6.5.1",1); gen_e("6.5.2",2); gen_e("6.5.3",3)
     generate_expanded_questions()
     marker.write_text("generated\n",encoding="utf-8")
+    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2"):
+        legacy.unlink(missing_ok=True)
     print("已生成 25 道竞赛强化训练题：6.1.1 ~ 6.5.5")
 
 if __name__=="__main__":
