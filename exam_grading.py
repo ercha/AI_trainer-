@@ -14,8 +14,14 @@ ANSWERS = ROOT / "人工智能训练师三级素材" / "操作题答案"
 PAGES = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级考试平台模拟界面"
 QIDS = ([f"1.1.{i}" for i in range(1, 6)] + [f"2.{j}.{i}" for j in (1, 2) for i in range(1, 6)]
         + [f"3.2.{i}" for i in range(1, 6)] + [f"5.1.{i}" for i in range(1, 6)]
-        + [f"6.{j}.{i}" for j in range(1, 6) for i in range(1, 4)])
-ADVANCED_MINUTES = [45, 45, 45, 50, 55, 50, 60, 60, 65, 50, 55, 55, 60, 65, 65]
+        + [f"6.{j}.{i}" for j in range(1, 6) for i in range(1, 6)])
+ADVANCED_MINUTES = [
+    40, 45, 45, 40, 40,
+    50, 55, 55, 50, 55,
+    60, 60, 65, 70, 70,
+    50, 55, 55, 65, 55,
+    60, 65, 65, 70, 75,
+]
 
 
 class PageText(HTMLParser):
@@ -39,7 +45,8 @@ def duration_minutes(qid):
             if match:
                 return int(match[0])
     if qid.startswith("6.") and qid in QIDS:
-        return ADVANCED_MINUTES[int(qid.split(".")[1]) * 3 + int(qid[-1]) - 4]
+        parts = [int(x) for x in qid.split(".")]
+        return ADVANCED_MINUTES[(parts[1] - 1) * 5 + parts[2] - 1]
     return 60 if qid.startswith("5.") else 30
 
 
@@ -454,7 +461,7 @@ def result_checks(qid, workspace, snapshot):
             for name in ("X_train", "X_test", "y_train", "y_test"):
                 item = value(name)
                 check("数据划分：" + name, item is not None and len(item) > 0, "实际生成非空训练与测试数据", "存在" if item is not None else "缺失")
-    elif qid.startswith("2.2.") or qid in {"6.2.2", "6.2.3", "6.4.1", "6.4.2", "6.5.2"}:
+    elif qid.startswith("2.2.") or qid in {"6.2.2", "6.2.3", "6.2.4", "6.4.1", "6.4.2", "6.5.2"}:
         models = snapshot.get("models", {})
         fitted = [m for m in models.values() if m.get("fitted") and m.get("prediction")]
         check("实际模型训练与预测", bool(fitted), "已拟合 sklearn 模型，能在本次测试集上预测", str({n: m.get("type") for n, m in models.items()}))
@@ -524,10 +531,18 @@ def result_checks(qid, workspace, snapshot):
             "5.1.4": ["word2vec.model"], "5.1.5": ["图书出版数据.xlsx", "图书出版年份分布.png", "图书出版数据分析报告.md"],
             "6.1.1": ["basic_processing.csv", "filter_comparison.png"],
             "6.1.2": ["detection_summary.csv"], "6.1.3": ["defect_report.csv"],
+            "6.1.4": ["color_detection.csv"], "6.1.5": ["template_detection.csv"],
             "6.2.1": ["customer_clusters.csv", "k_selection.csv", "best_cluster_model.pkl"],
+            "6.2.5": ["cluster_comparison.csv", "cluster_results.csv", "pca_tsne.png"],
+            "6.3.4": ["detection_metrics.json", "detection_preview.png"],
+            "6.3.5": ["segmentation_metrics.json", "segmentation_preview.png", "gan_samples.png"],
             "6.4.3": ["topics.json", "recommendations.json", "topic_result.csv"],
+            "6.4.4": ["ner_results.csv", "translation_results.csv"],
+            "6.4.5": ["generation_results.csv", "rouge_report.json"],
             "6.5.1": ["orders_clean.xlsx", "dashboard.png", "business_report.md"],
             "6.5.3": ["rag_results.csv", "rag_evaluation.md"],
+            "6.5.4": ["lora_metrics.json", "benchmark.csv", "lora_adapter/adapter_config.json"],
+            "6.5.5": ["app.py", "README.md", "demo_script.md", "benchmark.csv", "evaluation_results.csv"],
         }
         for filename in artifacts.get(qid, []):
             if filename.endswith(".csv"):
@@ -587,7 +602,7 @@ def result_checks(qid, workspace, snapshot):
                           "同时生成 640×360 的 Otsu 二值图和 Canny 边缘图",
                           "有效" if binary_image is not None and edge_image is not None else "缺失")
                 csv("detection_summary.csv", pd.DataFrame(records))
-            else:
+            elif qid == "6.1.3":
                 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
                 for fp in sorted((workspace / "defect_images").glob("*.png")):
                     gray = cv2.imread(str(fp), cv2.IMREAD_GRAYSCALE)
@@ -604,6 +619,66 @@ def result_checks(qid, workspace, snapshot):
                     records.append(dict(file=fp.name,defect_count=len(areas),defect_area=total,ratio=ratio,level="正常" if ratio<.002 else "轻微" if ratio<.01 else "严重"))
                     artifact("masks/" + fp.name)
                 csv("defect_report.csv", pd.DataFrame(records))
+        if qid == "6.1.4":
+            frame = pd.read_csv(workspace / "color_detection.csv")
+            inputs = list((workspace / "color_images").glob("*.jpg"))
+            ok = len(frame) == len(inputs) and len(frame) > 0 and {"file","red_objects","red_pixels"}.issubset(frame.columns)
+            if ok:
+                ok = (frame.red_objects > 0).all() and (frame.red_pixels > 0).all()
+            check("HSV 红色目标检测结果", ok, "每张输入图都有非空红色目标与像素统计", str(frame.head())[:800])
+        if qid == "6.1.5":
+            frame = pd.read_csv(workspace / "template_detection.csv")
+            truth = pd.read_csv(workspace / "ground_truth.csv")
+            ok = len(frame) == len(truth) and {"score","center_error"}.issubset(frame.columns)
+            if ok:
+                ok = np.isfinite(frame.score).all() and np.isfinite(frame.center_error).all() and frame.center_error.mean() <= 2
+            check("模板匹配定位结果", ok, "全部场景完成定位，平均中心误差不超过 2 像素", str(frame.head())[:800])
+        if qid == "6.2.5":
+            comp = pd.read_csv(workspace / "cluster_comparison.csv")
+            result = pd.read_csv(workspace / "cluster_results.csv")
+            names = set(comp.model.astype(str))
+            ok = {"KMeans","Agglomerative","DBSCAN","GMM"}.issubset(names)
+            ok = ok and {"pca_x","pca_y","tsne_x","tsne_y","kmeans","dbscan"}.issubset(result.columns)
+            ok = ok and np.isfinite(result[["pca_x","pca_y","tsne_x","tsne_y"]].to_numpy()).all()
+            check("多聚类与降维结果", ok, "包含四种聚类算法，以及有效的 PCA/t-SNE 二维坐标", str(comp)[:800])
+        if qid == "6.3.4":
+            metrics = json.loads((workspace / "detection_metrics.json").read_text(encoding="utf-8"))
+            yolo = list((workspace / "yolo_labels").glob("*.txt"))
+            ok = len(yolo) == len(list((workspace / "detection_images").glob("*.png"))) and len(yolo) > 0
+            ok = ok and 0 <= float(metrics.get("AP50",-1)) <= 1 and 0 <= float(metrics.get("mean_iou",-1)) <= 1
+            ok = ok and np.isfinite(float(metrics.get("training_loss", np.nan))) and float(metrics.get("training_loss",0)) > 0
+            check("YOLO 标注与 Faster R-CNN 检测指标", ok, "YOLO 标注齐全，训练损失有效，IoU/AP50 位于 [0,1]", str(metrics))
+        if qid == "6.3.5":
+            metrics = json.loads((workspace / "segmentation_metrics.json").read_text(encoding="utf-8"))
+            shape = metrics.get("deeplab_output_shape")
+            ok = 0 <= float(metrics.get("mean_iou",-1)) <= 1 and shape == [1,2,64,64]
+            check("U-Net/DeepLab 分割结果", ok, "IoU 位于 [0,1] 且 DeepLab 输出为 [1,2,64,64]", str(metrics))
+        if qid == "6.4.4":
+            ner = pd.read_csv(workspace / "ner_results.csv")
+            trans = pd.read_csv(workspace / "translation_results.csv")
+            ok = len(ner) == len(pd.read_csv(workspace / "ner_texts.csv")) and len(trans) == len(pd.read_csv(workspace / "translation_pairs.csv"))
+            ok = ok and {"entities"}.issubset(ner.columns) and {"prediction","bleu2"}.issubset(trans.columns)
+            ok = ok and trans.bleu2.between(0,1).all()
+            check("NER 与 Transformer/BLEU 输出", ok, "实体结果完整，逐句 BLEU-2 位于 [0,1]", str(trans.head())[:800])
+        if qid == "6.4.5":
+            frame = pd.read_csv(workspace / "generation_results.csv")
+            report = json.loads((workspace / "rouge_report.json").read_text(encoding="utf-8"))
+            ok = len(frame) == len(pd.read_csv(workspace / "generation_tasks.csv")) and frame.rouge_l.between(0,1).all()
+            ok = ok and 0 <= float(report.get("average_rouge_l",-1)) <= 1
+            check("GPT 生成与 ROUGE-L 结果", ok, "所有生成任务均有结果且 ROUGE-L 位于 [0,1]", str(report))
+        if qid == "6.5.4":
+            metrics = json.loads((workspace / "lora_metrics.json").read_text(encoding="utf-8"))
+            bench = pd.read_csv(workspace / "benchmark.csv")
+            ok = 0 <= float(metrics.get("accuracy",-1)) <= 1 and 0 < float(metrics.get("trainable_ratio",0)) < 1
+            ok = ok and set(bench.batch.astype(int)) == {1,8,32} and (bench.latency_ms > 0).all() and (bench.throughput > 0).all()
+            check("LoRA/PEFT 与性能评测", ok, "微调指标有效，batch 1/8/32 均有正的延迟和吞吐量", str(metrics))
+        if qid == "6.5.5":
+            bench = pd.read_csv(workspace / "benchmark.csv")
+            result = pd.read_csv(workspace / "evaluation_results.csv")
+            ok = len(result) == len(pd.read_csv(workspace / "eval_questions.csv")) and {"correct","latency_ms"}.issubset(result.columns)
+            ok = ok and len(bench) == 1 and 0 <= float(bench.iloc[0].accuracy) <= 1
+            ok = ok and float(bench.iloc[0].avg_latency_ms) >= 0 and float(bench.iloc[0].throughput_qps) > 0
+            check("创新原型功能与性能评测", ok, "评测题完整，准确率合法，延迟/吞吐量有效", str(bench))
         if qid == "6.2.1":
             selection = pd.read_csv(workspace / "k_selection.csv")
             clusters = pd.read_csv(workspace / "customer_clusters.csv")
@@ -642,6 +717,7 @@ def result_checks(qid, workspace, snapshot):
                 check("订单经营指标", False, "完整订单及销售额数据", "缺失")
     additional = {"6.2.2": ["best_churn_model.pkl", "predictions.csv", "metrics.json"],
                   "6.2.3": ["model_comparison.csv", "best_house_model.pkl", "test_predictions.csv"],
+                  "6.2.4": ["classifier_comparison.csv"],
                   "6.3.1": ["shape_cnn.pt"], "6.3.3": ["best_resnet18.pt"],
                   "6.4.1": ["class_keywords.json", "news_classifier.pkl"],
                   "6.4.2": ["reviews_word2vec.model"],

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""生成 6.1.1~6.5.3 共 15 道竞赛强化训练题。
+"""生成 6.1.1~6.5.5 共 25 道竞赛强化训练题。
 
 模块 A 按正式竞赛范围覆盖图像基础操作、颜色空间、边界填充、缩放、三种滤波、
 Canny、阈值分割、轮廓检测和经典 OpenCV 目标区域提取。
@@ -17,6 +17,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+from competition_syllabus_expansion import generate_expanded_questions
 
 ROOT=Path(__file__).resolve().parent
 SRC=ROOT/"人工智能训练师三级素材"/"人工智能训练师三级上网素材"
@@ -343,13 +344,15 @@ GridSearchCV(pipe,grid,scoring="f1",cv=4,n_jobs=-1)"""
         price=area*22000+school*85000+(2026-year)*-12000+np.where(region=="Center",800000,0)+rng.normal(0,180000,n)
         df=pd.DataFrame({"BuildYear":year,"Area":area,"Rooms":rooms,"Region":region,"SchoolScore":school,"Price":price.clip(350000)})
         df.to_csv(p/"housing.csv",index=False)
-        title="房价回归特征工程与多模型比较"
+        title="房价线性回归、决策树与随机森林对比"
         starter="""import pandas as pd, numpy as np, joblib
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder,StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import RandomForestRegressor,GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error,r2_score
 
 df=pd.read_csv("housing.csv")
@@ -361,8 +364,9 @@ X=df.drop(columns="Price"); y=df["Price"]
 num=X.select_dtypes(include="number").columns; cat=X.select_dtypes(exclude="number").columns
 pre=ColumnTransformer([("num",StandardScaler(),num),("cat",OneHotEncoder(handle_unknown="ignore"),cat)])
 X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=.2,random_state=42)
-models={"RandomForest":RandomForestRegressor(n_estimators=180,random_state=42),
-        "GradientBoosting":GradientBoostingRegressor(random_state=42)}
+models={"LinearRegression":LinearRegression(),
+        "DecisionTree":DecisionTreeRegressor(max_depth=8,random_state=42),
+        "RandomForest":RandomForestRegressor(n_estimators=180,random_state=42)}
 rows=[]; fitted={}
 for name,m in models.items():
     pipe=Pipeline([("pre",pre),("model",m)]); pipe.fit(X_train,y_train); pred=pipe.predict(X_test)
@@ -748,8 +752,7 @@ for fp in Path("knowledge_docs").glob("*.txt"):
     for para in fp.read_text(encoding="utf-8").splitlines():
         if para.strip(): chunks.append({"source":fp.name,"text":para.strip()})
 texts=[x["text"] for x in chunks]
-# TODO 1-1：TF-IDF 建库
-vectorizer=_____________; matrix=vectorizer.fit_transform(texts)
+# TODO 1-1：使用字符级 2~4 gram TF-IDF 建库，适配中文无空格文本\nvectorizer=_____________; matrix=vectorizer.fit_transform(texts)
 def retrieve(query,top_k=3):
     q=vectorizer.transform([query]); scores=cosine_similarity(q,matrix)[0]
     # TODO 1-2：取相似度最高的 top_k
@@ -776,7 +779,7 @@ for _,r in pd.read_csv("questions.csv").iterrows():
     rows.append({"question":r.question,"answer":a,"sources":";".join(sources),"score":score,"latency":time.time()-t})
 out=pd.DataFrame(rows); out.to_csv("rag_results.csv",index=False)
 open("rag_evaluation.md","w",encoding="utf-8").write(f"# RAG 自动评测\\n\\n平均关键词覆盖率：{out.score.mean():.2%}\\n")"""
-        sol="""TfidfVectorizer()
+        sol="""TfidfVectorizer(analyzer="char",ngram_range=(2,4))
 scores.argsort()[::-1][:top_k]
 requests.post(BASE.rstrip("/")+"/v1/chat/completions",headers={"Authorization":f"Bearer {KEY}"},json={"model":MODEL,"messages":[{"role":"user","content":prompt}],"temperature":0.1},timeout=60).json()["choices"][0]["message"]["content"]
 sum(k in a for k in keys)/len(keys)"""
@@ -784,20 +787,24 @@ sum(k in a for k in keys)/len(keys)"""
     write_answer(qid,title,sol)
 
 def generate(force=False):
-    for qid in [f"6.1.{i}" for i in range(1,4)]+[f"6.2.{i}" for i in range(1,4)]+[f"6.3.{i}" for i in range(1,4)]+[f"6.4.{i}" for i in range(1,4)]+[f"6.5.{i}" for i in range(1,4)]:
-        # 模块 A v2 题面与素材已按正式竞赛考纲重做；升级时主动清理旧 A 题素材。
-        if (force or qid.startswith("6.1.")) and (SRC/qid).exists(): shutil.rmtree(SRC/qid)
+    marker=SRC/".advanced_competition_v3"
+    upgrading = not marker.exists()
+    for qid in [f"6.{j}.{i}" for j in range(1,6) for i in range(1,6)]:
+        # 首次升级到 v3 时清理旧强化题目录，避免上一版遗留文件干扰评分。
+        if (force or upgrading) and (SRC/qid).exists(): shutil.rmtree(SRC/qid)
     gen_a1("6.1.1"); gen_a2("6.1.2"); gen_a3("6.1.3")
     gen_b("6.2.1","cluster"); gen_b("6.2.2","churn"); gen_b("6.2.3","house")
     gen_c("6.3.1",1); gen_c("6.3.2",2); gen_c("6.3.3",3)
     gen_d("6.4.1",1); gen_d("6.4.2",2); gen_d("6.4.3",3)
     gen_e("6.5.1",1); gen_e("6.5.2",2); gen_e("6.5.3",3)
-    marker=SRC/".advanced_competition_v2"
+    generate_expanded_questions()
     marker.write_text("generated\n",encoding="utf-8")
-    print("已生成 15 道竞赛强化训练题：6.1.1 ~ 6.5.3")
+    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2"):
+        legacy.unlink(missing_ok=True)
+    print("已生成 25 道竞赛强化训练题：6.1.1 ~ 6.5.5")
 
 if __name__=="__main__":
     ap=argparse.ArgumentParser()
-    ap.add_argument("--force",action="store_true",help="覆盖并重新生成 15 道强化题")
+    ap.add_argument("--force",action="store_true",help="覆盖并重新生成 25 道强化题")
     args=ap.parse_args()
     generate(force=args.force)

@@ -24,7 +24,7 @@ EXAM_STATUS_URL = BASE_URL + "/api/exam/status"
 PYTHON_EXE = ROOT / ".venv" / "Scripts" / "python.exe"
 SERVER_SCRIPT = ROOT / "serve_practice.py"
 ADVANCED_GENERATOR = ROOT / "生成竞赛强化训练.py"
-ADVANCED_MARKER = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级上网素材" / ".advanced_competition_v2"
+ADVANCED_MARKER = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级上网素材" / ".advanced_competition_v3"
 LOG_PATH = ROOT / "_trainer_service.log"
 
 SERVER_PROCESS: subprocess.Popen | None = None
@@ -112,7 +112,7 @@ def _server_environment() -> dict[str, str]:
 
 
 def _ensure_advanced_questions() -> None:
-    """首次启动或模块 A 题库升级后自动生成 15 道竞赛强化训练题；失败不阻断原题库启动。"""
+    """首次启动或竞赛考纲题库升级后自动生成 25 道竞赛强化训练题；失败不阻断原题库启动。"""
     if ADVANCED_MARKER.exists() or not ADVANCED_GENERATOR.exists() or not PYTHON_EXE.exists():
         return
     try:
