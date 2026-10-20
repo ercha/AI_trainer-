@@ -17,8 +17,8 @@ echo.
 if errorlevel 1 goto :fail
 
 echo.
-echo 正在验证 PyTorch / torchvision / jieba / gensim / requests...
-"%PY%" -c "import torch, torchvision, jieba, gensim, requests; print('torch:', torch.__version__); print('torchvision:', torchvision.__version__); print('jieba/gensim/requests: OK')"
+echo 正在验证 PyTorch / torchvision / jieba / gensim / requests / nltk / transformers / peft...
+"%PY%" -c "import torch, torchvision, jieba, gensim, requests, nltk, transformers, peft; print('torch:', torch.__version__); print('torchvision:', torchvision.__version__); print('transformers:', transformers.__version__); print('peft:', peft.__version__); print('jieba/gensim/requests/nltk: OK')"
 if errorlevel 1 goto :fail
 
 echo.
