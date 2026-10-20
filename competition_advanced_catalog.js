@@ -265,10 +265,10 @@ window.ADVANCED_DETAILS={
 '6.4.4':{
  title:'命名实体识别与 Transformer 翻译/BLEU',
  tags:['NER','jieba','Transformer','BLEU'],
- taskText:'使用 jieba 词性完成中文实体提取，并构建离线小样本 Transformer 编码器完成中英短句翻译流程与 BLEU-2 评估。',
+ taskText:'使用 jieba 词性完成中文实体提取，并构建 encoder-decoder Transformer，通过 teacher forcing 训练、greedy decoding 完成中英短句翻译与 BLEU-2 评估。',
  req:[
   'TODO 1：使用 jieba.posseg 提取人名、地名和机构名',
-  'TODO 2：构建 TransformerEncoderLayer 与编码器',
+  'TODO 2：构建 encoder-decoder Transformer，使用 teacher forcing 训练并 greedy decoding',
   'TODO 3：训练小样本翻译映射模型',
   'TODO 4：生成英文预测并计算 BLEU-2',
   'TODO 5：保存 ner_results.csv 与 translation_results.csv'
