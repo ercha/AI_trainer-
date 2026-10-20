@@ -14,8 +14,14 @@ ANSWERS = ROOT / "人工智能训练师三级素材" / "操作题答案"
 PAGES = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级考试平台模拟界面"
 QIDS = ([f"1.1.{i}" for i in range(1, 6)] + [f"2.{j}.{i}" for j in (1, 2) for i in range(1, 6)]
         + [f"3.2.{i}" for i in range(1, 6)] + [f"5.1.{i}" for i in range(1, 6)]
-        + [f"6.{j}.{i}" for j in range(1, 6) for i in range(1, 4)])
-ADVANCED_MINUTES = [45, 45, 45, 50, 55, 50, 60, 60, 65, 50, 55, 55, 60, 65, 65]
+        + [f"6.{j}.{i}" for j in range(1, 6) for i in range(1, 6)])
+ADVANCED_MINUTES = [
+    40, 45, 45, 40, 40,
+    50, 55, 55, 50, 55,
+    60, 60, 65, 70, 70,
+    50, 55, 55, 65, 55,
+    60, 65, 65, 70, 75,
+]
 
 
 class PageText(HTMLParser):
@@ -39,7 +45,8 @@ def duration_minutes(qid):
             if match:
                 return int(match[0])
     if qid.startswith("6.") and qid in QIDS:
-        return ADVANCED_MINUTES[int(qid.split(".")[1]) * 3 + int(qid[-1]) - 4]
+        parts = [int(x) for x in qid.split(".")]
+        return ADVANCED_MINUTES[(parts[1] - 1) * 5 + parts[2] - 1]
     return 60 if qid.startswith("5.") else 30
 
 
@@ -454,7 +461,7 @@ def result_checks(qid, workspace, snapshot):
             for name in ("X_train", "X_test", "y_train", "y_test"):
                 item = value(name)
                 check("数据划分：" + name, item is not None and len(item) > 0, "实际生成非空训练与测试数据", "存在" if item is not None else "缺失")
-    elif qid.startswith("2.2.") or qid in {"6.2.2", "6.2.3", "6.4.1", "6.4.2", "6.5.2"}:
+    elif qid.startswith("2.2.") or qid in {"6.2.2", "6.2.3", "6.2.4", "6.4.1", "6.4.2", "6.5.2"}:
         models = snapshot.get("models", {})
         fitted = [m for m in models.values() if m.get("fitted") and m.get("prediction")]
         check("实际模型训练与预测", bool(fitted), "已拟合 sklearn 模型，能在本次测试集上预测", str({n: m.get("type") for n, m in models.items()}))
@@ -524,10 +531,18 @@ def result_checks(qid, workspace, snapshot):
             "5.1.4": ["word2vec.model"], "5.1.5": ["图书出版数据.xlsx", "图书出版年份分布.png", "图书出版数据分析报告.md"],
             "6.1.1": ["basic_processing.csv", "filter_comparison.png"],
             "6.1.2": ["detection_summary.csv"], "6.1.3": ["defect_report.csv"],
+            "6.1.4": ["color_detection.csv"], "6.1.5": ["template_detection.csv"],
             "6.2.1": ["customer_clusters.csv", "k_selection.csv", "best_cluster_model.pkl"],
+            "6.2.5": ["cluster_comparison.csv", "cluster_results.csv", "pca_tsne.png"],
+            "6.3.4": ["detection_metrics.json", "detection_preview.png"],
+            "6.3.5": ["segmentation_metrics.json", "segmentation_preview.png", "gan_samples.png"],
             "6.4.3": ["topics.json", "recommendations.json", "topic_result.csv"],
+            "6.4.4": ["ner_results.csv", "translation_results.csv"],
+            "6.4.5": ["generation_results.csv", "rouge_report.json"],
             "6.5.1": ["orders_clean.xlsx", "dashboard.png", "business_report.md"],
             "6.5.3": ["rag_results.csv", "rag_evaluation.md"],
+            "6.5.4": ["lora_metrics.json", "benchmark.csv"],
+            "6.5.5": ["app.py", "README.md", "benchmark.csv", "evaluation_results.csv"],
         }
         for filename in artifacts.get(qid, []):
             if filename.endswith(".csv"):
@@ -642,6 +657,7 @@ def result_checks(qid, workspace, snapshot):
                 check("订单经营指标", False, "完整订单及销售额数据", "缺失")
     additional = {"6.2.2": ["best_churn_model.pkl", "predictions.csv", "metrics.json"],
                   "6.2.3": ["model_comparison.csv", "best_house_model.pkl", "test_predictions.csv"],
+                  "6.2.4": ["classifier_comparison.csv"],
                   "6.3.1": ["shape_cnn.pt"], "6.3.3": ["best_resnet18.pt"],
                   "6.4.1": ["class_keywords.json", "news_classifier.pkl"],
                   "6.4.2": ["reviews_word2vec.model"],
