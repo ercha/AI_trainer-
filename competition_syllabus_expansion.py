@@ -761,7 +761,7 @@ chunks=[]
 for fp in Path('knowledge_docs').glob('*.txt'):
     text=fp.read_text(encoding='utf-8')
     chunks.append((fp.name,text))
-vec=TfidfVectorizer(); mat=vec.fit_transform([x[1] for x in chunks])
+vec=TfidfVectorizer(analyzer="char",ngram_range=(2,4)); mat=vec.fit_transform([x[1] for x in chunks])
 
 def ask():
     q=entry.get().strip()
