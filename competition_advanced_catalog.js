@@ -239,11 +239,11 @@ window.ADVANCED_DETAILS={
  ]
 },
 '6.3.4':{
- title:'Faster R-CNN 目标检测、IoU 与 AP50',
- tags:['Faster R-CNN','IoU','AP50','torchvision'],
- taskText:'使用 torchvision Faster R-CNN 完成检测模型构建与一次训练更新，并依据检测框计算 IoU、AP50 和可视化结果。',
+ title:'YOLO 标注、Faster R-CNN 目标检测与 AP50',
+ tags:['YOLO','Faster R-CNN','IoU','AP50','torchvision'],
+ taskText:'掌握 YOLO 归一化标注与 xyxy 转换，并使用 torchvision Faster R-CNN 完成检测模型构建、训练更新、IoU、AP50 和可视化。',
  req:[
-  'TODO 1：构造不下载权重的 Faster R-CNN 两类模型',
+  'TODO 1：解析 YOLO 归一化标注并转换为像素 xyxy，同时构造不下载权重的 Faster R-CNN 两类模型',
   'TODO 2：准备图像 Tensor 与 boxes/labels target',
   'TODO 3：完成一次损失反传与优化器更新',
   'TODO 4：实现检测框 IoU 并计算 AP50',
@@ -251,13 +251,13 @@ window.ADVANCED_DETAILS={
  ]
 },
 '6.3.5':{
- title:'U-Net 语义分割与轻量 GAN 图像生成',
- tags:['U-Net','语义分割','IoU','GAN'],
- taskText:'在本地合成数据上完成 U-Net 跳跃连接、语义分割 IoU 评估，并训练轻量 GAN 生成掩膜样本。',
+ title:'U-Net/DeepLab 语义分割与轻量 GAN 图像生成',
+ tags:['U-Net','DeepLab','语义分割','IoU','GAN'],
+ taskText:'在本地合成数据上完成 U-Net 跳跃连接与 IoU 评估，掌握 DeepLabV3 离线调用，并训练轻量 GAN 生成掩膜样本。',
  req:[
   'TODO 1：完成 Tiny U-Net 上采样和跳跃连接',
   'TODO 2：使用 BCEWithLogitsLoss 训练分割网络',
-  'TODO 3：计算分割 IoU 并生成预览图',
+  'TODO 3：计算分割 IoU，创建 DeepLabV3 并检查输出尺寸，生成预览图',
   'TODO 4：训练轻量 Generator/Discriminator',
   'TODO 5：保存 segmentation_metrics.json、segmentation_preview.png 和 gan_samples.png'
  ]
