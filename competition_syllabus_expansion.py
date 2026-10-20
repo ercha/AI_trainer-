@@ -27,30 +27,30 @@ np.random.seed(SEED)
 
 def code_cell(text):
     return {"cell_type":"code","execution_count":None,"metadata":{},"outputs":[],
-            "source":[x+"\\n" for x in text.strip("\\n").split("\\n")]}
+            "source":[x+"\n" for x in text.strip("\n").split("\n")]}
 
 
 def md_cell(text):
     return {"cell_type":"markdown","metadata":{},
-            "source":[x+"\\n" for x in text.strip("\\n").split("\\n")]}
+            "source":[x+"\n" for x in text.strip("\n").split("\n")]}
 
 
 def write_nb(qid, title, task, cells):
     nb = {
-        "cells":[md_cell(f"# {qid} {title}\\n\\n{task}\\n\\n> 按 TODO 编号补全代码。不要删除 TODO 标记。"), *cells],
+        "cells":[md_cell(f"# {qid} {title}\n\n{task}\n\n> 按 TODO 编号补全代码。不要删除 TODO 标记。"), *cells],
         "metadata":{"kernelspec":{"display_name":"Python 3 (ipykernel)","language":"python","name":"python3"},
                     "language_info":{"name":"python","version":"3.12"}},
         "nbformat":4,"nbformat_minor":5,
     }
     p = SRC / qid
     p.mkdir(parents=True, exist_ok=True)
-    (p / f"{qid}.ipynb").write_text(json.dumps(nb, ensure_ascii=False, indent=1)+"\\n", encoding="utf-8")
+    (p / f"{qid}.ipynb").write_text(json.dumps(nb, ensure_ascii=False, indent=1)+"\n", encoding="utf-8")
 
 
 def write_answer(qid, title, solution):
     ANS.mkdir(parents=True, exist_ok=True)
     (ANS / f"{qid}_答案.md").write_text(
-        f"# {qid} {title} - 参考答案\\n\\n~~~python\\n{solution.strip()}\\n~~~\\n",
+        f"# {qid} {title} - 参考答案\n\n~~~python\n{solution.strip()}\n~~~\n",
         encoding="utf-8",
     )
 
