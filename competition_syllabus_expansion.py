@@ -513,54 +513,87 @@ ner["entities"]=ner.text.apply(lambda s:"|".join(extract_entities(s)))
 ner.to_csv("ner_results.csv",index=False)
 
 pairs=pd.read_csv("translation_pairs.csv")
-chars=sorted(set("".join(pairs.zh.tolist()).replace(" ","")))
-stoi={c:i+1 for i,c in enumerate(chars)}
-max_len=max(len(x.replace(" ","")) for x in pairs.zh)
-def encode(s):
-    ids=[stoi[c] for c in s.replace(" ","")]
-    return ids+[0]*(max_len-len(ids))
-X=torch.tensor([encode(s) for s in pairs.zh],dtype=torch.long)
-y=torch.arange(len(pairs))
+PAD,BOS,EOS=0,1,2
+src_chars=sorted(set("".join(pairs.zh.tolist()).replace(" ","")))
+tgt_words=sorted(set(" ".join(pairs.en.tolist()).split()))
+src_stoi={c:i+3 for i,c in enumerate(src_chars)}
+tgt_stoi={w:i+3 for i,w in enumerate(tgt_words)}
+tgt_itos={i:w for w,i in tgt_stoi.items()}
+
+max_src=max(len(x.replace(" ","")) for x in pairs.zh)+1
+max_tgt=max(len(x.split()) for x in pairs.en)+2
+
+def encode_src(s):
+    ids=[src_stoi[c] for c in s.replace(" ","")]+[EOS]
+    return ids+[PAD]*(max_src-len(ids))
+
+def encode_tgt(s):
+    ids=[BOS]+[tgt_stoi[w] for w in s.split()]+[EOS]
+    return ids+[PAD]*(max_tgt-len(ids))
+
+src=torch.tensor([encode_src(s) for s in pairs.zh],dtype=torch.long)
+tgt=torch.tensor([encode_tgt(s) for s in pairs.en],dtype=torch.long)
 
 class Translator(nn.Module):
     def __init__(self):
         super().__init__()
-        self.emb=nn.Embedding(len(stoi)+1,32,padding_idx=0)
-        # TODO 2-1：TransformerEncoderLayer，4 个注意力头
-        layer=_____________
-        self.enc=nn.TransformerEncoder(layer,num_layers=2)
-        self.fc=nn.Linear(32,len(pairs))
-    def forward(self,x):
-        z=self.enc(self.emb(x))
-        mask=(x!=0).float().unsqueeze(-1)
-        pooled=(z*mask).sum(1)/mask.sum(1).clamp_min(1)
-        return self.fc(pooled)
+        d=32
+        self.src_emb=nn.Embedding(len(src_stoi)+3,d,padding_idx=PAD)
+        self.tgt_emb=nn.Embedding(len(tgt_stoi)+3,d,padding_idx=PAD)
+        self.src_pos=nn.Embedding(max_src,d)
+        self.tgt_pos=nn.Embedding(max_tgt,d)
+        # TODO 2-1：创建 encoder-decoder Transformer，4 个注意力头
+        self.tr=_____________
+        self.fc=nn.Linear(d,len(tgt_stoi)+3)
+    def forward(self,src_ids,tgt_ids):
+        sp=torch.arange(src_ids.size(1)).unsqueeze(0)
+        tp=torch.arange(tgt_ids.size(1)).unsqueeze(0)
+        se=self.src_emb(src_ids)+self.src_pos(sp)
+        te=self.tgt_emb(tgt_ids)+self.tgt_pos(tp)
+        mask=nn.Transformer.generate_square_subsequent_mask(tgt_ids.size(1))
+        z=self.tr(se,te,tgt_mask=mask)
+        return self.fc(z)
 
+torch.manual_seed(42)
 model=Translator()
-# TODO 2-2：交叉熵损失
+# TODO 2-2：交叉熵损失，忽略 PAD
 loss_fn=_____________
 opt=torch.optim.Adam(model.parameters(),lr=.01)
-for epoch in range(120):
-    opt.zero_grad(); out=model(X); loss=loss_fn(out,y); loss.backward(); opt.step()
-pred=model(X).argmax(1).tolist()
+for epoch in range(350):
+    opt.zero_grad()
+    logits=model(src,tgt[:,:-1])
+    loss=loss_fn(logits.reshape(-1,logits.size(-1)),tgt[:,1:].reshape(-1))
+    loss.backward(); opt.step()
+
+def greedy_decode(src_one):
+    out=[BOS]
+    for _ in range(max_tgt-1):
+        y=torch.tensor([out],dtype=torch.long)
+        with torch.no_grad():
+            nxt=int(model(src_one,y)[0,-1].argmax())
+        if nxt==EOS: break
+        if nxt!=PAD: out.append(nxt)
+    return " ".join(tgt_itos[i] for i in out[1:] if i in tgt_itos)
+
 rows=[]
 smooth=SmoothingFunction().method1
-for i,pid in enumerate(pred):
-    ref=pairs.iloc[i].en.split(); hyp=pairs.iloc[pid].en.split()
+for i in range(len(pairs)):
+    prediction=greedy_decode(src[i:i+1])
+    ref=pairs.iloc[i].en.split(); hyp=prediction.split()
     # TODO 3-1：计算 BLEU-2
     bleu=_____________
     rows.append({"source":pairs.iloc[i].zh,"reference":pairs.iloc[i].en,
-                 "prediction":pairs.iloc[pid].en,"bleu2":bleu})
+                 "prediction":prediction,"bleu2":bleu})
 out=pd.DataFrame(rows)
 out.to_csv("translation_results.csv",index=False)
 print("平均 BLEU-2",out.bleu2.mean())
 """
     sol = """list(pseg.cut(text))
-nn.TransformerEncoderLayer(d_model=32,nhead=4,batch_first=True)
-nn.CrossEntropyLoss()
+nn.Transformer(d_model=32,nhead=4,num_encoder_layers=2,num_decoder_layers=2,dim_feedforward=64,batch_first=True)
+nn.CrossEntropyLoss(ignore_index=PAD)
 sentence_bleu([ref],hyp,weights=(0.5,0.5),smoothing_function=smooth)"""
     write_nb(qid, "命名实体识别与 Transformer 翻译/BLEU",
-             "使用 jieba 词性完成中文实体提取，并构建离线小样本 Transformer 编码器完成中英短句翻译流程与 BLEU-2 评估。",
+             "使用 jieba 词性完成中文实体提取，并构建真正的 encoder-decoder Transformer，通过 teacher forcing 训练、greedy decoding 生成英文短句并计算 BLEU-2。",
              [code_cell(starter)])
     write_answer(qid, "命名实体识别与 Transformer 翻译/BLEU", sol)
 
