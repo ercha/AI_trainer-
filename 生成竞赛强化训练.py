@@ -343,7 +343,7 @@ GridSearchCV(pipe,grid,scoring="f1",cv=4,n_jobs=-1)"""
         price=area*22000+school*85000+(2026-year)*-12000+np.where(region=="Center",800000,0)+rng.normal(0,180000,n)
         df=pd.DataFrame({"BuildYear":year,"Area":area,"Rooms":rooms,"Region":region,"SchoolScore":school,"Price":price.clip(350000)})
         df.to_csv(p/"housing.csv",index=False)
-        title="房价回归特征工程与多模型比较"
+        title="房价线性回归、决策树与随机森林对比"
         starter="""import pandas as pd, numpy as np, joblib
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
@@ -361,8 +361,9 @@ X=df.drop(columns="Price"); y=df["Price"]
 num=X.select_dtypes(include="number").columns; cat=X.select_dtypes(exclude="number").columns
 pre=ColumnTransformer([("num",StandardScaler(),num),("cat",OneHotEncoder(handle_unknown="ignore"),cat)])
 X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=.2,random_state=42)
-models={"RandomForest":RandomForestRegressor(n_estimators=180,random_state=42),
-        "GradientBoosting":GradientBoostingRegressor(random_state=42)}
+models={"LinearRegression":LinearRegression(),
+        "DecisionTree":DecisionTreeRegressor(max_depth=8,random_state=42),
+        "RandomForest":RandomForestRegressor(n_estimators=180,random_state=42)}
 rows=[]; fitted={}
 for name,m in models.items():
     pipe=Pipeline([("pre",pre),("model",m)]); pipe.fit(X_train,y_train); pred=pipe.predict(X_test)
@@ -792,9 +793,10 @@ def generate(force=False):
     gen_c("6.3.1",1); gen_c("6.3.2",2); gen_c("6.3.3",3)
     gen_d("6.4.1",1); gen_d("6.4.2",2); gen_d("6.4.3",3)
     gen_e("6.5.1",1); gen_e("6.5.2",2); gen_e("6.5.3",3)
-    marker=SRC/".advanced_competition_v2"
+    generate_expanded_questions()
+    marker=SRC/".advanced_competition_v3"
     marker.write_text("generated\n",encoding="utf-8")
-    print("已生成 15 道竞赛强化训练题：6.1.1 ~ 6.5.3")
+    print("已生成 25 道竞赛强化训练题：6.1.1 ~ 6.5.5")
 
 if __name__=="__main__":
     ap=argparse.ArgumentParser()
