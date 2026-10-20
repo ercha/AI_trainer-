@@ -777,19 +777,37 @@ output=ScrolledText(root,width=76,height=16); output.pack(padx=12,pady=8)
 root.mainloop()
 """
 Path("app.py").write_text(APP,encoding="utf-8")
-Path("README.md").write_text("""# 智慧校园制度问答原型
+Path("README.md").write_text(f"""# 智慧校园制度问答原型
 
-## 功能
-- 本地制度文档检索
-- Top-K 相关内容返回
-- Tkinter 图形界面
-- benchmark.csv 提供准确率、平均响应时间和吞吐量
+## 需求分析
+学生需要快速查询请假、机房和奖学金制度；系统应返回相关制度内容，并能够离线运行和复现。
+
+## 技术方案
+- 数据：knowledge_docs 本地制度文档
+- 检索：TF-IDF + cosine_similarity
+- 交互：Tkinter 桌面界面
+- 测试：eval_questions.csv 自动评测
+- 性能：benchmark.csv 记录准确率、平均响应时间和吞吐量
+
+## 当前测试
+- 准确率：{result.correct.mean():.2%}
+- 平均响应时间：{result.latency_ms.mean():.3f} ms
+- 吞吐量：{throughput:.2f} queries/s
 
 ## 运行
 python app.py
 
 ## 可复现性
-素材位于 knowledge_docs，评测问题位于 eval_questions.csv。
+素材、评测集和代码均随项目提供，不依赖外部在线服务。
+""",encoding="utf-8")
+Path("demo_script.md").write_text(f"""# 项目答题展示脚本
+
+1. 说明场景：学生查询校园制度时，传统人工检索耗时且容易遗漏
+2. 展示数据：knowledge_docs 中包含请假、机房、奖学金制度
+3. 展示流程：输入问题 → TF-IDF 向量化 → 余弦相似度检索 → 返回来源和制度内容
+4. 展示界面：运行 app.py，现场输入三类问题
+5. 展示测试：当前准确率 {result.correct.mean():.2%}，平均响应时间 {result.latency_ms.mean():.3f} ms
+6. 总结可复现性：代码、数据、评测问题和性能结果均随项目交付
 """,encoding="utf-8")
 result.to_csv("evaluation_results.csv",index=False)
 print(result)
