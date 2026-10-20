@@ -542,7 +542,7 @@ def result_checks(qid, workspace, snapshot):
             "6.5.1": ["orders_clean.xlsx", "dashboard.png", "business_report.md"],
             "6.5.3": ["rag_results.csv", "rag_evaluation.md"],
             "6.5.4": ["lora_metrics.json", "benchmark.csv", "lora_adapter/adapter_config.json"],
-            "6.5.5": ["app.py", "README.md", "benchmark.csv", "evaluation_results.csv"],
+            "6.5.5": ["app.py", "README.md", "demo_script.md", "benchmark.csv", "evaluation_results.csv"],
         }
         for filename in artifacts.get(qid, []):
             if filename.endswith(".csv"):
