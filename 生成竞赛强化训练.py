@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""生成 6.1.1~6.5.3 共 15 道竞赛强化训练题。
+"""生成 6.1.1~6.5.5 共 25 道竞赛强化训练题。
 
 模块 A 按正式竞赛范围覆盖图像基础操作、颜色空间、边界填充、缩放、三种滤波、
 Canny、阈值分割、轮廓检测和经典 OpenCV 目标区域提取。
@@ -16,7 +16,7 @@ import argparse, json, math, random, shutil
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter\nfrom competition_syllabus_expansion import generate_expanded_questions
 
 ROOT=Path(__file__).resolve().parent
 SRC=ROOT/"人工智能训练师三级素材"/"人工智能训练师三级上网素材"
@@ -349,7 +349,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder,StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import RandomForestRegressor,GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error,r2_score
 
 df=pd.read_csv("housing.csv")
@@ -784,7 +784,7 @@ sum(k in a for k in keys)/len(keys)"""
     write_answer(qid,title,sol)
 
 def generate(force=False):
-    for qid in [f"6.1.{i}" for i in range(1,4)]+[f"6.2.{i}" for i in range(1,4)]+[f"6.3.{i}" for i in range(1,4)]+[f"6.4.{i}" for i in range(1,4)]+[f"6.5.{i}" for i in range(1,4)]:
+    for qid in [f"6.{j}.{i}" for j in range(1,6) for i in range(1,6)]:
         # 模块 A v2 题面与素材已按正式竞赛考纲重做；升级时主动清理旧 A 题素材。
         if (force or qid.startswith("6.1.")) and (SRC/qid).exists(): shutil.rmtree(SRC/qid)
     gen_a1("6.1.1"); gen_a2("6.1.2"); gen_a3("6.1.3")
@@ -798,6 +798,6 @@ def generate(force=False):
 
 if __name__=="__main__":
     ap=argparse.ArgumentParser()
-    ap.add_argument("--force",action="store_true",help="覆盖并重新生成 15 道强化题")
+    ap.add_argument("--force",action="store_true",help="覆盖并重新生成 25 道强化题")
     args=ap.parse_args()
     generate(force=args.force)
