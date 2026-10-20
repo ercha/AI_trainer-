@@ -752,8 +752,7 @@ for fp in Path("knowledge_docs").glob("*.txt"):
     for para in fp.read_text(encoding="utf-8").splitlines():
         if para.strip(): chunks.append({"source":fp.name,"text":para.strip()})
 texts=[x["text"] for x in chunks]
-# TODO 1-1：TF-IDF 建库
-vectorizer=_____________; matrix=vectorizer.fit_transform(texts)
+# TODO 1-1：使用字符级 2~4 gram TF-IDF 建库，适配中文无空格文本\nvectorizer=_____________; matrix=vectorizer.fit_transform(texts)
 def retrieve(query,top_k=3):
     q=vectorizer.transform([query]); scores=cosine_similarity(q,matrix)[0]
     # TODO 1-2：取相似度最高的 top_k
@@ -780,7 +779,7 @@ for _,r in pd.read_csv("questions.csv").iterrows():
     rows.append({"question":r.question,"answer":a,"sources":";".join(sources),"score":score,"latency":time.time()-t})
 out=pd.DataFrame(rows); out.to_csv("rag_results.csv",index=False)
 open("rag_evaluation.md","w",encoding="utf-8").write(f"# RAG 自动评测\\n\\n平均关键词覆盖率：{out.score.mean():.2%}\\n")"""
-        sol="""TfidfVectorizer()
+        sol="""TfidfVectorizer(analyzer="char",ngram_range=(2,4))
 scores.argsort()[::-1][:top_k]
 requests.post(BASE.rstrip("/")+"/v1/chat/completions",headers={"Authorization":f"Bearer {KEY}"},json={"model":MODEL,"messages":[{"role":"user","content":prompt}],"temperature":0.1},timeout=60).json()["choices"][0]["message"]["content"]
 sum(k in a for k in keys)/len(keys)"""
