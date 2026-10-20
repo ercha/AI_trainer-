@@ -301,6 +301,7 @@ def gen_c4(qid):
     p = qdir(qid)
     imgs = p/"detection_images"; imgs.mkdir(exist_ok=True)
     anns=[]; preds=[]
+    yolo_dir=p/"yolo_labels"; yolo_dir.mkdir(exist_ok=True)
     rng=np.random.default_rng(SEED+34)
     for i in range(10):
         im=Image.new("RGB",(128,128),(35,45,55))
@@ -311,6 +312,9 @@ def gen_c4(qid):
         dr.rectangle((x1,y1,x2,y2),fill=(220,150,40))
         name=f"det_{i:02d}.png"; im.save(imgs/name)
         anns.append({"file":name,"x1":x1,"y1":y1,"x2":x2,"y2":y2})
+        cx=((x1+x2)/2)/128; cy=((y1+y2)/2)/128
+        nw=(x2-x1)/128; nh=(y2-y1)/128
+        (yolo_dir/f"{Path(name).stem}.txt").write_text(f"0 {cx:.6f} {cy:.6f} {nw:.6f} {nh:.6f}\n")
         dx=int(rng.integers(-5,6)); dy=int(rng.integers(-5,6))
         preds.append({"file":name,"x1":max(0,x1+dx),"y1":max(0,y1+dy),
                       "x2":min(127,x2+dx),"y2":min(127,y2+dy),"score":float(rng.uniform(.75,.98))})
@@ -325,7 +329,14 @@ from torchvision.transforms.functional import to_tensor
 from torchvision.models.detection import fasterrcnn_mobilenet_v3_large_320_fpn
 
 ann=pd.read_csv("annotations.csv")
-# TODO 1-1：创建不下载预训练权重的 Faster R-CNN，两类（背景+目标）
+
+def read_yolo_label(image_file):
+    cls,cx,cy,w,h=map(float,open("yolo_labels/"+image_file.replace(".png",".txt")).read().split())
+    # TODO 1-1：将 YOLO 归一化 cx,cy,w,h 转为像素 xyxy
+    return _____________
+
+yolo_boxes=[read_yolo_label(x) for x in ann.file]
+# TODO 1-2：创建不下载预训练权重的 Faster R-CNN，两类（背景+目标）
 model=_____________
 model.train()
 row=ann.iloc[0]
@@ -333,10 +344,10 @@ img=cv2.cvtColor(cv2.imread("detection_images/"+row.file),cv2.COLOR_BGR2RGB)
 x=to_tensor(img)
 target={"boxes":torch.tensor([[row.x1,row.y1,row.x2,row.y2]],dtype=torch.float32),
         "labels":torch.tensor([1],dtype=torch.int64)}
-# TODO 1-2：SGD 优化器
+# TODO 1-3：SGD 优化器
 optimizer=_____________
 losses=model([x],[target])
-# TODO 1-3：合计检测损失
+# TODO 1-4：合计检测损失
 loss=_____________
 optimizer.zero_grad(); loss.backward(); optimizer.step()
 
@@ -359,14 +370,15 @@ cv2.rectangle(vis,(int(r.x1_pred),int(r.y1_pred)),(int(r.x2_pred),int(r.y2_pred)
 cv2.imwrite("detection_preview.png",vis)
 metrics
 """
-    sol = """fasterrcnn_mobilenet_v3_large_320_fpn(weights=None,weights_backbone=None,num_classes=2,min_size=128,max_size=128)
+    sol = """[(cx-w/2)*128,(cy-h/2)*128,(cx+w/2)*128,(cy+h/2)*128]
+fasterrcnn_mobilenet_v3_large_320_fpn(weights=None,weights_backbone=None,num_classes=2,min_size=128,max_size=128)
 torch.optim.SGD(model.parameters(),lr=0.001,momentum=0.9)
 sum(losses.values())
 max(0,ix2-ix1)*max(0,iy2-iy1)"""
-    write_nb(qid, "Faster R-CNN 目标检测、IoU 与 AP50",
-             "使用 torchvision Faster R-CNN 完成检测模型构建与一次训练更新，并依据检测框计算 IoU、AP50 和可视化结果。",
+    write_nb(qid, "YOLO 标注、Faster R-CNN 目标检测与 AP50",
+             "掌握 YOLO 归一化标注格式与 xyxy 转换，并使用 torchvision Faster R-CNN 完成检测模型构建、一次训练更新、IoU/AP50 和可视化。",
              [code_cell(starter)])
-    write_answer(qid, "Faster R-CNN 目标检测、IoU 与 AP50", sol)
+    write_answer(qid, "YOLO 标注、Faster R-CNN 目标检测与 AP50", sol)
 
 
 def gen_c5(qid):
@@ -389,6 +401,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch import nn
 from torch.utils.data import TensorDataset,DataLoader
+from torchvision.models.segmentation import deeplabv3_resnet50
 from PIL import Image
 
 X=np.stack([np.array(Image.open(p),dtype=np.float32)/255 for p in sorted(Path("seg_images").glob("*.png"))])[:,None]
@@ -423,7 +436,12 @@ with torch.no_grad():
     truth=torch.tensor(Y[:8])
     inter=(pred*truth).sum().item(); union=((pred+truth)>0).sum().item()
     iou=inter/max(union,1)
-json.dump({"mean_iou":iou},open("segmentation_metrics.json","w"),indent=2)
+# TODO 1-4：创建不下载权重的 DeepLabV3（二分类）
+deeplab=_____________
+deeplab.eval()
+with torch.inference_mode():
+    deeplab_shape=list(deeplab(torch.tensor(np.repeat(X[:1],3,axis=1)))["out"].shape)
+json.dump({"mean_iou":iou,"deeplab_output_shape":deeplab_shape},open("segmentation_metrics.json","w"),indent=2)
 fig,ax=plt.subplots(2,3,figsize=(8,5))
 for i in range(3):
     ax[0,i].imshow(X[i,0],cmap="gray"); ax[0,i].axis("off")
@@ -451,11 +469,12 @@ print({"IoU":iou,"G_loss":float(gl.detach()),"D_loss":float(dl.detach())})
     sol = """nn.ConvTranspose2d(32,16,2,stride=2)
 torch.cat([u,e1],dim=1)
 nn.BCEWithLogitsLoss()
+deeplabv3_resnet50(weights=None,weights_backbone=None,num_classes=2)
 nn.BCELoss()"""
-    write_nb(qid, "U-Net 语义分割与轻量 GAN 图像生成",
-             "在本地合成数据上完成 U-Net 跳跃连接、语义分割 IoU 评估，并训练轻量 GAN 生成掩膜样本。",
+    write_nb(qid, "U-Net/DeepLab 语义分割与轻量 GAN 图像生成",
+             "在本地合成数据上完成 U-Net 跳跃连接与 IoU 评估，掌握 DeepLabV3 离线模型调用，并训练轻量 GAN 生成掩膜样本。",
              [code_cell(starter)])
-    write_answer(qid, "U-Net 语义分割与轻量 GAN 图像生成", sol)
+    write_answer(qid, "U-Net/DeepLab 语义分割与轻量 GAN 图像生成", sol)
 
 
 def gen_d4(qid):
@@ -749,7 +768,7 @@ def ask():
     s=cosine_similarity(vec.transform([q]),mat)[0]
     i=int(s.argmax())
     output.delete('1.0',tk.END)
-    output.insert(tk.END,f'来源：{chunks[i][0]}\\n\\n{chunks[i][1]}')
+    output.insert(tk.END,f'来源：{chunks[i][0]}\\\\n\\\\n{chunks[i][1]}')
 
 root=tk.Tk(); root.title('智慧校园制度问答')
 entry=tk.Entry(root,width=70); entry.pack(padx=12,pady=8)
