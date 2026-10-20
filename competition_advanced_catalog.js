@@ -1,9 +1,9 @@
 window.ADVANCED_UNITS=[
-{id:'6.1',name:'竞赛强化 A·图像处理技术',count:3},
-{id:'6.2',name:'竞赛强化 B·机器学习',count:3},
-{id:'6.3',name:'竞赛强化 C·深度学习',count:3},
-{id:'6.4',name:'竞赛强化 D·自然语言处理',count:3},
-{id:'6.5',name:'竞赛强化 E·AI创新项目',count:3}
+{id:'6.1',name:'竞赛强化 A·图像处理技术',count:5},
+{id:'6.2',name:'竞赛强化 B·机器学习',count:5},
+{id:'6.3',name:'竞赛强化 C·深度学习',count:5},
+{id:'6.4',name:'竞赛强化 D·自然语言处理',count:5},
+{id:'6.5',name:'竞赛强化 E·AI创新项目',count:5}
 ];
 
 window.ADVANCED_DETAILS={
@@ -68,13 +68,13 @@ window.ADVANCED_DETAILS={
  ]
 },
 '6.2.3':{
- title:'房价回归特征工程与多模型比较',
- tags:['回归','特征工程','RandomForest','GradientBoosting','RMSE','R2'],
- taskText:'根据房屋面积、房龄、区域、学区评分等信息预测成交价。要求构造新特征、比较两种回归模型，并根据 RMSE 自动选择和保存最佳模型。',
+ title:'房价线性回归、决策树与随机森林对比',
+ tags:['LinearRegression','DecisionTree','RandomForest','RMSE','R2'],
+ taskText:'根据房屋面积、房龄、区域、学区评分等信息预测成交价。要求构造新特征，对比线性回归、决策树回归和随机森林回归，并根据 RMSE 自动选择最佳模型。',
  req:[
   'TODO 1：读取 housing.csv，构造 HouseAge 和 AreaPerRoom 两个新特征',
   'TODO 2：完成缺失值处理、类别编码和训练测试划分',
-  'TODO 3：训练 RandomForestRegressor 与 GradientBoostingRegressor',
+  'TODO 3：训练 LinearRegression、DecisionTreeRegressor 与 RandomForestRegressor',
   'TODO 4：分别计算 RMSE 与 R²，生成 model_comparison.csv',
   'TODO 5：按 RMSE 选择最佳模型，保存 best_house_model.pkl 与 test_predictions.csv'
  ]
@@ -188,6 +188,126 @@ window.ADVANCED_DETAILS={
   'TODO 4：读取 questions.csv 批量问答，记录 answer、sources、latency',
   'TODO 5：根据 expected_keywords 计算关键词覆盖率和平均得分',
   'TODO 6：生成 rag_results.csv 与 rag_evaluation.md'
+ ]
+},
+'6.1.4':{
+ title:'HSV 颜色目标提取与形态学检测',
+ tags:['HSV','inRange','形态学','轮廓'],
+ taskText:'使用 HSV 颜色空间提取红色目标，完成掩膜去噪、轮廓检测、目标框绘制与数量统计。',
+ req:[
+  'TODO 1：BGR 转 HSV，并用两段红色色相范围生成掩膜',
+  'TODO 2：使用开运算去噪、闭运算连接目标',
+  'TODO 3：findContours 后按面积过滤并绘制目标框',
+  'TODO 4：保存红色掩膜和可视化结果',
+  'TODO 5：输出 color_detection.csv'
+ ]
+},
+'6.1.5':{
+ title:'OpenCV 模板匹配目标检测',
+ tags:['matchTemplate','minMaxLoc','目标检测'],
+ taskText:'使用模板匹配在复杂背景中定位指定目标，输出匹配分数、目标框与定位误差。',
+ req:[
+  'TODO 1：读取灰度模板与场景图片',
+  'TODO 2：使用 TM_CCOEFF_NORMED 做 matchTemplate',
+  'TODO 3：使用 minMaxLoc 得到最大匹配位置',
+  'TODO 4：绘制检测框并保存可视化结果',
+  'TODO 5：输出 template_detection.csv 并计算定位误差'
+ ]
+},
+'6.2.4':{
+ title:'逻辑回归、SVM 与 KNN 分类器对比',
+ tags:['LogisticRegression','SVC','KNN','Accuracy','Recall','F1'],
+ taskText:'对同一二分类数据完成标准化、训练、预测，并用准确率、召回率、F1 和混淆矩阵比较三种分类器。',
+ req:[
+  'TODO 1：按 8:2 分层划分训练/测试集',
+  'TODO 2：建立 LogisticRegression、SVC、KNeighborsClassifier',
+  'TODO 3：使用 StandardScaler + Pipeline 训练',
+  'TODO 4：计算 accuracy、recall、F1 和 confusion_matrix',
+  'TODO 5：保存 classifier_comparison.csv'
+ ]
+},
+'6.2.5':{
+ title:'多聚类算法与 PCA/t-SNE 可视化',
+ tags:['KMeans','Agglomerative','DBSCAN','GMM','PCA','t-SNE'],
+ taskText:'比较 K-Means、层次聚类、DBSCAN、高斯混合模型，并使用 PCA 与 t-SNE 对高维样本进行二维可视化。',
+ req:[
+  'TODO 1：标准化四维聚类特征',
+  'TODO 2：训练 KMeans、AgglomerativeClustering、DBSCAN、GaussianMixture',
+  'TODO 3：计算各算法簇数、噪声数和可用的 silhouette_score',
+  'TODO 4：使用 PCA 与 t-SNE 降到二维',
+  'TODO 5：保存 cluster_comparison.csv、cluster_results.csv 和 pca_tsne.png'
+ ]
+},
+'6.3.4':{
+ title:'Faster R-CNN 目标检测、IoU 与 AP50',
+ tags:['Faster R-CNN','IoU','AP50','torchvision'],
+ taskText:'使用 torchvision Faster R-CNN 完成检测模型构建与一次训练更新，并依据检测框计算 IoU、AP50 和可视化结果。',
+ req:[
+  'TODO 1：构造不下载权重的 Faster R-CNN 两类模型',
+  'TODO 2：准备图像 Tensor 与 boxes/labels target',
+  'TODO 3：完成一次损失反传与优化器更新',
+  'TODO 4：实现检测框 IoU 并计算 AP50',
+  'TODO 5：保存 detection_metrics.json 和 detection_preview.png'
+ ]
+},
+'6.3.5':{
+ title:'U-Net 语义分割与轻量 GAN 图像生成',
+ tags:['U-Net','语义分割','IoU','GAN'],
+ taskText:'在本地合成数据上完成 U-Net 跳跃连接、语义分割 IoU 评估，并训练轻量 GAN 生成掩膜样本。',
+ req:[
+  'TODO 1：完成 Tiny U-Net 上采样和跳跃连接',
+  'TODO 2：使用 BCEWithLogitsLoss 训练分割网络',
+  'TODO 3：计算分割 IoU 并生成预览图',
+  'TODO 4：训练轻量 Generator/Discriminator',
+  'TODO 5：保存 segmentation_metrics.json、segmentation_preview.png 和 gan_samples.png'
+ ]
+},
+'6.4.4':{
+ title:'命名实体识别与 Transformer 翻译/BLEU',
+ tags:['NER','jieba','Transformer','BLEU'],
+ taskText:'使用 jieba 词性完成中文实体提取，并构建离线小样本 Transformer 编码器完成中英短句翻译流程与 BLEU-2 评估。',
+ req:[
+  'TODO 1：使用 jieba.posseg 提取人名、地名和机构名',
+  'TODO 2：构建 TransformerEncoderLayer 与编码器',
+  'TODO 3：训练小样本翻译映射模型',
+  'TODO 4：生成英文预测并计算 BLEU-2',
+  'TODO 5：保存 ner_results.csv 与 translation_results.csv'
+ ]
+},
+'6.4.5':{
+ title:'GPT 文本摘要、对话/诗歌生成与 ROUGE',
+ tags:['GPT','OpenAI兼容接口','摘要','对话','ROUGE'],
+ taskText:'调用 OpenAI 兼容 GPT 接口完成摘要、对话回复和诗歌生成，并实现 ROUGE-L 自动评价；未配置 API 时保留离线基线。',
+ req:[
+  'TODO 1：实现 OpenAI 兼容 chat/completions 调用',
+  'TODO 2：完成摘要、客服回复和诗歌三类生成任务',
+  'TODO 3：实现最长公共子序列 LCS',
+  'TODO 4：计算 ROUGE-L F1',
+  'TODO 5：保存 generation_results.csv 与 rouge_report.json'
+ ]
+},
+'6.5.4':{
+ title:'LoRA/PEFT 微调与推理性能评测',
+ tags:['Transformers','LoRA','PEFT','Latency','Throughput'],
+ taskText:'使用本地随机初始化的小型 BERT 完成 LoRA/PEFT 参数高效微调，统计可训练参数比例、准确率、延迟与吞吐量，全程无需下载模型。',
+ req:[
+  'TODO 1：创建小型 BertForSequenceClassification',
+  'TODO 2：配置 LoraConfig 并用 get_peft_model 包装',
+  'TODO 3：完成参数高效微调并保存 adapter',
+  'TODO 4：统计准确率与可训练参数比例',
+  'TODO 5：评测 batch=1/8/32 的延迟和吞吐量，保存 benchmark.csv'
+ ]
+},
+'6.5.5':{
+ title:'智慧校园 AI 原型：需求、检索、界面、性能与交付',
+ tags:['工程化','RAG','Tkinter','测试','文档'],
+ taskText:'完成一个可复现的智慧校园制度问答原型：本地知识检索、自动评测、响应时间/吞吐量统计、Tkinter 界面和 README 交付文档。',
+ req:[
+  'TODO 1：读取并切分制度文档，建立 TF-IDF 检索矩阵',
+  'TODO 2：实现 Top-K 检索与问答',
+  'TODO 3：基于标准答案做功能准确率测试',
+  'TODO 4：统计响应时间与吞吐量',
+  'TODO 5：生成 app.py、README.md、benchmark.csv 与 evaluation_results.csv'
  ]
 }
 };
