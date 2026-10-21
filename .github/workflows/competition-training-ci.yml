@@ -45,6 +45,12 @@ jobs:
               text="\n".join("".join(c.get("source",[])) for c in nb["cells"])
               assert "# TODO " in text, f"{qid} 缺少 TODO"
               assert "_____________" in text, f"{qid} 缺少待填空"
+              assert "\n\n# TODO " in text, f"{qid} TODO 代码块缺少视觉分隔空行"
+          cnn=(root/"6.3.1"/"6.3.1.ipynb")
+          cnn_text="\n".join("".join(c.get("source",[])) for c in json.loads(cnn.read_text(encoding="utf-8"))["cells"])
+          assert "\n\nclass Net" in cnn_text
+          assert "\n\nfor epoch in range(8):" in cnn_text
+          assert "\n\ntorch.save" in cnn_text
           print("validated",len(ids),"notebooks")
           PY
       - name: JavaScript syntax
