@@ -19,7 +19,7 @@ echo      目标：torch 2.14.1+cu132 / torchvision 0.29.1+cu132
 echo.
 
 "%PY%" -m pip uninstall -y torch torchvision >nul 2>&1
-"%PY%" -m pip install --upgrade --no-cache-dir torch==2.14.1 torchvision==0.29.1 --index-url https://download.pytorch.org/whl/cu132
+"%PY%" -m pip install --upgrade torch==2.14.1 torchvision==0.29.1 --index-url https://download.pytorch.org/whl/cu132
 if errorlevel 1 goto :fail
 
 echo.
