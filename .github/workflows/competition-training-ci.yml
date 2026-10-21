@@ -51,6 +51,7 @@ jobs:
         run: |
           node --check competition_advanced_catalog.js
           node --check competition_guidance.js
+          node --check test_exam_ui.cjs
           python - <<'PY'
           from pathlib import Path
           html = Path("实操训练系统.html").read_text(encoding="utf-8")
