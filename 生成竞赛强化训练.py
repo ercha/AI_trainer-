@@ -829,10 +829,10 @@ sum(k in a for k in keys)/len(keys)"""
     write_answer(qid,title,sol)
 
 def generate(force=False):
-    marker=SRC/".advanced_competition_v3"
+    marker=SRC/".advanced_competition_v4"
     upgrading = not marker.exists()
     for qid in [f"6.{j}.{i}" for j in range(1,6) for i in range(1,6)]:
-        # 首次升级到 v3 时清理旧强化题目录，避免上一版遗留文件干扰评分。
+        # 首次升级到 v4 时清理旧强化题目录，避免旧版题目和代码排版残留。
         if (force or upgrading) and (SRC/qid).exists(): shutil.rmtree(SRC/qid)
     gen_a1("6.1.1"); gen_a2("6.1.2"); gen_a3("6.1.3")
     gen_b("6.2.1","cluster"); gen_b("6.2.2","churn"); gen_b("6.2.3","house")
@@ -841,7 +841,7 @@ def generate(force=False):
     gen_e("6.5.1",1); gen_e("6.5.2",2); gen_e("6.5.3",3)
     generate_expanded_questions()
     marker.write_text("generated\n",encoding="utf-8")
-    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2"):
+    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2", SRC/".advanced_competition_v3"):
         legacy.unlink(missing_ok=True)
     print("已生成 25 道竞赛强化训练题：6.1.1 ~ 6.5.5")
 
