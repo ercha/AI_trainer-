@@ -7,6 +7,7 @@ on:
       - "competition_syllabus_expansion.py"
       - "导入竞赛练习.py"
       - "competition_advanced_catalog.js"
+      - "competition_guidance.js"
       - "实操训练系统.html"
       - "serve_practice.py"
       - "tray_launcher.py"
@@ -47,4 +48,15 @@ jobs:
           print("validated",len(ids),"notebooks")
           PY
       - name: JavaScript syntax
-        run: node --check competition_advanced_catalog.js
+        run: |
+          node --check competition_advanced_catalog.js
+          node --check competition_guidance.js
+          node --check test_exam_ui.cjs
+          python - <<'PY'
+          from pathlib import Path
+          html = Path("实操训练系统.html").read_text(encoding="utf-8")
+          inline = html.rsplit("<script>", 1)[1].split("</script>", 1)[0]
+          Path("/tmp/practice-inline.js").write_text(inline, encoding="utf-8")
+          PY
+          node --check /tmp/practice-inline.js
+          node -e "global.window={};require('./competition_guidance.js');const g=window.COMPETITION_GUIDANCE;if(Object.keys(g.modules).length!==5)process.exit(1);if(Object.values(g.modules).reduce((n,m)=>n+m.must.length+m.strengthen.length,0)!==25)process.exit(1);"

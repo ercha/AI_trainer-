@@ -77,8 +77,8 @@ const assert=require('node:assert/strict');
       const shot=await send('Page.captureScreenshot',{format:'png'});
       await fs.writeFile(path.join(output,'grading-'+name+'.png'),Buffer.from(shot.data,'base64'));
     }
-    const answers=await evaluate(`(async()=>{const qs=['5.1.1','5.1.2','5.1.3','5.1.4','5.1.5',...Array.from({length:5},(_,i)=>Array.from({length:3},(_,j)=>'6.'+(i+1)+'.'+(j+1))).flat()];for(const q of qs){const r=await fetch('/人工智能训练师三级素材/操作题答案/'+q+'_答案.md');if(!r.ok||!extractCode(await r.text()))return false}return true})()`);
-    assert.ok(answers,'20 answer code blocks');
+    const answers=await evaluate(`(async()=>{const qs=['5.1.1','5.1.2','5.1.3','5.1.4','5.1.5',...Array.from({length:5},(_,i)=>Array.from({length:5},(_,j)=>'6.'+(i+1)+'.'+(j+1))).flat()];for(const q of qs){const r=await fetch('/人工智能训练师三级素材/操作题答案/'+q+'_答案.md');if(!r.ok||!extractCode(await r.text()))return false}return true})()`);
+    assert.ok(answers,'30 answer code blocks');
     await evaluate("document.querySelector('.result-actions [onclick=\"openAnswer()\"]').click()");
     await waitFor("document.querySelector('.reference-dialog[open]') && document.getElementById('referenceText').textContent.includes('import')");
     assert.ok(await evaluate('referenceTitle.textContent.includes('+JSON.stringify(report.qid)+')'),'submission answer matches report');
@@ -94,6 +94,17 @@ const assert=require('node:assert/strict');
     assert.equal(home.requirements,3,'numbered requirements marked TODO');
     assert.equal(home.todos,0,'homepage does not render code-edit TODO block');
     assert.ok(home.answerVisible&&!home.text.includes('代码修改 TODO'),'answer entry remains without code-edit TODO block');
+    await evaluate("appFrame.contentDocument.querySelector('[data-mode=guide]').click()");
+    await waitFor("appFrame.contentDocument.getElementById('guideArea').innerText.includes('竞赛五模块学习指导')");
+    const guideOverview=await evaluate("appFrame.contentDocument.getElementById('guideArea').innerText");
+    for(const name of ['图像处理技术','机器学习算法应用','深度学习技术应用','自然语言处理应用开发','人工智能创新项目实战开发'])assert.ok(guideOverview.includes(name),'guide overview includes '+name);
+    await evaluate("appFrame.contentWindow.openGuideModule('6.1')");
+    await waitFor("appFrame.contentDocument.getElementById('guideArea').innerText.includes('固定任务链')");
+    assert.ok(await evaluate("appFrame.contentDocument.getElementById('guideArea').innerText.includes('20 分') && appFrame.contentDocument.getElementById('guideArea').innerText.includes('cv2.Canny')"),'module A guidance score and APIs');
+    await evaluate("appFrame.contentWindow.goGuideQuestion('6.1.1')");
+    await waitFor("appFrame.contentDocument.getElementById('guideArea').innerText.includes('当前题怎么练 · 6.1.1')");
+    assert.equal(await evaluate("appFrame.contentWindow.getCurrentQuestion().id"),'6.1.1','guide question navigation');
+    await evaluate("appFrame.contentWindow.setMode('exam')");
     const coverage=await evaluate(`(()=>{const w=appFrame.contentWindow;return w.eval('Q.filter(q=>q.notebookAvailable).map(q=>({id:q.id}))')})()`);
     assert.equal(coverage.length,40,'forty Notebook questions');
     for(const [name,width,height] of [['desktop',1440,1000],['mobile',375,900]]){
@@ -186,7 +197,7 @@ const assert=require('node:assert/strict');
     await waitFor("document.querySelector('.task-description')");
     assert.ok(await evaluate("document.body.innerText.includes('20min')"));
     assert.ok(await evaluate("document.querySelectorAll('.task-requirement').length>0 && document.body.innerText.includes('技能要求') && document.body.innerText.includes('质量指标') && document.body.innerText.includes('2.1.2.html')"),'original question metadata and submissions preserved');
-    console.log(JSON.stringify({output,passed:true,answerCodeCount:40,notebookQuestions:coverage.length,viewports:[1440,375],flows:['home','exam-entry','intercepted-exam-start','copy','submitted-report','records','historic-review','noncode','load-error']}));
+    console.log(JSON.stringify({output,passed:true,answerCodeCount:30,notebookQuestions:coverage.length,viewports:[1440,375],flows:['home','exam-entry','intercepted-exam-start','copy','submitted-report','records','historic-review','noncode','load-error']}));
   }finally{
     if(socket&&socket.readyState===WebSocket.OPEN){try{await send('Browser.close')}catch(_){}socket.close()}
     if(proc.exitCode===null){await Promise.race([new Promise(resolve=>proc.once('exit',resolve)),delay(5000)])}
