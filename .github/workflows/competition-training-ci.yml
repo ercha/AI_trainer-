@@ -7,6 +7,7 @@ on:
       - "competition_syllabus_expansion.py"
       - "导入竞赛练习.py"
       - "competition_advanced_catalog.js"
+      - "competition_guidance.js"
       - "实操训练系统.html"
       - "serve_practice.py"
       - "tray_launcher.py"
@@ -47,4 +48,6 @@ jobs:
           print("validated",len(ids),"notebooks")
           PY
       - name: JavaScript syntax
-        run: node --check competition_advanced_catalog.js
+        run: |
+          node --check competition_advanced_catalog.js
+          node --check competition_guidance.js
