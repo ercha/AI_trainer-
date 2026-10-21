@@ -25,8 +25,50 @@ ANS=ROOT/"人工智能训练师三级素材"/"操作题答案"
 SEED=20261005
 random.seed(SEED); np.random.seed(SEED)
 
+def format_code_spacing(text):
+    """为 Notebook 代码按逻辑块补充空行，只调整展示，不改变代码内容。"""
+    lines=text.strip("\n").split("\n")
+    out=[]
+    for line in lines:
+        stripped=line.strip()
+        if not stripped:
+            if out and out[-1]!="":
+                out.append("")
+            continue
+
+        indent=len(line)-len(line.lstrip())
+        if out and out[-1]!="":
+            prev=out[-1]
+            prev_stripped=prev.strip()
+            prev_indent=len(prev)-len(prev.lstrip())
+
+            top_level_block=indent==0 and (
+                stripped.startswith("class ")
+                or stripped.startswith("def ")
+                or stripped.startswith("for ")
+                or stripped.startswith("while ")
+                or stripped.startswith("with ")
+                or stripped=="try:"
+            )
+            leaving_indented_block=(
+                indent==0
+                and prev_indent>0
+                and not stripped.startswith(("elif ","else:","except ","except:","finally:"))
+            )
+            todo_section=stripped.startswith("# TODO")
+
+            if top_level_block or leaving_indented_block or todo_section:
+                out.append("")
+
+        out.append(line.rstrip())
+
+    while out and out[-1]=="":
+        out.pop()
+    return "\n".join(out)
+
 def code_cell(text):
-    return {"cell_type":"code","execution_count":None,"metadata":{},"outputs":[],"source":[x+"\n" for x in text.strip("\n").split("\n")]}
+    text=format_code_spacing(text)
+    return {"cell_type":"code","execution_count":None,"metadata":{},"outputs":[],"source":[x+"\n" for x in text.split("\n")]}
 
 def md_cell(text):
     return {"cell_type":"markdown","metadata":{},"source":[x+"\n" for x in text.strip("\n").split("\n")]}
@@ -787,10 +829,10 @@ sum(k in a for k in keys)/len(keys)"""
     write_answer(qid,title,sol)
 
 def generate(force=False):
-    marker=SRC/".advanced_competition_v3"
+    marker=SRC/".advanced_competition_v4"
     upgrading = not marker.exists()
     for qid in [f"6.{j}.{i}" for j in range(1,6) for i in range(1,6)]:
-        # 首次升级到 v3 时清理旧强化题目录，避免上一版遗留文件干扰评分。
+        # 首次升级到 v4 时清理旧强化题目录，避免旧版题目和代码排版残留。
         if (force or upgrading) and (SRC/qid).exists(): shutil.rmtree(SRC/qid)
     gen_a1("6.1.1"); gen_a2("6.1.2"); gen_a3("6.1.3")
     gen_b("6.2.1","cluster"); gen_b("6.2.2","churn"); gen_b("6.2.3","house")
@@ -799,7 +841,7 @@ def generate(force=False):
     gen_e("6.5.1",1); gen_e("6.5.2",2); gen_e("6.5.3",3)
     generate_expanded_questions()
     marker.write_text("generated\n",encoding="utf-8")
-    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2"):
+    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2", SRC/".advanced_competition_v3"):
         legacy.unlink(missing_ok=True)
     print("已生成 25 道竞赛强化训练题：6.1.1 ~ 6.5.5")
 
