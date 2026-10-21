@@ -14,6 +14,19 @@ echo =============================================
 echo 安装竞赛强化训练额外依赖
 echo =============================================
 echo.
+echo 检查系统 Python / 已安装 PyTorch / pip 缓存...
+where py >nul 2>&1
+if not errorlevel 1 (
+    py -3.12 -c "import sys; print('Global Python:',sys.executable); import torch; print('Global torch:',torch.__version__); print('Global torch CUDA:',torch.version.cuda)" 2>nul
+)
+where python >nul 2>&1
+if not errorlevel 1 (
+    python -c "import sys; print('PATH Python:',sys.executable); import torch; print('PATH torch:',torch.__version__); print('PATH torch CUDA:',torch.version.cuda)" 2>nul
+)
+echo.
+"%PY%" -m pip cache dir
+"%PY%" -m pip cache list | findstr /I "torch torchvision"
+echo.
 echo [1/3] 安装 NVIDIA CUDA 13.2 版 PyTorch
 echo      目标：torch 2.14.1+cu132 / torchvision 0.29.1+cu132
 echo.
