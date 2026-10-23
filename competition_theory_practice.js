@@ -203,7 +203,8 @@
     const s = stats();
     const settings = loadSettings();
     const chopped = loadChopped();
-    const activeWrong = bank.questions.filter(item => !chopped.has(item.id) && loadState()[item.id]?.lastCorrect === false).length;
+    const state = loadState();
+    const activeWrong = bank.questions.filter(item => !chopped.has(item.id) && state[item.id]?.lastCorrect === false).length;
     const labels = {
       all: `全部 ${bank.counts.total}`,
       single: `单选 ${bank.counts.single}`,
