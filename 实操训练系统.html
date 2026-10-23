@@ -17,6 +17,7 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:15px;margin:16px 0 8px}.muted{colo
 @media(max-width:1100px){.layout{grid-template-columns:250px 1fr}.right{display:none}}@media(max-width:760px){.layout{display:block}.sidebar{position:static;height:auto;margin-bottom:12px}.main{margin-bottom:12px}}
 </style>
 <link rel="stylesheet" href="answer_viewer.css">
+<link rel="stylesheet" href="competition_theory_practice.css">
 <style>
 .main{min-width:0}.guide-hero{border:1px solid #bfdbfe;background:#eff6ff;border-radius:10px;padding:14px;margin:10px 0 14px}.guide-hero h3{font-size:18px;margin:0 0 8px}.guide-meta{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.guide-badge{display:inline-block;border-radius:999px;padding:4px 9px;font-size:12px;background:#fff;border:1px solid #cbd5e1}.guide-badge.score{font-weight:700;color:#1d4ed8;border-color:#93c5fd}.guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.guide-card{border:1px solid var(--line);border-radius:9px;padding:12px;background:#fff;min-width:0}.guide-card h3{margin:0 0 8px}.guide-card p{line-height:1.75;margin:6px 0}.guide-list{margin:6px 0;padding-left:20px;line-height:1.8}.guide-flow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}.guide-step{background:#f8fafc;border:1px solid #cbd5e1;border-radius:7px;padding:6px 9px;font-size:12px}.guide-arrow{color:#94a3b8;font-size:12px}.guide-api-group{margin:10px 0}.guide-api-group b{display:block;margin-bottom:5px}.guide-pills{display:flex;gap:5px;flex-wrap:wrap}.guide-pill{font:12px Consolas,monospace;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;overflow-wrap:anywhere}.guide-qbtn{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:6px;padding:5px 8px;cursor:pointer;font-weight:700}.guide-qbtn.strong{border-color:#fed7aa;background:#fff7ed;color:#9a3412}.guide-focus{border-left:3px solid #2563eb;padding-left:12px}.guide-overview-card{cursor:pointer}.guide-overview-card:hover{border-color:#93c5fd;background:#f8fbff}.task-description{line-height:1.85;overflow-wrap:anywhere}.task-description p{margin:0 0 12px}.task-requirement{padding:8px 0 8px 12px;border-left:3px solid #cbd5e1}.todo-label{color:#1d4ed8}.task-todos{list-style:none;padding:0;line-height:1.65}.task-todos li{padding:10px 0;border-bottom:1px solid #e2e8f0}.task-todos p{margin:4px 0;overflow-wrap:anywhere}.task-todos summary{font-size:13px;color:#64748b;cursor:pointer}.task-todos pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px;padding:8px;font:13px/1.65 Consolas,monospace}.layout.notebook-mode{grid-template-columns:300px minmax(0,1fr)}.notebook-mode .right{display:none}
 @media(max-width:900px){.guide-grid{grid-template-columns:1fr}}
@@ -24,7 +25,7 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:15px;margin:16px 0 8px}.muted{colo
 </style>
 </head>
 <body>
-<header><h1>实操训练系统</h1><div class="sub">70 道操作技能题 · 含 A-E 五模块 25 道竞赛强化训练 · 默认使用 Jupyter Notebook 模拟考试</div></header>
+<header><h1>实操训练系统</h1><div class="sub">70 道操作技能题 · 456 道理论题 · 含 A-E 五模块 25 道竞赛强化训练</div></header>
 <div class="layout">
   <aside class="card sidebar">
     <input id="qSearch" class="search" placeholder="搜索题号 / 题目 / 章节" oninput="renderQuestionList()">
@@ -151,5 +152,7 @@ function renderStats(){const s=loadStats(),vals=Object.values(s),total=vals.redu
 function renderCheats(){const x=(document.getElementById('cheatSearch').value||'').toLowerCase();cheats.innerHTML=CHEATS.filter(([a,b])=>(a+' '+b).toLowerCase().includes(x)).map(([a,b])=>`<div style="margin:8px 0"><b>${esc(a)}</b><br><code>${esc(b)}</code></div>`).join('')}
 renderQuestionList();renderTask();renderStats();renderCheats();renderExam();hydrateCatalog();
 </script>
+<script src="competition_theory_bank.js"></script>
+<script src="competition_theory_practice.js"></script>
 </body>
 </html>
