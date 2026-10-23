@@ -8,6 +8,9 @@ on:
       - "导入竞赛练习.py"
       - "competition_advanced_catalog.js"
       - "competition_guidance.js"
+      - "competition_theory_bank.js"
+      - "competition_theory_practice.js"
+      - "competition_theory_practice.css"
       - "实操训练系统.html"
       - "serve_practice.py"
       - "tray_launcher.py"
@@ -58,6 +61,8 @@ jobs:
         run: |
           node --check competition_advanced_catalog.js
           node --check competition_guidance.js
+          node --check competition_theory_bank.js
+          node --check competition_theory_practice.js
           node --check test_exam_ui.cjs
           python - <<'PY'
           from pathlib import Path
@@ -67,3 +72,4 @@ jobs:
           PY
           node --check /tmp/practice-inline.js
           node -e "global.window={};require('./competition_guidance.js');const g=window.COMPETITION_GUIDANCE;if(Object.keys(g.modules).length!==5)process.exit(1);if(Object.values(g.modules).reduce((n,m)=>n+m.must.length+m.strengthen.length,0)!==25)process.exit(1);"
+          node -e "global.window={};require('./competition_theory_bank.js');const b=window.COMPETITION_THEORY_BANK;if(!b||b.counts.total!==456||b.counts.single!==304||b.counts.multi!==137||b.counts.fill!==15)process.exit(1);if(b.questions.length!==456)process.exit(1);"
