@@ -8,11 +8,15 @@
   }
 
   const STORAGE_KEY = 'ai_trainer_competition_theory_v1';
+  const SETTINGS_KEY = 'ai_trainer_competition_theory_settings_v1';
+  const CHOPPED_KEY = 'ai_trainer_competition_theory_chopped_v1';
+  const DEFAULT_AUTO_NEXT_DELAY = 2;
   const TYPE_LABEL = { single: '单选题', multi: '多选题', fill: '填空题' };
   const TYPE_ORDER = ['all', 'single', 'multi', 'fill', 'wrong'];
   let filter = 'all';
   let keyword = '';
   let currentId = '';
+  let autoNextTimer = null;
 
   function esc(value) {
     return String(value == null ? '' : value)
@@ -38,14 +42,61 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
+  function normalizeDelay(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return DEFAULT_AUTO_NEXT_DELAY;
+    return Math.round(Math.max(0.5, Math.min(60, number)) * 10) / 10;
+  }
+
+  function loadSettings() {
+    try {
+      const value = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+      return {
+        autoNext: value && value.autoNext === true,
+        delay: normalizeDelay(value && value.delay),
+      };
+    } catch (_) {
+      return { autoNext: false, delay: DEFAULT_AUTO_NEXT_DELAY };
+    }
+  }
+
+  function saveSettings(settings) {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      autoNext: settings.autoNext === true,
+      delay: normalizeDelay(settings.delay),
+    }));
+  }
+
+  function loadChopped() {
+    try {
+      const value = JSON.parse(localStorage.getItem(CHOPPED_KEY) || '[]');
+      return new Set(Array.isArray(value) ? value : []);
+    } catch (_) {
+      return new Set();
+    }
+  }
+
+  function saveChopped(chopped) {
+    localStorage.setItem(CHOPPED_KEY, JSON.stringify(Array.from(chopped)));
+  }
+
+  function cancelAutoNext() {
+    if (autoNextTimer) {
+      clearTimeout(autoNextTimer);
+      autoNextTimer = null;
+    }
+  }
+
   function recordFor(id) {
     return loadState()[id] || null;
   }
 
   function filteredQuestions() {
     const state = loadState();
+    const chopped = loadChopped();
     const term = keyword.trim().toLowerCase();
     return bank.questions.filter(q => {
+      if (chopped.has(q.id)) return false;
       if (filter === 'wrong') {
         const r = state[q.id];
         if (!r || r.lastCorrect !== false) return false;
@@ -119,7 +170,7 @@
   function questionHtml(q, list, record) {
     const pos = Math.max(0, list.findIndex(x => x.id === q.id)) + 1;
     const feedback = record
-      ? `<div class="theory-feedback ${record.lastCorrect ? 'ok' : 'bad'}"><b>${record.lastCorrect ? '回答正确' : '回答错误'}</b>${record.lastCorrect ? '' : `<br>正确答案：${esc(displayAnswer(q))}`}</div>`
+      ? `<div class="theory-feedback ${record.lastCorrect ? 'ok' : 'bad'}"><b>${record.lastCorrect ? '回答正确' : '回答错误'}</b><br>正确答案：${esc(displayAnswer(q))}</div>`
       : '';
     const body = q.type === 'fill'
       ? `<input id="theoryFillInput" class="theory-fill" autocomplete="off" placeholder="输入答案" value="${esc(savedSelection(q, record))}">`
@@ -136,9 +187,10 @@
         ${feedback}
         <div class="theory-actions">
           <button class="btn" data-theory-action="prev">上一题</button>
-          <button class="btn primary" data-theory-action="check">检查答案</button>
+          <button class="btn primary" data-theory-action="check">${q.type === 'fill' ? '检查答案' : '确定'}</button>
           <button class="btn" data-theory-action="next">下一题</button>
           <button class="btn" data-theory-action="random">随机一题</button>
+          <button class="btn chop" data-theory-action="chop">斩题</button>
           <button class="btn warn" data-theory-action="clear">清除本题记录</button>
         </div>
       </div>`;
@@ -149,19 +201,22 @@
     if (!area) return;
     const { list, q } = currentQuestion();
     const s = stats();
+    const settings = loadSettings();
+    const chopped = loadChopped();
+    const activeWrong = bank.questions.filter(item => !chopped.has(item.id) && loadState()[item.id]?.lastCorrect === false).length;
     const labels = {
       all: `全部 ${bank.counts.total}`,
       single: `单选 ${bank.counts.single}`,
       multi: `多选 ${bank.counts.multi}`,
       fill: `填空 ${bank.counts.fill}`,
-      wrong: `错题 ${s.wrong}`,
+      wrong: `错题 ${activeWrong}`,
     };
 
     area.innerHTML = `
       <div class="theory-shell">
         <div class="theory-hero">
           <h2>理论题库练习</h2>
-          <div class="muted">共 ${bank.counts.total} 题，答题后即时判定；进度保存在当前浏览器本地。</div>
+          <div class="muted">共 ${bank.counts.total} 题，选择题点击“确定”后显示答案；进度、自动跳题设置和斩题记录保存在当前浏览器本地。</div>
           <div class="theory-summary">
             <span>单选 ${bank.counts.single}</span>
             <span>多选 ${bank.counts.multi}</span>
@@ -174,13 +229,20 @@
           </div>
           <input id="theorySearch" class="theory-search" placeholder="搜索题目或选项" value="${esc(keyword)}">
         </div>
+        <div class="theory-mode-row">
+          <label class="theory-toggle"><input id="theoryAutoNext" type="checkbox" ${settings.autoNext ? 'checked' : ''}> 自动下一题</label>
+          <label class="theory-delay">延时 <input id="theoryAutoNextDelay" type="number" min="0.5" max="60" step="0.5" value="${settings.delay}"> 秒</label>
+          <span class="theory-chop-status">斩题模式：剩余 ${bank.counts.total - chopped.size} / 已斩 ${chopped.size}</span>
+          <button class="btn small" data-theory-action="restore-chopped" ${chopped.size ? '' : 'disabled'}>恢复已斩题目</button>
+        </div>
         <div class="theory-stats">
           <div class="theory-stat"><b>${s.answered}</b>已作答</div>
           <div class="theory-stat"><b>${s.correct}</b>当前答对</div>
           <div class="theory-stat"><b>${s.rate}%</b>正确率</div>
           <div class="theory-stat"><b>${s.wrong}</b>错题</div>
+          <div class="theory-stat"><b>${chopped.size}</b>已斩题目</div>
         </div>
-        ${q ? questionHtml(q, list, recordFor(q.id)) : '<div class="theory-empty">当前筛选条件下没有题目。</div>'}
+        ${q ? questionHtml(q, list, recordFor(q.id)) : '<div class="theory-empty">当前筛选或斩题循环下没有可练习题目，可调整筛选条件或恢复已斩题目。</div>'}
         <div class="theory-actions">
           <button class="btn warn" data-theory-action="reset-all">重置全部理论练习进度</button>
         </div>
@@ -207,6 +269,7 @@
   }
 
   function move(delta) {
+    cancelAutoNext();
     const list = filteredQuestions();
     if (!list.length) return;
     let index = list.findIndex(q => q.id === currentId);
@@ -217,11 +280,22 @@
   }
 
   function randomQuestion() {
+    cancelAutoNext();
     const list = filteredQuestions();
     if (!list.length) return;
     const candidates = list.length > 1 ? list.filter(q => q.id !== currentId) : list;
     currentId = candidates[Math.floor(Math.random() * candidates.length)].id;
     render();
+  }
+
+  function scheduleAutoNext(questionId) {
+    cancelAutoNext();
+    const settings = loadSettings();
+    if (!settings.autoNext) return;
+    autoNextTimer = setTimeout(() => {
+      autoNextTimer = null;
+      if (currentId === questionId) move(1);
+    }, Math.round(settings.delay * 1000));
   }
 
   function checkAnswer() {
@@ -245,9 +319,11 @@
     };
     saveState(state);
     render();
+    if (q.type !== 'fill') scheduleAutoNext(q.id);
   }
 
   function clearCurrent() {
+    cancelAutoNext();
     const { q } = currentQuestion();
     if (!q) return;
     const state = loadState();
@@ -256,9 +332,29 @@
     render();
   }
 
+  function chopCurrent() {
+    cancelAutoNext();
+    const list = filteredQuestions();
+    const index = list.findIndex(q => q.id === currentId);
+    if (index < 0) return;
+    const chopped = loadChopped();
+    chopped.add(currentId);
+    saveChopped(chopped);
+    currentId = list.length > 1 ? list[(index + 1) % list.length].id : '';
+    render();
+  }
+
+  function restoreChopped() {
+    cancelAutoNext();
+    saveChopped(new Set());
+    currentId = '';
+    render();
+  }
+
   function bind(area) {
     area.querySelectorAll('[data-theory-filter]').forEach(btn => {
       btn.addEventListener('click', () => {
+        cancelAutoNext();
         filter = btn.dataset.theoryFilter || 'all';
         currentId = '';
         render();
@@ -267,6 +363,7 @@
     const search = area.querySelector('#theorySearch');
     if (search) {
       search.addEventListener('input', () => {
+        cancelAutoNext();
         keyword = search.value || '';
         currentId = '';
         render();
@@ -284,15 +381,35 @@
         else if (action === 'next') move(1);
         else if (action === 'random') randomQuestion();
         else if (action === 'check') checkAnswer();
+        else if (action === 'chop') chopCurrent();
         else if (action === 'clear') clearCurrent();
-        else if (action === 'reset-all') {
-          if (confirm('确定清除全部理论题练习记录吗？')) {
+        else if (action === 'restore-chopped') {
+          if (loadChopped().size && confirm('确定恢复全部已斩题目吗？')) restoreChopped();
+        } else if (action === 'reset-all') {
+          if (confirm('确定清除全部理论题练习记录和斩题记录吗？')) {
+            cancelAutoNext();
             localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(CHOPPED_KEY);
             currentId = '';
             render();
           }
         }
       });
+    });
+    const autoNext = area.querySelector('#theoryAutoNext');
+    if (autoNext) autoNext.addEventListener('change', () => {
+      const settings = loadSettings();
+      settings.autoNext = autoNext.checked;
+      saveSettings(settings);
+      if (!autoNext.checked) cancelAutoNext();
+    });
+    const delay = area.querySelector('#theoryAutoNextDelay');
+    if (delay) delay.addEventListener('change', () => {
+      const settings = loadSettings();
+      settings.delay = normalizeDelay(delay.value);
+      saveSettings(settings);
+      delay.value = settings.delay;
+      cancelAutoNext();
     });
     const fill = area.querySelector('#theoryFillInput');
     if (fill) fill.addEventListener('keydown', e => {
@@ -323,6 +440,7 @@
       const taskHead = document.getElementById('taskHead');
       const taskDescription = document.getElementById('taskDescription');
       if (name !== 'theory') {
+        cancelAutoNext();
         if (layout) layout.classList.remove('theory-mode');
         area.classList.add('hidden');
         if (taskHead) taskHead.classList.remove('hidden');
@@ -342,7 +460,9 @@
     window.TheoryPractice = {
       render,
       reset: () => {
+        cancelAutoNext();
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(CHOPPED_KEY);
         currentId = '';
         render();
       },
