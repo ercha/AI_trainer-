@@ -185,13 +185,7 @@ class ExecutionTests(unittest.TestCase):
 
     def test_clustering_result_validator(self):
         qid = "6.2.1"
-        n = json.loads((grading.SOURCE / qid / (qid + ".ipynb")).read_text(encoding="utf-8"))
-        values = ["SimpleImputer(strategy='median')", "StandardScaler()", "SimpleImputer(strategy='most_frequent')", "OneHotEncoder(handle_unknown='ignore')", "silhouette_score(X,labels)", "KMeans(n_clusters=best_k,random_state=42,n_init=10)"]
-        for cell in n["cells"]:
-            if cell["cell_type"] != "code": continue
-            text = grading.source_text(cell)
-            while "_____________" in text: text=text.replace("_____________",values.pop(0),1)
-            cell["source"] = text
+        n = audit.answer_notebook(qid)
         r = self.run_answer(qid, n)
         self.assertFalse(r["auto_errors"])
         self.assertEqual(r["score"], 100, [c for c in r["checks"] if not c["ok"]])
