@@ -104,14 +104,17 @@ print(audit_df.dtypes)
 print("missing =")
 print(audit_df.isna().sum())
 
+# TODO 9-2：删除完全重复记录，保留独立清洗副本
+audit_clean = _____________
 quality = pd.DataFrame({{
-    "column": audit_df.columns.astype(str),
-    "dtype": audit_df.dtypes.astype(str).to_numpy(),
-    "missing": audit_df.isna().sum().to_numpy(),
+    "column": audit_clean.columns.astype(str),
+    "dtype": audit_clean.dtypes.astype(str).to_numpy(),
+    "missing": audit_clean.isna().sum().to_numpy(),
 }})
-# TODO 9-2：将字段类型和缺失值统计保存为 UTF-8-SIG CSV
+# TODO 9-3：将字段类型和缺失值统计保存为 UTF-8-SIG CSV
 _____________'''
-        answers = [reader, 'quality.to_csv("data_quality_check.csv",index=False,encoding="utf-8-sig")']
+        answers = [reader, 'audit_df.drop_duplicates().copy()',
+                   'quality.to_csv("data_quality_check.csv",index=False,encoding="utf-8-sig")']
         return code, answers
 
     if kind == "image":
@@ -227,14 +230,14 @@ def _plot_block(qid: str):
 
     code = f'''{setup}
 {head}
-# TODO 9-3：使用 matplotlib 绘制指定结果图
+# TODO 10-1：使用 matplotlib 绘制指定结果图
 _____________
 plt.title("{title}")
 plt.xlabel("{x or "Category"}")
 plt.ylabel("{ylabel}")
 plt.xticks(rotation=45,ha="right")
 plt.tight_layout()
-# TODO 9-4：以 150 dpi 保存可视化结果
+# TODO 10-2：以 150 dpi 保存可视化结果
 _____________
 plt.show()
 
