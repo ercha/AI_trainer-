@@ -18,9 +18,10 @@ def complete_advanced_code(qid: str, notebook: dict, snippets: str) -> str:
         values.append(ast.unparse(value))
     # 这两题的答案以多条语句表示一个填空，需还原为对应的表达式。
     if qid == "6.1.3":
+        tail = values[5:]
         values = [values[0], f"({values[1]})[1]", f"({values[2]})[1]",
                   "cv2.morphologyEx(cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel), "
-                  "cv2.MORPH_CLOSE, kernel, iterations=2)"]
+                  "cv2.MORPH_CLOSE, kernel, iterations=2)", *tail]
     elif qid == "6.3.2":
         values = [", ".join(values[:4]), *values[4:]]
     elif qid == "6.3.3":
