@@ -51,7 +51,7 @@ jobs:
               assert "# TODO " in text, f"{qid} 缺少 TODO"
               assert "_____________" in text, f"{qid} 缺少待填空"
               assert "# TODO 9-1" in text, f"{qid} 缺少输入核验练习"
-              assert "# TODO 9-3" in text, f"{qid} 缺少 matplotlib 绘图练习"
+              assert "# TODO 10-1" in text, f"{qid} 缺少 matplotlib 绘图练习"
               assert "data_quality_check.csv" in text, f"{qid} 缺少数据质量交付"
               assert "plt.savefig" in text, f"{qid} 缺少图像保存要求"
               assert re.search(r"\n\n\s*# TODO ", text), f"{qid} TODO 代码块缺少视觉分隔空行"
