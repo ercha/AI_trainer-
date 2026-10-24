@@ -411,7 +411,7 @@ _____________
 ''', [
 'pd.read_csv("questions.csv")',
 'float(out.score.mean())',
-'(out.to_csv("rag_results.csv",index=False),Path("rag_evaluation.md").write_text(f"# RAG 自动评测\n\n平均关键词覆盖率：{mean_keyword_score:.2%}\n",encoding="utf-8"))',
+'(out.to_csv("rag_results.csv",index=False),Path("rag_evaluation.md").write_text(f"# RAG 自动评测\\n\\n平均关键词覆盖率：{mean_keyword_score:.2%}\\n",encoding="utf-8"))',
 ]),
 "6.5.4": (r'''
 from pathlib import Path
