@@ -69,6 +69,22 @@ jobs:
           assert "\n\ntorch.save" in cnn_text
           print("validated",len(ids),"notebooks")
           PY
+      - name: Validate 6.1.1 complete reference answer
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          import reference_answers
+          answer=reference_answers.get_reference_answer("6.1.1",Path("."))
+          ast.parse(answer["code"])
+          code=answer["code"]
+          assert 'basic_processing.csv' in code
+          assert 'filter_comparison.png' in code
+          assert code.count('cv2.imwrite') >= 6
+          assert 'plt.subplots(2, 4' in code or 'plt.subplots(2,4' in code
+          assert 'plt.savefig' in code
+          print("6.1.1 complete answer validated")
+          PY
       - name: JavaScript syntax
         run: |
           node --check competition_advanced_catalog.js
