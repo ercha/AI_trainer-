@@ -6,6 +6,7 @@ on:
       - "生成竞赛强化训练.py"
       - "competition_syllabus_expansion.py"
       - "competition_real_exam_workflow.py"
+      - "competition_todo_alignment.py"
       - "导入竞赛练习.py"
       - "competition_advanced_catalog.js"
       - "competition_guidance.js"
@@ -31,7 +32,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check numpy pandas pillow
       - name: Python syntax
         run: |
-          python -m py_compile "生成竞赛强化训练.py" competition_syllabus_expansion.py competition_real_exam_workflow.py "导入竞赛练习.py" serve_practice.py tray_launcher.py exam_grading.py reference_answers.py
+          python -m py_compile "生成竞赛强化训练.py" competition_syllabus_expansion.py competition_real_exam_workflow.py competition_todo_alignment.py "导入竞赛练习.py" serve_practice.py tray_launcher.py exam_grading.py reference_answers.py
       - name: Generate all 25 advanced exercises
         run: python "生成竞赛强化训练.py" --force
       - name: Validate generated notebooks
@@ -55,12 +56,52 @@ jobs:
               assert "data_quality_check.csv" in text, f"{qid} 缺少数据质量交付"
               assert "# TODO 10-2" in text, f"{qid} 缺少图像保存练习"
               assert re.search(r"\n\n\s*# TODO ", text), f"{qid} TODO 代码块缺少视觉分隔空行"
+          a1=(root/"6.1.1"/"6.1.1.ipynb")
+          a1_text="\n".join("".join(c.get("source",[])) for c in json.loads(a1.read_text(encoding="utf-8"))["cells"])
+          assert "# TODO 4-1" in a1_text and "# TODO 4-7" in a1_text, "6.1.1 缺少结果保存 TODO 4"
+          assert "basic_processing.csv" in a1_text, "6.1.1 缺少 basic_processing.csv 交付"
+          assert "# TODO 5-1" in a1_text and "# TODO 5-5" in a1_text, "6.1.1 缺少对比预览 TODO 5"
+          assert "filter_comparison.png" in a1_text, "6.1.1 缺少 filter_comparison.png 交付"
+
           cnn=(root/"6.3.1"/"6.3.1.ipynb")
           cnn_text="\n".join("".join(c.get("source",[])) for c in json.loads(cnn.read_text(encoding="utf-8"))["cells"])
           assert "\n\nclass Net" in cnn_text
           assert "\n\nfor epoch in range(8):" in cnn_text
           assert "\n\ntorch.save" in cnn_text
           print("validated",len(ids),"notebooks")
+          PY
+      - name: Audit advanced TODO coverage
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          from competition_todo_alignment import EXPECTED_TODO_GROUPS
+          root=Path("人工智能训练师三级素材/人工智能训练师三级上网素材")
+          for qid,expected in EXPECTED_TODO_GROUPS.items():
+              nb=json.loads((root/qid/f"{qid}.ipynb").read_text(encoding="utf-8"))
+              text="\n".join("".join(c.get("source",[])) for c in nb["cells"] if c.get("cell_type")=="code")
+              groups=sorted({int(x) for x in re.findall(r"# TODO (\d+)(?:-\d+)?",text)})
+              missing=[n for n in expected if n not in groups]
+              print(qid,"groups=",groups,"missing=",missing)
+              assert not missing, f"{qid} 题面 TODO 与 Notebook 不一致，缺少组：{missing}"
+          PY
+      - name: Validate all advanced reference answers
+        run: python "验证竞赛强化题.py"
+      - name: Validate 6.1.1 complete reference answer
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          import reference_answers
+          answer=reference_answers.get_reference_answer("6.1.1",Path("."))
+          ast.parse(answer["code"])
+          code=answer["code"]
+          assert 'basic_processing.csv' in code
+          assert 'filter_comparison.png' in code
+          assert code.count('cv2.imwrite') >= 6
+          assert 'plt.subplots(2, 4' in code or 'plt.subplots(2,4' in code
+          assert 'plt.savefig' in code
+          print("6.1.1 complete answer validated")
           PY
       - name: JavaScript syntax
         run: |
