@@ -5,6 +5,7 @@ on:
     paths:
       - "生成竞赛强化训练.py"
       - "competition_syllabus_expansion.py"
+      - "competition_real_exam_workflow.py"
       - "导入竞赛练习.py"
       - "competition_advanced_catalog.js"
       - "competition_guidance.js"
@@ -30,7 +31,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check numpy pandas pillow
       - name: Python syntax
         run: |
-          python -m py_compile "生成竞赛强化训练.py" competition_syllabus_expansion.py "导入竞赛练习.py" serve_practice.py tray_launcher.py exam_grading.py reference_answers.py
+          python -m py_compile "生成竞赛强化训练.py" competition_syllabus_expansion.py competition_real_exam_workflow.py "导入竞赛练习.py" serve_practice.py tray_launcher.py exam_grading.py reference_answers.py
       - name: Generate all 25 advanced exercises
         run: python "生成竞赛强化训练.py" --force
       - name: Validate generated notebooks
@@ -49,6 +50,10 @@ jobs:
               text="\n".join("".join(c.get("source",[])) for c in nb["cells"])
               assert "# TODO " in text, f"{qid} 缺少 TODO"
               assert "_____________" in text, f"{qid} 缺少待填空"
+              assert "# TODO 9-1" in text, f"{qid} 缺少输入核验练习"
+              assert "# TODO 9-3" in text, f"{qid} 缺少 matplotlib 绘图练习"
+              assert "data_quality_check.csv" in text, f"{qid} 缺少数据质量交付"
+              assert "plt.savefig" in text, f"{qid} 缺少图像保存要求"
               assert re.search(r"\n\n\s*# TODO ", text), f"{qid} TODO 代码块缺少视觉分隔空行"
           cnn=(root/"6.3.1"/"6.3.1.ipynb")
           cnn_text="\n".join("".join(c.get("source",[])) for c in json.loads(cnn.read_text(encoding="utf-8"))["cells"])
