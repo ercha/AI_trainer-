@@ -55,6 +55,13 @@ jobs:
               assert "data_quality_check.csv" in text, f"{qid} 缺少数据质量交付"
               assert "# TODO 10-2" in text, f"{qid} 缺少图像保存练习"
               assert re.search(r"\n\n\s*# TODO ", text), f"{qid} TODO 代码块缺少视觉分隔空行"
+          a1=(root/"6.1.1"/"6.1.1.ipynb")
+          a1_text="\n".join("".join(c.get("source",[])) for c in json.loads(a1.read_text(encoding="utf-8"))["cells"])
+          assert "# TODO 4-1" in a1_text and "# TODO 4-7" in a1_text, "6.1.1 缺少结果保存 TODO 4"
+          assert "basic_processing.csv" in a1_text, "6.1.1 缺少 basic_processing.csv 交付"
+          assert "# TODO 5-1" in a1_text and "# TODO 5-5" in a1_text, "6.1.1 缺少对比预览 TODO 5"
+          assert "filter_comparison.png" in a1_text, "6.1.1 缺少 filter_comparison.png 交付"
+
           cnn=(root/"6.3.1"/"6.3.1.ipynb")
           cnn_text="\n".join("".join(c.get("source",[])) for c in json.loads(cnn.read_text(encoding="utf-8"))["cells"])
           assert "\n\nclass Net" in cnn_text
