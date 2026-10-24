@@ -341,8 +341,8 @@ Object.entries(window.ADVANCED_DETAILS).forEach(([qid,item])=>{
     `TODO 0：从 ${REAL_EXAM_INPUTS[qid]} 独立读取原始输入，检查数据/文件数量、shape、字段类型或 dtype，并记录缺失值等基础质量信息`,
     MODULE_DATA_RULE[module],
     ...item.req,
-    `TODO 9：使用 matplotlib 对本题关键结果进行可视化，设置标题、坐标轴标签和必要刻度，保存为 ${REAL_EXAM_PLOTS[qid]}`,
-    'TODO 10：将输入质量检查保存为 data_quality_check.csv，并在提交前重新读取/检查关键输出文件，确认结果可复现'
+    'TODO 9：重新读取原始输入，完成字段/样本核验、缺失值检查；表格类数据额外完成重复记录清理，并保存 data_quality_check.csv',
+    `TODO 10：使用 matplotlib 对本题关键结果进行可视化，设置标题、坐标轴标签和必要刻度，保存为 ${REAL_EXAM_PLOTS[qid]}，提交前检查关键输出文件`
   ];
 });
 
