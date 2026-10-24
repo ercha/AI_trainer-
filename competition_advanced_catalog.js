@@ -311,3 +311,38 @@ window.ADVANCED_DETAILS={
  ]
 }
 };
+
+const REAL_EXAM_INPUTS={
+'6.1.1':'input_images/*.jpg','6.1.2':'road_images/*.jpg','6.1.3':'defect_images/*.png','6.1.4':'color_images/*.jpg','6.1.5':'ground_truth.csv',
+'6.2.1':'customer_behavior.csv','6.2.2':'telecom_churn.csv','6.2.3':'housing.csv','6.2.4':'classification.csv','6.2.5':'cluster_features.csv',
+'6.3.1':'shape_images/','6.3.2':'flower_images/','6.3.3':'scene_images/','6.3.4':'annotations.csv','6.3.5':'seg_images/*.png',
+'6.4.1':'news_train.csv','6.4.2':'reviews.csv','6.4.3':'corpus_news.csv','6.4.4':'translation_pairs.csv','6.4.5':'generation_tasks.csv',
+'6.5.1':'orders.json','6.5.2':'complaints.csv','6.5.3':'questions.csv','6.5.4':'lora_train.npz','6.5.5':'eval_questions.csv'
+};
+const REAL_EXAM_PLOTS={
+'6.1.1':'basic_processing_chart.png','6.1.2':'detection_summary_chart.png','6.1.3':'defect_area_chart.png','6.1.4':'red_object_chart.png','6.1.5':'template_error_chart.png',
+'6.2.1':'k_selection_chart.png','6.2.2':'churn_metrics_chart.png','6.2.3':'house_model_chart.png','6.2.4':'classifier_f1_chart.png','6.2.5':'cluster_score_chart.png',
+'6.3.1':'cnn_loss_chart.png','6.3.2':'flower_split_chart.png','6.3.3':'scene_split_chart.png','6.3.4':'detection_metrics_chart.png','6.3.5':'segmentation_iou_chart.png',
+'6.4.1':'news_class_chart.png','6.4.2':'review_label_chart.png','6.4.3':'topic_distribution_chart.png','6.4.4':'bleu_chart.png','6.4.5':'rouge_chart.png',
+'6.5.1':'order_category_chart.png','6.5.2':'complaint_priority_chart.png','6.5.3':'rag_score_chart.png','6.5.4':'lora_throughput_chart.png','6.5.5':'prototype_eval_chart.png'
+};
+const MODULE_DATA_RULE={
+'1':'图像任务需先枚举输入文件，使用 OpenCV/PIL 实际读取样本，检查数量、尺寸、通道和 dtype；处理后既要保存中间图像，也要用 matplotlib 展示关键处理结果。',
+'2':'机器学习任务需从原始表格开始，检查 shape、字段类型、缺失值和类别分布；再完成填补/编码/标准化、数据划分、建模、评价、模型或预测结果保存。',
+'3':'深度学习任务需检查数据集类别与样本量，明确训练/验证划分；训练过程或关键评价结果必须用 matplotlib 展示，并保存权重、指标或图像结果。',
+'4':'NLP 任务需从语料读取开始，检查文本、标签和缺失值；完成清洗/分词/向量化、建模评价，并用 matplotlib 展示类别、主题或评价指标。',
+'5':'AI 项目任务需覆盖多格式数据读取、清洗、指标计算、接口/检索/模型流程、matplotlib 业务可视化及 CSV/Excel/JSON/Markdown 等交付文件。'
+};
+Object.entries(window.ADVANCED_DETAILS).forEach(([qid,item])=>{
+  const module=qid.split('.')[1];
+  item.tags=[...new Set([...item.tags,'数据读取','数据预处理','matplotlib','结果保存'])];
+  item.taskText += ' 本题按真实竞赛任务链训练，不能只补模型 API，还必须完成输入核验、数据质量检查、结果可视化与交付文件验证。';
+  item.req=[
+    `TODO 0：从 ${REAL_EXAM_INPUTS[qid]} 独立读取原始输入，检查数据/文件数量、shape、字段类型或 dtype，并记录缺失值等基础质量信息`,
+    MODULE_DATA_RULE[module],
+    ...item.req,
+    `TODO 9：使用 matplotlib 对本题关键结果进行可视化，设置标题、坐标轴标签和必要刻度，保存为 ${REAL_EXAM_PLOTS[qid]}`,
+    'TODO 10：将输入质量检查保存为 data_quality_check.csv，并在提交前重新读取/检查关键输出文件，确认结果可复现'
+  ];
+});
+
