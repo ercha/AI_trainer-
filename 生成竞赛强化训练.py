@@ -19,6 +19,7 @@ import pandas as pd
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 from competition_syllabus_expansion import generate_expanded_questions
 from competition_real_exam_workflow import enhance_task, extra_workflow_answers, extra_workflow_code
+from competition_todo_alignment import alignment_answers, alignment_code
 
 ROOT=Path(__file__).resolve().parent
 SRC=ROOT/"人工智能训练师三级素材"/"人工智能训练师三级上网素材"
@@ -76,6 +77,9 @@ def md_cell(text):
 
 def write_nb(qid,title,task,cells):
     task=enhance_task(qid,task)
+    align=alignment_code(qid)
+    if align:
+        cells=[*cells,code_cell(align)]
     cells=[*cells,code_cell(extra_workflow_code(qid))]
     nb={"cells":[md_cell(f"# {qid} {title}\n\n{task}\n\n> 按 TODO 编号补全代码。不要删除 TODO 标记。"),*cells],
         "metadata":{"kernelspec":{"display_name":"Python 3 (ipykernel)","language":"python","name":"python3"},
@@ -86,7 +90,7 @@ def write_nb(qid,title,task,cells):
 
 def write_answer(qid,title,solution):
     ANS.mkdir(parents=True,exist_ok=True)
-    extras="\n".join(extra_workflow_answers(qid))
+    extras="\n".join([*alignment_answers(qid),*extra_workflow_answers(qid)])
     solution=solution.strip()+("\n"+extras if extras else "")
     (ANS/f"{qid}_答案.md").write_text(f"# {qid} {title} - 参考答案\n\n~~~python\n{solution}\n~~~\n",encoding="utf-8")
 
