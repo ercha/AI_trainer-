@@ -142,6 +142,7 @@ _____________'''
     if kind == "imagefolder":
         code = f'''import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 
@@ -164,6 +165,7 @@ _____________'''
         code = f'''import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 # TODO 9-1：重新读取 NPZ 训练数据
 audit_npz = _____________
@@ -195,7 +197,7 @@ def _plot_block(qid: str):
         expr = f'plt.plot(plot_df["{x}"],plot_df["{y}"],marker="o")'
     elif kind == "csv_bar_index":
         setup = f'plot_df=pd.read_csv("{source}")'
-        expr = f'plt.bar(range(len(plot_df)),plot_df["{y}"]); plt.xticks(range(len(plot_df)),plot_df["{x}"].astype(str),rotation=45,ha="right")'
+        expr = f'(plt.bar(range(len(plot_df)),plot_df["{y}"]),plt.xticks(range(len(plot_df)),plot_df["{x}"].astype(str),rotation=45,ha="right"))'
     elif kind == "csv_group":
         setup = f'plot_df=pd.read_csv("{source}"); plot_group=plot_df.groupby("{x}")["{y}"].mean()'
         expr = 'plt.bar(plot_group.index.astype(str),plot_group.values)'
