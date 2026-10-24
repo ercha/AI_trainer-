@@ -140,12 +140,19 @@ for fp in sorted(INPUT.glob("*.jpg")):
     median = _____________
 
     stem=fp.stem
-    cv2.imwrite(str(OUTPUT/f"{stem}_resized.jpg"),resized)
-    cv2.imwrite(str(OUTPUT/f"{stem}_gray.jpg"),gray)
-    cv2.imwrite(str(OUTPUT/f"{stem}_border.jpg"),bordered)
-    cv2.imwrite(str(OUTPUT/f"{stem}_mean.jpg"),mean_blur)
-    cv2.imwrite(str(OUTPUT/f"{stem}_gaussian.jpg"),gaussian)
-    cv2.imwrite(str(OUTPUT/f"{stem}_median.jpg"),median)
+
+    # TODO 4-1：将缩放图保存到 processed
+    _____________
+    # TODO 4-2：将灰度图保存到 processed
+    _____________
+    # TODO 4-3：将加边框图保存到 processed
+    _____________
+    # TODO 4-4：将均值滤波图保存到 processed
+    _____________
+    # TODO 4-5：将高斯滤波图保存到 processed
+    _____________
+    # TODO 4-6：将中值滤波图保存到 processed
+    _____________
 
     rows.append({
         "file":fp.name,
@@ -158,24 +165,28 @@ for fp in sorted(INPUT.glob("*.jpg")):
     })
 
 summary=pd.DataFrame(rows)
-summary.to_csv("basic_processing.csv",index=False,encoding="utf-8-sig")
+# TODO 4-7：输出 basic_processing.csv
+_____________
 summary.head()"""),
-code_cell("""first=sorted(INPUT.glob("*.jpg"))[0]
+code_cell("""# TODO 5-1：选取首张输入图像
+first=_____________
 stem=first.stem
-items=[
-    ("Original",cv2.cvtColor(cv2.imread(str(first)),cv2.COLOR_BGR2RGB),None),
-    ("Resized",cv2.cvtColor(cv2.imread(str(OUTPUT/f"{stem}_resized.jpg")),cv2.COLOR_BGR2RGB),None),
-    ("Gray",cv2.imread(str(OUTPUT/f"{stem}_gray.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
-    ("Border",cv2.cvtColor(cv2.imread(str(OUTPUT/f"{stem}_border.jpg")),cv2.COLOR_BGR2RGB),None),
-    ("Mean",cv2.imread(str(OUTPUT/f"{stem}_mean.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
-    ("Gaussian",cv2.imread(str(OUTPUT/f"{stem}_gaussian.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
-    ("Median",cv2.imread(str(OUTPUT/f"{stem}_median.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
-]
-fig,axes=plt.subplots(2,4,figsize=(13,7))
-for ax in axes.ravel(): ax.axis("off")
+
+# TODO 5-2：组织原图、缩放图、灰度图、边框图和三种滤波结果
+items=_____________
+
+# TODO 5-3：创建 2×4 子图用于对比预览
+fig,axes=_____________
+for ax in axes.ravel():
+    ax.axis("off")
+
 for ax,(title,image,cmap) in zip(axes.ravel(),items):
-    ax.imshow(image,cmap=cmap); ax.set_title(title); ax.axis("off")
-plt.tight_layout(); plt.savefig("filter_comparison.png",dpi=150)
+    # TODO 5-4：显示图像并设置标题
+    _____________
+
+plt.tight_layout()
+# TODO 5-5：将对比预览保存为 filter_comparison.png
+_____________
 plt.show()""")]
     write_nb(qid,"图像基础处理、颜色空间与三种滤波","完成读取/保存、尺寸统一、颜色空间转换、边界填充和三类经典去噪方法，并生成处理统计和对比图。",cells)
     sol="""resized = cv2.resize(img,(320,240))
@@ -184,7 +195,27 @@ hsv = cv2.cvtColor(resized,cv2.COLOR_BGR2HSV)
 bordered = cv2.copyMakeBorder(resized,20,20,30,30,cv2.BORDER_CONSTANT,value=(255,255,255))
 mean_blur = cv2.blur(gray,(5,5))
 gaussian = cv2.GaussianBlur(gray,(5,5),0)
-median = cv2.medianBlur(gray,5)"""
+median = cv2.medianBlur(gray,5)
+cv2.imwrite(str(OUTPUT/f"{stem}_resized.jpg"),resized)
+cv2.imwrite(str(OUTPUT/f"{stem}_gray.jpg"),gray)
+cv2.imwrite(str(OUTPUT/f"{stem}_border.jpg"),bordered)
+cv2.imwrite(str(OUTPUT/f"{stem}_mean.jpg"),mean_blur)
+cv2.imwrite(str(OUTPUT/f"{stem}_gaussian.jpg"),gaussian)
+cv2.imwrite(str(OUTPUT/f"{stem}_median.jpg"),median)
+summary.to_csv("basic_processing.csv",index=False,encoding="utf-8-sig")
+sorted(INPUT.glob("*.jpg"))[0]
+[
+    ("Original",cv2.cvtColor(cv2.imread(str(first)),cv2.COLOR_BGR2RGB),None),
+    ("Resized",cv2.cvtColor(cv2.imread(str(OUTPUT/f"{stem}_resized.jpg")),cv2.COLOR_BGR2RGB),None),
+    ("Gray",cv2.imread(str(OUTPUT/f"{stem}_gray.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
+    ("Border",cv2.cvtColor(cv2.imread(str(OUTPUT/f"{stem}_border.jpg")),cv2.COLOR_BGR2RGB),None),
+    ("Mean",cv2.imread(str(OUTPUT/f"{stem}_mean.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
+    ("Gaussian",cv2.imread(str(OUTPUT/f"{stem}_gaussian.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
+    ("Median",cv2.imread(str(OUTPUT/f"{stem}_median.jpg"),cv2.IMREAD_GRAYSCALE),"gray"),
+]
+plt.subplots(2,4,figsize=(13,7))
+(ax.imshow(image,cmap=cmap),ax.set_title(title),ax.axis("off"))
+plt.savefig("filter_comparison.png",dpi=150,bbox_inches="tight")"""
     write_answer(qid,"图像基础处理、颜色空间与三种滤波",sol)
 
 def gen_a2(qid):
