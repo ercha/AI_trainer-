@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 from competition_syllabus_expansion import generate_expanded_questions
+from competition_real_exam_workflow import enhance_task, extra_workflow_answers, extra_workflow_code
 
 ROOT=Path(__file__).resolve().parent
 SRC=ROOT/"人工智能训练师三级素材"/"人工智能训练师三级上网素材"
@@ -74,6 +75,8 @@ def md_cell(text):
     return {"cell_type":"markdown","metadata":{},"source":[x+"\n" for x in text.strip("\n").split("\n")]}
 
 def write_nb(qid,title,task,cells):
+    task=enhance_task(qid,task)
+    cells=[*cells,code_cell(extra_workflow_code(qid))]
     nb={"cells":[md_cell(f"# {qid} {title}\n\n{task}\n\n> 按 TODO 编号补全代码。不要删除 TODO 标记。"),*cells],
         "metadata":{"kernelspec":{"display_name":"Python 3 (ipykernel)","language":"python","name":"python3"},
                     "language_info":{"name":"python","version":"3.12"}},
@@ -83,7 +86,9 @@ def write_nb(qid,title,task,cells):
 
 def write_answer(qid,title,solution):
     ANS.mkdir(parents=True,exist_ok=True)
-    (ANS/f"{qid}_答案.md").write_text(f"# {qid} {title} - 参考答案\n\n~~~python\n{solution.strip()}\n~~~\n",encoding="utf-8")
+    extras="\n".join(extra_workflow_answers(qid))
+    solution=solution.strip()+("\n"+extras if extras else "")
+    (ANS/f"{qid}_答案.md").write_text(f"# {qid} {title} - 参考答案\n\n~~~python\n{solution}\n~~~\n",encoding="utf-8")
 
 def img_dir(qid,name):
     p=SRC/qid/name; p.mkdir(parents=True,exist_ok=True); return p
@@ -829,7 +834,7 @@ sum(k in a for k in keys)/len(keys)"""
     write_answer(qid,title,sol)
 
 def generate(force=False):
-    marker=SRC/".advanced_competition_v4"
+    marker=SRC/".advanced_competition_v5"
     upgrading = not marker.exists()
     for qid in [f"6.{j}.{i}" for j in range(1,6) for i in range(1,6)]:
         # 首次升级到 v4 时清理旧强化题目录，避免旧版题目和代码排版残留。
@@ -841,7 +846,7 @@ def generate(force=False):
     gen_e("6.5.1",1); gen_e("6.5.2",2); gen_e("6.5.3",3)
     generate_expanded_questions()
     marker.write_text("generated\n",encoding="utf-8")
-    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2", SRC/".advanced_competition_v3"):
+    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2", SRC/".advanced_competition_v3", SRC/".advanced_competition_v4"):
         legacy.unlink(missing_ok=True)
     print("已生成 25 道竞赛强化训练题：6.1.1 ~ 6.5.5")
 
