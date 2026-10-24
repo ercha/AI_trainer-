@@ -6,6 +6,7 @@ on:
       - "生成竞赛强化训练.py"
       - "competition_syllabus_expansion.py"
       - "competition_real_exam_workflow.py"
+      - "competition_todo_alignment.py"
       - "导入竞赛练习.py"
       - "competition_advanced_catalog.js"
       - "competition_guidance.js"
@@ -31,7 +32,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check numpy pandas pillow
       - name: Python syntax
         run: |
-          python -m py_compile "生成竞赛强化训练.py" competition_syllabus_expansion.py competition_real_exam_workflow.py "导入竞赛练习.py" serve_practice.py tray_launcher.py exam_grading.py reference_answers.py
+          python -m py_compile "生成竞赛强化训练.py" competition_syllabus_expansion.py competition_real_exam_workflow.py competition_todo_alignment.py "导入竞赛练习.py" serve_practice.py tray_launcher.py exam_grading.py reference_answers.py
       - name: Generate all 25 advanced exercises
         run: python "生成竞赛强化训练.py" --force
       - name: Validate generated notebooks
@@ -74,16 +75,18 @@ jobs:
           python - <<'PY'
           import json,re
           from pathlib import Path
+          from competition_todo_alignment import EXPECTED_TODO_GROUPS
           root=Path("人工智能训练师三级素材/人工智能训练师三级上网素材")
-          for m in range(1,6):
-              for i in range(1,6):
-                  qid=f"6.{m}.{i}"
-                  nb=json.loads((root/qid/f"{qid}.ipynb").read_text(encoding="utf-8"))
-                  text="\n".join("".join(c.get("source",[])) for c in nb["cells"] if c.get("cell_type")=="code")
-                  groups=sorted({int(x) for x in re.findall(r"# TODO (\d+)(?:-\d+)?",text)})
-                  missing=[n for n in range(1,6) if n not in groups]
-                  print(qid,"groups=",groups,"missing=",missing)
+          for qid,expected in EXPECTED_TODO_GROUPS.items():
+              nb=json.loads((root/qid/f"{qid}.ipynb").read_text(encoding="utf-8"))
+              text="\n".join("".join(c.get("source",[])) for c in nb["cells"] if c.get("cell_type")=="code")
+              groups=sorted({int(x) for x in re.findall(r"# TODO (\d+)(?:-\d+)?",text)})
+              missing=[n for n in expected if n not in groups]
+              print(qid,"groups=",groups,"missing=",missing)
+              assert not missing, f"{qid} 题面 TODO 与 Notebook 不一致，缺少组：{missing}"
           PY
+      - name: Validate all advanced reference answers
+        run: python "验证竞赛强化题.py"
       - name: Validate 6.1.1 complete reference answer
         run: |
           python - <<'PY'
