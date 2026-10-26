@@ -90,6 +90,48 @@ jobs:
               print(qid,"groups=",groups,"expected=",expected)
               assert groups == expected, f"{qid} TODO 顺序错误：实际 {groups}，应为 {expected}"
           PY
+      - name: Validate task TODO text matches notebook code TODOs
+        run: |
+          node - <<'JS' > /tmp/advanced-details.json
+          global.window={};
+          require('./competition_advanced_catalog.js');
+          process.stdout.write(JSON.stringify(window.ADVANCED_DETAILS));
+          JS
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+
+          root=Path("人工智能训练师三级素材/人工智能训练师三级上网素材")
+          details=json.loads(Path("/tmp/advanced-details.json").read_text(encoding="utf-8"))
+          ids=[f"6.{m}.{i}" for m in range(1,6) for i in range(1,6)]+["6.2.6","6.3.6"]
+          six_core={"6.5.1","6.5.2","6.5.3"}
+
+          for qid in ids:
+              nb=json.loads((root/qid/f"{qid}.ipynb").read_text(encoding="utf-8"))
+              code="\n".join("".join(c.get("source",[])) for c in nb["cells"] if c.get("cell_type")=="code")
+              matches=re.findall(r"# TODO (\d+)(?:-\d+)?：([^\n]+)",code)
+              grouped={}
+              for group,desc in matches:
+                  grouped.setdefault(int(group),[]).append(desc.strip())
+
+              req_by_group={}
+              for req in details[qid]["req"]:
+                  m=re.match(r"TODO (\d+)：(.*)",req)
+                  if m:
+                      req_by_group[int(m.group(1))]=m.group(2).strip()
+
+              core_max=6 if qid in six_core else 5
+              for group in range(1,core_max+1):
+                  code_text="；".join(grouped.get(group,[]))
+                  task_text=req_by_group.get(group)
+                  print(qid,group,"task=",task_text,"code=",code_text)
+                  assert task_text is not None, f"{qid} 题面缺少 TODO {group}"
+                  assert task_text == code_text, (
+                      f"{qid} TODO {group} 题面与代码不匹配\n"
+                      f"题面：{task_text}\n代码：{code_text}"
+                  )
+          print("27 道强化题题面 TODO 与代码 TODO 文本完全匹配")
+          PY
       - name: Validate all advanced reference answers
         run: python "验证竞赛强化题.py"
       - name: Validate 6.1.1 complete reference answer
