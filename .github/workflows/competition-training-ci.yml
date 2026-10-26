@@ -51,10 +51,11 @@ jobs:
               text="\n".join("".join(c.get("source",[])) for c in nb["cells"])
               assert "# TODO " in text, f"{qid} 缺少 TODO"
               assert "_____________" in text, f"{qid} 缺少待填空"
-              assert "# TODO 9-1" in text, f"{qid} 缺少输入核验练习"
-              assert "# TODO 10-1" in text, f"{qid} 缺少 matplotlib 绘图练习"
+              assert "# TODO 0-1" in text, f"{qid} 缺少 TODO 0 输入核验练习"
+              final_group=7 if qid in {"6.5.1","6.5.2","6.5.3"} else 6
+              assert f"# TODO {final_group}-1" in text, f"{qid} 缺少最终 matplotlib 绘图练习"
               assert "data_quality_check.csv" in text, f"{qid} 缺少数据质量交付"
-              assert "# TODO 10-2" in text, f"{qid} 缺少图像保存练习"
+              assert f"# TODO {final_group}-2" in text, f"{qid} 缺少最终图像保存练习"
               assert re.search(r"\n\n\s*# TODO ", text), f"{qid} TODO 代码块缺少视觉分隔空行"
           a1=(root/"6.1.1"/"6.1.1.ipynb")
           a1_text="\n".join("".join(c.get("source",[])) for c in json.loads(a1.read_text(encoding="utf-8"))["cells"])
@@ -80,10 +81,14 @@ jobs:
           for qid,expected in EXPECTED_TODO_GROUPS.items():
               nb=json.loads((root/qid/f"{qid}.ipynb").read_text(encoding="utf-8"))
               text="\n".join("".join(c.get("source",[])) for c in nb["cells"] if c.get("cell_type")=="code")
-              groups=sorted({int(x) for x in re.findall(r"# TODO (\d+)(?:-\d+)?",text)})
-              missing=[n for n in expected if n not in groups]
-              print(qid,"groups=",groups,"missing=",missing)
-              assert not missing, f"{qid} 题面 TODO 与 Notebook 不一致，缺少组：{missing}"
+              raw=[int(x) for x in re.findall(r"# TODO (\d+)(?:-\d+)?",text)]
+              groups=[]
+              for group in raw:
+                  if not groups or groups[-1] != group:
+                      groups.append(group)
+              expected=list(expected)
+              print(qid,"groups=",groups,"expected=",expected)
+              assert groups == expected, f"{qid} TODO 顺序错误：实际 {groups}，应为 {expected}"
           PY
       - name: Validate all advanced reference answers
         run: python "验证竞赛强化题.py"
