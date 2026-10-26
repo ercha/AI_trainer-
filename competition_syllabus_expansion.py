@@ -905,10 +905,288 @@ len(result)/(result.latency_ms.sum()/1000)"""
     write_answer(qid, "智慧校园 AI 原型：需求、检索、界面、性能与交付", sol)
 
 
+def _draw_synthetic_face(path, gender, age, seed):
+    rng=np.random.default_rng(seed)
+    bg=(238,228,232) if gender=="female" else (226,234,242)
+    im=Image.new("RGB",(96,96),bg)
+    d=ImageDraw.Draw(im)
+    dx=int(rng.integers(-3,4)); dy=int(rng.integers(-2,3))
+    hair=(45+int(rng.integers(0,25)),35+int(rng.integers(0,20)),30+int(rng.integers(0,18)))
+    skin=(220+int(rng.integers(0,20)),170+int(rng.integers(0,25)),145+int(rng.integers(0,25)))
+    if gender=="female":
+        d.ellipse((14+dx,7+dy,82+dx,88+dy),fill=hair)
+    else:
+        d.ellipse((20+dx,8+dy,76+dx,70+dy),fill=hair)
+    d.ellipse((22+dx,16+dy,74+dx,80+dy),fill=skin)
+    if gender=="female":
+        d.rectangle((15+dx,30+dy,24+dx,83+dy),fill=hair)
+        d.rectangle((72+dx,30+dy,81+dx,83+dy),fill=hair)
+    else:
+        d.rectangle((22+dx,16+dy,74+dx,27+dy),fill=hair)
+    eye_y=43+dy
+    for ex in (36+dx,60+dx):
+        d.ellipse((ex-3,eye_y-2,ex+3,eye_y+2),fill=(25,25,25))
+    d.line((48+dx,48+dy,46+dx,58+dy,50+dx,58+dy),fill=(120,80,70),width=1)
+    d.arc((37+dx,53+dy,59+dx,70+dy),0,180,fill=(130,55,65),width=2)
+    if age=="adult":
+        d.line((34+dx,34+dy,62+dx,34+dy),fill=(165,120,105),width=1)
+    elif age=="senior":
+        for off in (0,4,8):
+            d.line((33+dx,31+dy+off,63+dx,31+dy+off),fill=(155,115,100),width=1)
+        d.line((29+dx,51+dy,35+dx,55+dy),fill=(160,115,100),width=1)
+        d.line((61+dx,55+dy,67+dx,51+dy),fill=(160,115,100),width=1)
+    d.rectangle((31+dx,79+dy,65+dx,95),fill=(110,125,150) if age=="young" else ((105,120,120) if age=="adult" else (90,95,100)))
+    im.save(path)
+
+
+def gen_b6(qid):
+    p=qdir(qid)
+    root=p/"portrait_images"
+    for gender in ("female","male"):
+        d=root/gender
+        d.mkdir(parents=True,exist_ok=True)
+        for i in range(48):
+            age=("young","adult","senior")[i%3]
+            _draw_synthetic_face(d/f"{gender}_{i:03d}.png",gender,age,SEED+2600+i+(0 if gender=="female" else 100))
+    _draw_synthetic_face(p/"predict_image.png","female","adult",SEED+2799)
+
+    starter = """import cv2,joblib
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+
+ROOT=Path("portrait_images")
+files=sorted(ROOT.glob("*/*.png"))
+X=[]; y=[]
+for fp in files:
+    img=cv2.imread(str(fp),cv2.IMREAD_GRAYSCALE)
+    # TODO 1-1：统一缩放到 32×32
+    small=_____________
+    # TODO 1-2：转为 0~1 的一维特征
+    feat=_____________
+    X.append(feat); y.append(fp.parent.name)
+X=np.asarray(X,dtype=np.float32); y=np.asarray(y)
+indices=np.arange(len(y))
+
+# TODO 2-1：按 3:1 分层划分训练/测试索引
+train_idx,test_idx=_____________
+
+model=Pipeline([
+    ("scaler",StandardScaler()),
+    ("svc",SVC(kernel="rbf",C=3.0,gamma="scale",probability=True,random_state=42))
+])
+# TODO 3-1：训练 SVC 概率分类模型
+_____________
+
+test_pred=model.predict(X[test_idx])
+test_prob=model.predict_proba(X[test_idx])
+test_conf=test_prob.max(axis=1)
+acc=accuracy_score(y[test_idx],test_pred)
+
+result=pd.DataFrame({
+    "sample":[files[i].name for i in test_idx],
+    "true":y[test_idx],
+    "pred":test_pred,
+    "confidence":test_conf,
+})
+result.to_csv("portrait_predictions.csv",index=False)
+joblib.dump(model,"best_gender_svc.pkl")
+print("test accuracy =",acc)
+
+preview_bgr=cv2.imread("predict_image.png")
+preview_gray=cv2.cvtColor(preview_bgr,cv2.COLOR_BGR2GRAY)
+# TODO 4-1：按训练时相同方式构造待预测特征
+preview_feat=_____________
+# TODO 4-2：预测类别
+preview_label=_____________
+# TODO 4-3：取得预测类别的最大概率
+preview_prob=_____________
+print("prediction =",preview_label,"probability =",preview_prob)
+
+# TODO 5-1：创建 Matplotlib 画布
+fig,ax=_____________
+ax.imshow(cv2.cvtColor(preview_bgr,cv2.COLOR_BGR2RGB))
+# TODO 5-2：标题写出预测类别和概率
+_____________
+ax.axis("off")
+plt.tight_layout()
+# TODO 5-3：保存预测结果图
+_____________
+plt.show()
+"""
+    sol = """cv2.resize(img,(32,32))
+small.astype(np.float32).reshape(-1)/255.0
+train_test_split(indices,test_size=0.25,random_state=42,stratify=y)
+model.fit(X[train_idx],y[train_idx])
+cv2.resize(preview_gray,(32,32)).astype(np.float32).reshape(1,-1)/255.0
+model.predict(preview_feat)[0]
+float(model.predict_proba(preview_feat).max())
+plt.subplots(figsize=(5,5))
+ax.set_title(f"Prediction: {preview_label}\\nProbability: {preview_prob:.2%}")
+plt.savefig("gender_prediction.png",dpi=150,bbox_inches="tight")"""
+    write_nb(qid,"合成人像二分类、预测概率与 Matplotlib 标注",
+             "使用本地生成的合成人像训练 SVC 概率分类器，完成图像读取、缩放、展平、标准化、分类评估，并把待测女性合成人像及预测类别/概率绘制到结果图。合成标签仅用于练习模型流程。",
+             [code_cell(starter)])
+    write_answer(qid,"合成人像二分类、预测概率与 Matplotlib 标注",sol)
+
+
+def gen_c6(qid):
+    p=qdir(qid)
+    root=p/"face_attributes"
+    for gender in ("female","male"):
+        for age in ("young","adult","senior"):
+            d=root/f"{gender}_{age}"
+            d.mkdir(parents=True,exist_ok=True)
+            for i in range(24):
+                _draw_synthetic_face(d/f"{gender}_{age}_{i:03d}.png",gender,age,SEED+3600+i+(0 if gender=="female" else 500)+("young","adult","senior").index(age)*100)
+    _draw_synthetic_face(p/"woman_preview.png","female","adult",SEED+3999)
+
+    starter = """from pathlib import Path
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from PIL import Image
+import torch
+from torch import nn
+from torch.utils.data import Dataset,DataLoader,random_split
+
+GENDER={"female":0,"male":1}
+AGE={"young":0,"adult":1,"senior":2}
+GENDER_NAMES=["Female","Male"]
+AGE_NAMES=["Young","Adult","Senior"]
+
+class FaceAttributeDataset(Dataset):
+    def __init__(self,root):
+        self.files=sorted(Path(root).glob("*/*.png"))
+    def __len__(self):
+        return len(self.files)
+    def __getitem__(self,index):
+        fp=self.files[index]
+        gender_name,age_name=fp.parent.name.split("_",1)
+        # TODO 1-1：将 gender 字符串映射为类别编号
+        gender=_____________
+        # TODO 1-2：将 age 字符串映射为类别编号
+        age=_____________
+        arr=np.asarray(Image.open(fp).convert("L").resize((48,48)),dtype=np.float32)/255.0
+        x=torch.from_numpy(arr).unsqueeze(0)
+        return x,torch.tensor(gender),torch.tensor(age),fp.name
+
+dataset=FaceAttributeDataset("face_attributes")
+n_train=int(len(dataset)*0.8)
+n_val=len(dataset)-n_train
+# TODO 2-1：固定随机种子完成 8:2 划分
+train_set,val_set=_____________
+# TODO 2-2：建立 batch_size=16 的训练 DataLoader
+train_loader=_____________
+val_loader=DataLoader(val_set,batch_size=32,shuffle=False)
+
+class MultiTaskCNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.features=nn.Sequential(
+            nn.Conv2d(1,12,3,padding=1),nn.ReLU(),nn.MaxPool2d(2),
+            nn.Conv2d(12,24,3,padding=1),nn.ReLU(),nn.MaxPool2d(2),
+            nn.AdaptiveAvgPool2d((4,4))
+        )
+        self.shared=nn.Sequential(nn.Flatten(),nn.Linear(24*4*4,48),nn.ReLU())
+        self.gender_head=nn.Linear(48,2)
+        self.age_head=nn.Linear(48,3)
+    def forward(self,x):
+        z=self.shared(self.features(x))
+        # TODO 3-1：分别输出性别 logits 和年龄段 logits
+        gender_logits=_____________
+        age_logits=_____________
+        return gender_logits,age_logits
+
+torch.manual_seed(42)
+model=MultiTaskCNN()
+opt=torch.optim.Adam(model.parameters(),lr=0.003)
+criterion=nn.CrossEntropyLoss()
+history=[]
+for epoch in range(10):
+    model.train(); total_loss=0.0
+    for x,g,a,_ in train_loader:
+        opt.zero_grad()
+        g_logits,a_logits=model(x)
+        # TODO 3-2：两个分类损失相加作为总损失
+        loss=_____________
+        loss.backward(); opt.step()
+        total_loss += loss.item()*len(x)
+    history.append({"epoch":epoch+1,"loss":total_loss/len(train_set)})
+pd.DataFrame(history).to_csv("multitask_history.csv",index=False)
+
+rows=[]
+model.eval()
+with torch.no_grad():
+    for x,g,a,names in val_loader:
+        g_logits,a_logits=model(x)
+        gp=torch.softmax(g_logits,dim=1); ap=torch.softmax(a_logits,dim=1)
+        for i,name in enumerate(names):
+            rows.append({
+                "sample":name,
+                "gender_true":GENDER_NAMES[int(g[i])],
+                "gender_pred":GENDER_NAMES[int(gp[i].argmax())],
+                "gender_confidence":float(gp[i].max()),
+                "age_true":AGE_NAMES[int(a[i])],
+                "age_pred":AGE_NAMES[int(ap[i].argmax())],
+                "age_confidence":float(ap[i].max()),
+            })
+pd.DataFrame(rows).to_csv("multitask_predictions.csv",index=False)
+torch.save(model.state_dict(),"face_multitask.pt")
+
+preview_img=Image.open("woman_preview.png").convert("L").resize((48,48))
+preview_arr=np.asarray(preview_img,dtype=np.float32)/255.0
+preview_tensor=torch.from_numpy(preview_arr).unsqueeze(0).unsqueeze(0)
+with torch.no_grad():
+    g_logits,a_logits=model(preview_tensor)
+    # TODO 4-1：Softmax 得到两个任务的概率
+    gender_prob=_____________
+    age_prob=_____________
+# TODO 4-2：取得预测类别编号
+gender_idx=_____________
+age_idx=_____________
+gender_conf=float(gender_prob.max())
+age_conf=float(age_prob.max())
+
+fig,ax=plt.subplots(figsize=(5,5))
+ax.imshow(Image.open("woman_preview.png"))
+# TODO 5-1：标题同时写出性别、年龄段及两项概率
+_____________
+ax.axis("off")
+plt.tight_layout()
+# TODO 5-2：保存最终预测可视化
+_____________
+plt.show()
+"""
+    sol = """GENDER[gender_name]
+AGE[age_name]
+random_split(dataset,[n_train,n_val],generator=torch.Generator().manual_seed(42))
+DataLoader(train_set,batch_size=16,shuffle=True)
+self.gender_head(z)
+self.age_head(z)
+criterion(g_logits,g)+criterion(a_logits,a)
+torch.softmax(g_logits,dim=1)
+torch.softmax(a_logits,dim=1)
+int(gender_prob.argmax(1))
+int(age_prob.argmax(1))
+ax.set_title(f"Gender: {GENDER_NAMES[gender_idx]} ({gender_conf:.2%})\\nAge: {AGE_NAMES[age_idx]} ({age_conf:.2%})")
+plt.savefig("age_gender_prediction.png",dpi=150,bbox_inches="tight")"""
+    write_nb(qid,"合成人像年龄段/性别多任务 CNN 与概率可视化",
+             "使用本地生成的合成人像训练双输出 CNN，同时预测性别标签与年龄段标签；最后用 Matplotlib 显示女性合成人像，并在标题中写出两项预测值和概率。合成标签仅用于练习多任务分类流程。",
+             [code_cell(starter)])
+    write_answer(qid,"合成人像年龄段/性别多任务 CNN 与概率可视化",sol)
+
+
 def generate_expanded_questions():
     gen_a4("6.1.4"); gen_a5("6.1.5")
-    gen_b4("6.2.4"); gen_b5("6.2.5")
-    gen_c4("6.3.4"); gen_c5("6.3.5")
+    gen_b4("6.2.4"); gen_b5("6.2.5"); gen_b6("6.2.6")
+    gen_c4("6.3.4"); gen_c5("6.3.5"); gen_c6("6.3.6")
     gen_d4("6.4.4"); gen_d5("6.4.5")
     gen_e4("6.5.4"); gen_e5("6.5.5")
 
