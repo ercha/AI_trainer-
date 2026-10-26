@@ -69,6 +69,16 @@ PLOT_SPECS = {
     "6.5.5": ("csv_bar_index", "evaluation_results.csv", "question", "correct", "智慧校园原型评测结果", "Correct", "prototype_eval_chart.png"),
 }
 
+FINAL_TODO_GROUPS = {
+    "6.5.1": 7,
+    "6.5.2": 7,
+    "6.5.3": 7,
+}
+
+
+def final_todo_group(qid: str) -> int:
+    return FINAL_TODO_GROUPS.get(qid, 6)
+
 
 def enhance_task(qid: str, task: str) -> str:
     kind, path, pattern, label = INPUT_SPECS[qid]
@@ -100,7 +110,7 @@ def _input_block(qid: str):
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-# TODO 9-1：重新读取{label}，用于交付前的数据质量核验
+# TODO 0-1：重新读取{label}，用于交付前的数据质量核验
 audit_df = _____________
 print("shape =", audit_df.shape)
 print("dtypes =")
@@ -108,14 +118,14 @@ print(audit_df.dtypes)
 print("missing =")
 print(audit_df.isna().sum())
 
-# TODO 9-2：删除完全重复记录，保留独立清洗副本
+# TODO 0-2：删除完全重复记录，保留独立清洗副本
 audit_clean = _____________
 quality = pd.DataFrame({{
     "column": audit_clean.columns.astype(str),
     "dtype": audit_clean.dtypes.astype(str).to_numpy(),
     "missing": audit_clean.isna().sum().to_numpy(),
 }})
-# TODO 9-3：将字段类型和缺失值统计保存为 UTF-8-SIG CSV
+# TODO 0-3：将字段类型和缺失值统计保存为 UTF-8-SIG CSV
 _____________'''
         answers = [reader, 'audit_df.drop_duplicates().copy()',
                    'quality.to_csv("data_quality_check.csv",index=False,encoding="utf-8-sig")']
@@ -129,7 +139,7 @@ from pathlib import Path
 
 audit_files = sorted(Path("{path}").glob("{pattern}"))
 assert audit_files, "未找到输入图像"
-# TODO 9-1：使用 OpenCV 读取首个输入图像，保留原始通道信息
+# TODO 0-1：使用 OpenCV 读取首个输入图像，保留原始通道信息
 audit_image = _____________
 print("images =", len(audit_files), "shape =", audit_image.shape, "dtype =", audit_image.dtype)
 
@@ -140,7 +150,7 @@ quality = pd.DataFrame([{{
     "channels": 1 if audit_image.ndim == 2 else audit_image.shape[2],
     "dtype": str(audit_image.dtype),
 }}])
-# TODO 9-2：保存图像输入核验结果
+# TODO 0-2：保存图像输入核验结果
 _____________'''
         answers = ['cv2.imread(str(audit_files[0]),cv2.IMREAD_UNCHANGED)',
                    'quality.to_csv("data_quality_check.csv",index=False,encoding="utf-8-sig")']
@@ -153,7 +163,7 @@ from pathlib import Path
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 
-# TODO 9-1：使用 ImageFolder 重新读取{label}
+# TODO 0-1：使用 ImageFolder 重新读取{label}
 audit_dataset = _____________
 class_counts = pd.Series([y for _, y in audit_dataset.samples]).value_counts().sort_index()
 quality = pd.DataFrame({{
@@ -162,7 +172,7 @@ quality = pd.DataFrame({{
 }})
 print("classes =", audit_dataset.classes)
 print("samples =", len(audit_dataset))
-# TODO 9-2：保存类别与样本数核验结果
+# TODO 0-2：保存类别与样本数核验结果
 _____________'''
         answers = [f'ImageFolder("{path}",transform=transforms.ToTensor())',
                    'quality.to_csv("data_quality_check.csv",index=False,encoding="utf-8-sig")']
@@ -174,7 +184,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-# TODO 9-1：重新读取 NPZ 训练数据
+# TODO 0-1：重新读取 NPZ 训练数据
 audit_npz = _____________
 quality = pd.DataFrame([{{
     "arrays": ",".join(audit_npz.files),
@@ -184,7 +194,7 @@ quality = pd.DataFrame([{{
     "label_dtype": str(audit_npz["labels"].dtype),
 }}])
 print(quality)
-# TODO 9-2：保存数组结构核验结果
+# TODO 0-2：保存数组结构核验结果
 _____________'''
         answers = [f'np.load("{path}")',
                    'quality.to_csv("data_quality_check.csv",index=False,encoding="utf-8-sig")']
@@ -195,6 +205,7 @@ _____________'''
 
 def _plot_block(qid: str):
     kind, source, x, y, title, ylabel, output = PLOT_SPECS[qid]
+    todo_group = final_todo_group(qid)
     head = 'plt.figure(figsize=(9, 4.8))'
     if kind == "csv_bar":
         setup = f'plot_df=pd.read_csv("{source}")'
@@ -234,14 +245,14 @@ def _plot_block(qid: str):
 
     code = f'''{setup}
 {head}
-# TODO 10-1：使用 matplotlib 绘制指定结果图
+# TODO {todo_group}-1：使用 matplotlib 绘制指定结果图
 _____________
 plt.title("{title}")
 plt.xlabel("{x or "Category"}")
 plt.ylabel("{ylabel}")
 plt.xticks(rotation=45,ha="right")
 plt.tight_layout()
-# TODO 10-2：以 150 dpi 保存可视化结果
+# TODO {todo_group}-2：以 150 dpi 保存可视化结果
 _____________
 plt.show()
 
@@ -252,13 +263,31 @@ print("交付核验通过：data_quality_check.csv, {output}")'''
     return code, answers
 
 
-def extra_workflow_code(qid: str) -> str:
+def pre_workflow_code(qid: str) -> str:
     input_code, _ = _input_block(qid)
+    return input_code
+
+
+def post_workflow_code(qid: str) -> str:
     plot_code, _ = _plot_block(qid)
-    return input_code + "\n\n" + plot_code
+    return plot_code
+
+
+def pre_workflow_answers(qid: str) -> list[str]:
+    _, input_answers = _input_block(qid)
+    return input_answers
+
+
+def post_workflow_answers(qid: str) -> list[str]:
+    _, plot_answers = _plot_block(qid)
+    return plot_answers
+
+
+def extra_workflow_code(qid: str) -> str:
+    """兼容旧调用：返回 TODO 0 输入核验 + 最终可视化。"""
+    return pre_workflow_code(qid) + "\n\n" + post_workflow_code(qid)
 
 
 def extra_workflow_answers(qid: str) -> list[str]:
-    _, input_answers = _input_block(qid)
-    _, plot_answers = _plot_block(qid)
-    return input_answers + plot_answers
+    """兼容旧调用。"""
+    return pre_workflow_answers(qid) + post_workflow_answers(qid)
