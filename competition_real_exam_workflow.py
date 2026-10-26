@@ -3,7 +3,7 @@
 """为 6.x 竞赛强化题补充更接近真实样题的完整任务链。
 
 该模块只负责给生成的 Notebook 追加“输入核验 -> 数据质量记录 -> matplotlib 可视化 ->
-结果交付”训练，不改变各题原有核心算法 TODO。这样可以在 25 道题中重复训练比赛必考的
+结果交付”训练，不改变各题原有核心算法 TODO。这样可以在 27 道题中重复训练比赛必考的
 文件读取、数据检查、结果展示和保存能力。
 """
 
@@ -20,11 +20,13 @@ INPUT_SPECS = {
     "6.2.3": ("csv", "housing.csv", "", "房价数据"),
     "6.2.4": ("csv", "classification.csv", "", "二分类数据"),
     "6.2.5": ("csv", "cluster_features.csv", "", "聚类特征数据"),
+    "6.2.6": ("imagefolder", "portrait_images", "", "合成人像二分类数据集"),
     "6.3.1": ("imagefolder", "shape_images", "", "三类图形数据集"),
     "6.3.2": ("imagefolder", "flower_images", "", "四类花卉数据集"),
     "6.3.3": ("imagefolder", "scene_images", "", "四类场景数据集"),
     "6.3.4": ("csv", "annotations.csv", "", "目标检测标注"),
     "6.3.5": ("image", "seg_images", "*.png", "分割图像"),
+    "6.3.6": ("imagefolder", "face_attributes", "", "合成人像年龄段/性别数据集"),
     "6.4.1": ("csv", "news_train.csv", "", "新闻分类语料"),
     "6.4.2": ("csv", "reviews.csv", "", "商品评论数据"),
     "6.4.3": ("csv", "corpus_news.csv", "", "新闻主题语料"),
@@ -48,11 +50,13 @@ PLOT_SPECS = {
     "6.2.3": ("csv_bar", "model_comparison.csv", "model", "RMSE", "回归模型 RMSE 对比", "RMSE", "house_model_chart.png"),
     "6.2.4": ("csv_bar", "classifier_comparison.csv", "model", "f1", "分类器 F1 对比", "F1", "classifier_f1_chart.png"),
     "6.2.5": ("csv_bar", "cluster_comparison.csv", "model", "silhouette", "聚类算法轮廓系数对比", "Silhouette Score", "cluster_score_chart.png"),
+    "6.2.6": ("csv_bar_index", "portrait_predictions.csv", "sample", "confidence", "人像分类预测置信度", "Probability", "portrait_confidence_chart.png"),
     "6.3.1": ("csv_line", "training_history.csv", "epoch", "loss", "CNN 训练损失曲线", "Loss", "cnn_loss_chart.png"),
     "6.3.2": ("dataset_size", "", "", "", "花卉训练/验证样本量", "Samples", "flower_split_chart.png"),
     "6.3.3": ("dataset_size", "", "", "", "场景训练/验证样本量", "Samples", "scene_split_chart.png"),
     "6.3.4": ("json_detection", "detection_metrics.json", "", "", "目标检测指标", "Score", "detection_metrics_chart.png"),
     "6.3.5": ("json_iou", "segmentation_metrics.json", "", "", "语义分割 IoU", "IoU", "segmentation_iou_chart.png"),
+    "6.3.6": ("csv_bar_index", "multitask_predictions.csv", "sample", "gender_confidence", "多任务人像性别预测置信度", "Probability", "face_multitask_confidence_chart.png"),
     "6.4.1": ("input_count", "", "label", "", "新闻类别样本分布", "Samples", "news_class_chart.png"),
     "6.4.2": ("input_count", "", "label", "", "评论情感标签分布", "Samples", "review_label_chart.png"),
     "6.4.3": ("csv_count", "topic_result.csv", "dominant_topic", "", "LDA 主主题分布", "Documents", "topic_distribution_chart.png"),
