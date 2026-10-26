@@ -872,7 +872,7 @@ def generate(force=False):
     marker=SRC/".advanced_competition_v6"
     upgrading = not marker.exists()
     for qid in [*[f"6.{j}.{i}" for j in range(1,6) for i in range(1,6)], "6.2.6", "6.3.6"]:
-        # 首次升级到 v4 时清理旧强化题目录，避免旧版题目和代码排版残留。
+        # 首次升级到 v6 时清理旧强化题目录，避免旧版题目和代码排版残留。
         if (force or upgrading) and (SRC/qid).exists(): shutil.rmtree(SRC/qid)
     gen_a1("6.1.1"); gen_a2("6.1.2"); gen_a3("6.1.3")
     gen_b("6.2.1","cluster"); gen_b("6.2.2","churn"); gen_b("6.2.3","house")
