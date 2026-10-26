@@ -14,7 +14,7 @@ ANSWERS = ROOT / "人工智能训练师三级素材" / "操作题答案"
 PAGES = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级考试平台模拟界面"
 QIDS = ([f"1.1.{i}" for i in range(1, 6)] + [f"2.{j}.{i}" for j in (1, 2) for i in range(1, 6)]
         + [f"3.2.{i}" for i in range(1, 6)] + [f"5.1.{i}" for i in range(1, 6)]
-        + [f"6.{j}.{i}" for j in range(1, 6) for i in range(1, 6)])
+        + [f"6.{j}.{i}" for j in range(1, 6) for i in range(1, 6)] + ["6.2.6", "6.3.6"])
 ADVANCED_MINUTES = [
     40, 45, 45, 40, 40,
     50, 55, 55, 50, 55,
@@ -22,6 +22,7 @@ ADVANCED_MINUTES = [
     50, 55, 55, 65, 55,
     60, 65, 65, 70, 75,
 ]
+ADVANCED_EXTRA_MINUTES = {"6.2.6": 55, "6.3.6": 65}
 
 
 class PageText(HTMLParser):
@@ -44,6 +45,8 @@ def duration_minutes(qid):
             match = re.search(r"\d+", value)
             if match:
                 return int(match[0])
+    if qid in ADVANCED_EXTRA_MINUTES:
+        return ADVANCED_EXTRA_MINUTES[qid]
     if qid.startswith("6.") and qid in QIDS:
         parts = [int(x) for x in qid.split(".")]
         return ADVANCED_MINUTES[(parts[1] - 1) * 5 + parts[2] - 1]
@@ -534,8 +537,10 @@ def result_checks(qid, workspace, snapshot):
             "6.1.4": ["color_detection.csv"], "6.1.5": ["template_detection.csv"],
             "6.2.1": ["customer_clusters.csv", "k_selection.csv", "best_cluster_model.pkl"],
             "6.2.5": ["cluster_comparison.csv", "cluster_results.csv", "pca_tsne.png"],
+            "6.2.6": ["portrait_predictions.csv", "best_gender_svc.pkl", "gender_prediction.png"],
             "6.3.4": ["detection_metrics.json", "detection_preview.png"],
             "6.3.5": ["segmentation_metrics.json", "segmentation_preview.png", "gan_samples.png"],
+            "6.3.6": ["face_multitask.pt", "multitask_predictions.csv", "age_gender_prediction.png"],
             "6.4.3": ["topics.json", "recommendations.json", "topic_result.csv"],
             "6.4.4": ["ner_results.csv", "translation_results.csv"],
             "6.4.5": ["generation_results.csv", "rouge_report.json"],
@@ -641,6 +646,12 @@ def result_checks(qid, workspace, snapshot):
             ok = ok and {"pca_x","pca_y","tsne_x","tsne_y","kmeans","dbscan"}.issubset(result.columns)
             ok = ok and np.isfinite(result[["pca_x","pca_y","tsne_x","tsne_y"]].to_numpy()).all()
             check("多聚类与降维结果", ok, "包含四种聚类算法，以及有效的 PCA/t-SNE 二维坐标", str(comp)[:800])
+        if qid == "6.2.6":
+            frame = pd.read_csv(workspace / "portrait_predictions.csv")
+            ok = len(frame) > 0 and {"true","pred","confidence"}.issubset(frame.columns)
+            if ok:
+                ok = frame.confidence.between(0,1).all() and set(frame.pred.astype(str)).issubset({"female","male"})
+            check("人像二分类概率预测", ok, "测试集预测完整，类别合法且概率位于 [0,1]", str(frame.head())[:800])
         if qid == "6.3.4":
             metrics = json.loads((workspace / "detection_metrics.json").read_text(encoding="utf-8"))
             yolo = list((workspace / "yolo_labels").glob("*.txt"))
@@ -653,6 +664,15 @@ def result_checks(qid, workspace, snapshot):
             shape = metrics.get("deeplab_output_shape")
             ok = 0 <= float(metrics.get("mean_iou",-1)) <= 1 and shape == [1,2,64,64]
             check("U-Net/DeepLab 分割结果", ok, "IoU 位于 [0,1] 且 DeepLab 输出为 [1,2,64,64]", str(metrics))
+        if qid == "6.3.6":
+            frame = pd.read_csv(workspace / "multitask_predictions.csv")
+            needed={"gender_true","gender_pred","gender_confidence","age_true","age_pred","age_confidence"}
+            ok = len(frame) > 0 and needed.issubset(frame.columns)
+            if ok:
+                ok = frame.gender_confidence.between(0,1).all() and frame.age_confidence.between(0,1).all()
+                ok = ok and set(frame.gender_pred.astype(str)).issubset({"Female","Male"})
+                ok = ok and set(frame.age_pred.astype(str)).issubset({"Young","Adult","Senior"})
+            check("人像多任务概率预测", ok, "性别/年龄段预测完整，两项概率均位于 [0,1]", str(frame.head())[:800])
         if qid == "6.4.4":
             ner = pd.read_csv(workspace / "ner_results.csv")
             trans = pd.read_csv(workspace / "translation_results.csv")

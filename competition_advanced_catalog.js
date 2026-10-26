@@ -1,7 +1,7 @@
 window.ADVANCED_UNITS=[
 {id:'6.1',name:'竞赛强化 A·图像处理技术',count:5},
-{id:'6.2',name:'竞赛强化 B·机器学习',count:5},
-{id:'6.3',name:'竞赛强化 C·深度学习',count:5},
+{id:'6.2',name:'竞赛强化 B·机器学习',count:6},
+{id:'6.3',name:'竞赛强化 C·深度学习',count:6},
 {id:'6.4',name:'竞赛强化 D·自然语言处理',count:5},
 {id:'6.5',name:'竞赛强化 E·AI创新项目',count:5}
 ];
@@ -309,20 +309,44 @@ window.ADVANCED_DETAILS={
   'TODO 4：统计响应时间与吞吐量',
   'TODO 5：生成 app.py、README.md、demo_script.md、benchmark.csv 与 evaluation_results.csv'
  ]
+},
+'6.2.6':{
+ title:'合成人像二分类、预测概率与 Matplotlib 标注',
+ tags:['SVC','predict_proba','图像分类','概率','matplotlib'],
+ taskText:'使用本地生成的合成人像完成二分类训练与概率预测。重点练习图像读取/缩放/展平、SVC(probability=True)、predict_proba，以及在结果图标题中写出预测类别和概率。',
+ req:[
+  'TODO 1：批量读取 portrait_images 下两类合成人像，统一为 32×32 灰度图并展平归一化',
+  'TODO 2：按 3:1 分层划分训练/测试集',
+  'TODO 3：使用 StandardScaler + SVC(probability=True) 完成训练并评估准确率',
+  'TODO 4：读取 predict_image.png，预测类别并取得最大预测概率',
+  'TODO 5：用 matplotlib 显示待测女性合成人像，在标题中标注 Prediction 与 Probability，并保存 gender_prediction.png'
+ ]
+},
+'6.3.6':{
+ title:'合成人像年龄段/性别多任务 CNN 与概率可视化',
+ tags:['PyTorch','CNN','多任务学习','Softmax','概率可视化'],
+ taskText:'使用本地生成的合成人像训练双输出 CNN，同时预测性别标签与年龄段标签，并把女性合成人像、两项预测结果及各自概率显示在 Matplotlib 标题中。',
+ req:[
+  'TODO 1：从 face_attributes 目录解析 gender/age 标签并构造 Dataset',
+  'TODO 2：固定随机种子按 8:2 划分数据并建立 DataLoader',
+  'TODO 3：搭建共享卷积特征 + gender_head/age_head，两个交叉熵损失相加训练',
+  'TODO 4：对 woman_preview.png 做 Softmax 概率预测，分别取得性别和年龄段预测类别',
+  'TODO 5：用 matplotlib 显示女性合成人像，在标题中写出 Gender/Age 与两项概率，并保存 age_gender_prediction.png'
+ ]
 }
 };
 
 const REAL_EXAM_INPUTS={
 '6.1.1':'input_images/*.jpg','6.1.2':'road_images/*.jpg','6.1.3':'defect_images/*.png','6.1.4':'color_images/*.jpg','6.1.5':'ground_truth.csv',
-'6.2.1':'customer_behavior.csv','6.2.2':'telecom_churn.csv','6.2.3':'housing.csv','6.2.4':'classification.csv','6.2.5':'cluster_features.csv',
-'6.3.1':'shape_images/','6.3.2':'flower_images/','6.3.3':'scene_images/','6.3.4':'annotations.csv','6.3.5':'seg_images/*.png',
+'6.2.1':'customer_behavior.csv','6.2.2':'telecom_churn.csv','6.2.3':'housing.csv','6.2.4':'classification.csv','6.2.5':'cluster_features.csv','6.2.6':'portrait_images/',
+'6.3.1':'shape_images/','6.3.2':'flower_images/','6.3.3':'scene_images/','6.3.4':'annotations.csv','6.3.5':'seg_images/*.png','6.3.6':'face_attributes/',
 '6.4.1':'news_train.csv','6.4.2':'reviews.csv','6.4.3':'corpus_news.csv','6.4.4':'translation_pairs.csv','6.4.5':'generation_tasks.csv',
 '6.5.1':'orders.json','6.5.2':'complaints.csv','6.5.3':'questions.csv','6.5.4':'lora_train.npz','6.5.5':'eval_questions.csv'
 };
 const REAL_EXAM_PLOTS={
 '6.1.1':'basic_processing_chart.png','6.1.2':'detection_summary_chart.png','6.1.3':'defect_area_chart.png','6.1.4':'red_object_chart.png','6.1.5':'template_error_chart.png',
-'6.2.1':'k_selection_chart.png','6.2.2':'churn_metrics_chart.png','6.2.3':'house_model_chart.png','6.2.4':'classifier_f1_chart.png','6.2.5':'cluster_score_chart.png',
-'6.3.1':'cnn_loss_chart.png','6.3.2':'flower_split_chart.png','6.3.3':'scene_split_chart.png','6.3.4':'detection_metrics_chart.png','6.3.5':'segmentation_iou_chart.png',
+'6.2.1':'k_selection_chart.png','6.2.2':'churn_metrics_chart.png','6.2.3':'house_model_chart.png','6.2.4':'classifier_f1_chart.png','6.2.5':'cluster_score_chart.png','6.2.6':'portrait_confidence_chart.png',
+'6.3.1':'cnn_loss_chart.png','6.3.2':'flower_split_chart.png','6.3.3':'scene_split_chart.png','6.3.4':'detection_metrics_chart.png','6.3.5':'segmentation_iou_chart.png','6.3.6':'face_multitask_confidence_chart.png',
 '6.4.1':'news_class_chart.png','6.4.2':'review_label_chart.png','6.4.3':'topic_distribution_chart.png','6.4.4':'bleu_chart.png','6.4.5':'rouge_chart.png',
 '6.5.1':'order_category_chart.png','6.5.2':'complaint_priority_chart.png','6.5.3':'rag_score_chart.png','6.5.4':'lora_throughput_chart.png','6.5.5':'prototype_eval_chart.png'
 };

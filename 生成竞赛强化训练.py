@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""生成 6.1.1~6.5.5 共 25 道竞赛强化训练题。
+"""生成 27 道竞赛强化训练题：原 6.1.1~6.5.5 共 25 道，并新增 6.2.6 / 6.3.6。
 
 模块 A 按正式竞赛范围覆盖图像基础操作、颜色空间、边界填充、缩放、三种滤波、
 Canny、阈值分割、轮廓检测和经典 OpenCV 目标区域提取。
@@ -869,10 +869,10 @@ sum(k in a for k in keys)/len(keys)"""
     write_answer(qid,title,sol)
 
 def generate(force=False):
-    marker=SRC/".advanced_competition_v5"
+    marker=SRC/".advanced_competition_v6"
     upgrading = not marker.exists()
-    for qid in [f"6.{j}.{i}" for j in range(1,6) for i in range(1,6)]:
-        # 首次升级到 v4 时清理旧强化题目录，避免旧版题目和代码排版残留。
+    for qid in [*[f"6.{j}.{i}" for j in range(1,6) for i in range(1,6)], "6.2.6", "6.3.6"]:
+        # 首次升级到 v6 时清理旧强化题目录，避免旧版题目和代码排版残留。
         if (force or upgrading) and (SRC/qid).exists(): shutil.rmtree(SRC/qid)
     gen_a1("6.1.1"); gen_a2("6.1.2"); gen_a3("6.1.3")
     gen_b("6.2.1","cluster"); gen_b("6.2.2","churn"); gen_b("6.2.3","house")
@@ -881,12 +881,12 @@ def generate(force=False):
     gen_e("6.5.1",1); gen_e("6.5.2",2); gen_e("6.5.3",3)
     generate_expanded_questions()
     marker.write_text("generated\n",encoding="utf-8")
-    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2", SRC/".advanced_competition_v3", SRC/".advanced_competition_v4"):
+    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2", SRC/".advanced_competition_v3", SRC/".advanced_competition_v4", SRC/".advanced_competition_v5"):
         legacy.unlink(missing_ok=True)
-    print("已生成 25 道竞赛强化训练题：6.1.1 ~ 6.5.5")
+    print("已生成 27 道竞赛强化训练题：原 6.1.1 ~ 6.5.5，并新增 6.2.6 / 6.3.6")
 
 if __name__=="__main__":
     ap=argparse.ArgumentParser()
-    ap.add_argument("--force",action="store_true",help="覆盖并重新生成 25 道强化题")
+    ap.add_argument("--force",action="store_true",help="覆盖并重新生成 27 道强化题")
     args=ap.parse_args()
     generate(force=args.force)

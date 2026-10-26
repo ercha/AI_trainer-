@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""本地验证 25 道竞赛强化训练题，不执行耗时模型训练。"""
+"""本地验证 27 道竞赛强化训练题，不执行耗时模型训练。"""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def main() -> None:
         source = (ROOT / name).read_text(encoding="utf-8-sig")
         ast.parse(source, filename=name)
 
-    print("[2/4] 重新生成 25 道强化题")
+    print("[2/4] 重新生成 27 道强化题")
     subprocess.run(
         [sys.executable, str(ROOT / "生成竞赛强化训练.py"), "--force"],
         cwd=ROOT,
@@ -35,8 +35,8 @@ def main() -> None:
     )
 
     print("[3/4] 检查 Notebook、TODO 与占位符")
-    ids = [f"6.{module}.{index}" for module in range(1, 6) for index in range(1, 6)]
-    assert len(ids) == 25
+    ids = [f"6.{module}.{index}" for module in range(1, 6) for index in range(1, 6)] + ["6.2.6", "6.3.6"]
+    assert len(ids) == 27
     for qid in ids:
         path = SRC / qid / f"{qid}.ipynb"
         assert path.is_file(), f"{qid}: Notebook 不存在"
@@ -52,7 +52,7 @@ def main() -> None:
         answer = reference_answers.get_reference_answer(qid, ROOT)
         ast.parse(answer["code"], filename=f"{qid}_完整答案.py")
 
-    print("OK：25 道强化题均已生成，参考答案与占位符匹配，完整代码语法有效")
+    print("OK：27 道强化题均已生成，参考答案与占位符匹配，完整代码语法有效")
 
 
 if __name__ == "__main__":

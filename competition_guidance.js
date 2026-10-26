@@ -32,7 +32,7 @@ window.COMPETITION_GUIDANCE={
         {title:'分类/回归',items:['LogisticRegression','SVC','KNeighborsClassifier','RandomForestClassifier','LinearRegression','DecisionTreeRegressor','RandomForestRegressor']},
         {title:'聚类/降维/调参',items:['KMeans','DBSCAN','AgglomerativeClustering','GaussianMixture','silhouette_score','GridSearchCV','PCA','TSNE']}
       ],
-      must:['6.2.4','6.2.3','6.2.1','6.2.5'],strengthen:['6.2.2'],
+      must:['6.2.4','6.2.3','6.2.1','6.2.5'],strengthen:['6.2.2','6.2.6'],
       checkpoints:['先 split 再对训练集 fit 预处理器，避免数据泄漏','分类任务尽量使用 stratify=y','测试集只能 transform，不能再次 fit_transform','分类看 Accuracy/Recall/F1，回归看 RMSE/R²','聚类没有真实标签时重点看簇数、噪声与 silhouette_score'],
       exam:'把预处理和模型放入 Pipeline 能显著减少漏步骤。模型比较题先统一数据划分和评价口径，再循环训练，避免不同模型使用了不同测试集。'
     },
@@ -45,7 +45,7 @@ window.COMPETITION_GUIDANCE={
         {title:'迁移学习',items:['torchvision.models.resnet18','requires_grad','state_dict','load_state_dict']},
         {title:'检测/分割',items:['FasterRCNN','boxes/labels target','IoU/AP50','BCEWithLogitsLoss','DeepLabV3','U-Net skip connection']}
       ],
-      must:['6.3.1','6.3.2','6.3.3'],strengthen:['6.3.4','6.3.5'],
+      must:['6.3.1','6.3.2','6.3.3'],strengthen:['6.3.4','6.3.5','6.3.6'],
       checkpoints:['先检查 batch 的 NCHW 形状和标签 dtype','训练阶段 model.train()，验证阶段 model.eval() + no_grad()','CrossEntropyLoss 输入 logits，不要提前 softmax','冻结层后确认真正可训练参数只包含预期层','检测框坐标格式要统一，分割预测 sigmoid/阈值后再计算 IoU'],
       exam:'先保证一个最小训练循环可运行，再补增强、冻结、指标和图片。深度学习题最常见失分不是网络复杂度，而是 shape、dtype、train/eval 状态和输出文件漏交。'
     },

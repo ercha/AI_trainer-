@@ -24,7 +24,7 @@ EXAM_STATUS_URL = BASE_URL + "/api/exam/status"
 PYTHON_EXE = ROOT / ".venv" / "Scripts" / "python.exe"
 SERVER_SCRIPT = ROOT / "serve_practice.py"
 ADVANCED_GENERATOR = ROOT / "生成竞赛强化训练.py"
-ADVANCED_MARKER = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级上网素材" / ".advanced_competition_v4"
+ADVANCED_MARKER = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级上网素材" / ".advanced_competition_v6"
 LOG_PATH = ROOT / "_trainer_service.log"
 
 SERVER_PROCESS: subprocess.Popen | None = None
