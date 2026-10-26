@@ -350,6 +350,7 @@ const REAL_EXAM_PLOTS={
 '6.4.1':'news_class_chart.png','6.4.2':'review_label_chart.png','6.4.3':'topic_distribution_chart.png','6.4.4':'bleu_chart.png','6.4.5':'rouge_chart.png',
 '6.5.1':'order_category_chart.png','6.5.2':'complaint_priority_chart.png','6.5.3':'rag_score_chart.png','6.5.4':'lora_throughput_chart.png','6.5.5':'prototype_eval_chart.png'
 };
+const FINAL_TODO_GROUPS={'6.5.1':7,'6.5.2':7,'6.5.3':7};
 const MODULE_DATA_RULE={
 '1':'图像任务需先枚举输入文件，使用 OpenCV/PIL 实际读取样本，检查数量、尺寸、通道和 dtype；处理后既要保存中间图像，也要用 matplotlib 展示关键处理结果。',
 '2':'机器学习任务需从原始表格开始，检查 shape、字段类型、缺失值和类别分布；再完成填补/编码/标准化、数据划分、建模、评价、模型或预测结果保存。',
@@ -361,12 +362,12 @@ Object.entries(window.ADVANCED_DETAILS).forEach(([qid,item])=>{
   const module=qid.split('.')[1];
   item.tags=[...new Set([...item.tags,'数据读取','数据预处理','matplotlib','结果保存'])];
   item.taskText += ' 本题按真实竞赛任务链训练，不能只补模型 API，还必须完成输入核验、数据质量检查、结果可视化与交付文件验证。';
+  const finalTodo=FINAL_TODO_GROUPS[qid]||6;
   item.req=[
-    `TODO 0：从 ${REAL_EXAM_INPUTS[qid]} 独立读取原始输入，检查数据/文件数量、shape、字段类型或 dtype，并记录缺失值等基础质量信息`,
+    `TODO 0：从 ${REAL_EXAM_INPUTS[qid]} 独立读取原始输入，检查数据/文件数量、shape、字段类型或 dtype，并完成数据质量核验，保存 data_quality_check.csv`,
     MODULE_DATA_RULE[module],
     ...item.req,
-    'TODO 9：重新读取原始输入，完成字段/样本核验、缺失值检查；表格类数据额外完成重复记录清理，并保存 data_quality_check.csv',
-    `TODO 10：使用 matplotlib 对本题关键结果进行可视化，设置标题、坐标轴标签和必要刻度，保存为 ${REAL_EXAM_PLOTS[qid]}，提交前检查关键输出文件`
+    `TODO ${finalTodo}：使用 matplotlib 对本题关键结果进行可视化，设置标题、坐标轴标签和必要刻度，保存为 ${REAL_EXAM_PLOTS[qid]}，提交前检查关键输出文件`
   ];
 });
 
