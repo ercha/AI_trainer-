@@ -33,7 +33,7 @@ jobs:
       - name: Python syntax
         run: |
           python -m py_compile "生成竞赛强化训练.py" competition_syllabus_expansion.py competition_real_exam_workflow.py competition_todo_alignment.py "导入竞赛练习.py" serve_practice.py tray_launcher.py exam_grading.py reference_answers.py
-      - name: Generate all 25 advanced exercises
+      - name: Generate all 27 advanced exercises
         run: python "生成竞赛强化训练.py" --force
       - name: Validate generated notebooks
         run: |
@@ -42,8 +42,8 @@ jobs:
           import re
           from pathlib import Path
           root=Path("人工智能训练师三级素材/人工智能训练师三级上网素材")
-          ids=[f"6.{m}.{i}" for m in range(1,6) for i in range(1,6)]
-          assert len(ids)==25
+          ids=[f"6.{m}.{i}" for m in range(1,6) for i in range(1,6)]+["6.2.6","6.3.6"]
+          assert len(ids)==27
           for qid in ids:
               p=root/qid/f"{qid}.ipynb"
               assert p.is_file(), p
@@ -117,5 +117,5 @@ jobs:
           Path("/tmp/practice-inline.js").write_text(inline, encoding="utf-8")
           PY
           node --check /tmp/practice-inline.js
-          node -e "global.window={};require('./competition_guidance.js');const g=window.COMPETITION_GUIDANCE;if(Object.keys(g.modules).length!==5)process.exit(1);if(Object.values(g.modules).reduce((n,m)=>n+m.must.length+m.strengthen.length,0)!==25)process.exit(1);"
+          node -e "global.window={};require('./competition_guidance.js');const g=window.COMPETITION_GUIDANCE;if(Object.keys(g.modules).length!==5)process.exit(1);if(Object.values(g.modules).reduce((n,m)=>n+m.must.length+m.strengthen.length,0)!==27)process.exit(1);"
           node -e "global.window={};require('./competition_theory_bank.js');const b=window.COMPETITION_THEORY_BANK;if(!b||b.counts.total!==456||b.counts.single!==304||b.counts.multi!==137||b.counts.fill!==15)process.exit(1);if(b.questions.length!==456)process.exit(1);"
