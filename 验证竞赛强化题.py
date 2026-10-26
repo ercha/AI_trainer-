@@ -10,6 +10,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+from competition_todo_alignment import EXPECTED_TODO_GROUPS
+
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级上网素材"
 
@@ -44,6 +46,13 @@ def main() -> None:
         text = "\n".join("".join(cell.get("source", [])) for cell in nb.get("cells", []))
         assert "# TODO " in text, f"{qid}: 缺少 TODO"
         assert "_____________" in text, f"{qid}: 缺少待填空"
+        raw = [int(x) for x in __import__("re").findall(r"# TODO (\d+)(?:-\d+)?", text)]
+        groups = []
+        for group in raw:
+            if not groups or groups[-1] != group:
+                groups.append(group)
+        expected = list(EXPECTED_TODO_GROUPS[qid])
+        assert groups == expected, f"{qid}: TODO 顺序错误，实际 {groups}，应为 {expected}"
 
     print("[4/4] 将参考答案填回 Notebook 并做完整 Python 语法检查")
     import reference_answers
