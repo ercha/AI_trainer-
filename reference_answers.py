@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 
 import exam_grading as grading
+from competition_real_exam_workflow import pre_workflow_answers
 
 
 def complete_advanced_code(qid: str, notebook: dict, snippets: str) -> str:
@@ -16,17 +17,25 @@ def complete_advanced_code(qid: str, notebook: dict, snippets: str) -> str:
         if isinstance(value, ast.Tuple) and len(value.elts) == 1:
             value = value.elts[0]
         values.append(ast.unparse(value))
-    # 这两题的答案以多条语句表示一个填空，需还原为对应的表达式。
+    # TODO 0 的输入核验答案现在位于参考答案最前面；特殊题只对其后的核心答案做还原。
+    prefix_count = len(pre_workflow_answers(qid))
+    prefix_values = values[:prefix_count]
+    body_values = values[prefix_count:]
+    body_nodes = nodes[prefix_count:]
+
+    # 这几题的核心答案以多条语句表示一个填空，需还原为对应的表达式。
     if qid == "6.1.3":
-        tail = values[5:]
-        values = [values[0], f"({values[1]})[1]", f"({values[2]})[1]",
-                  "cv2.morphologyEx(cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel), "
-                  "cv2.MORPH_CLOSE, kernel, iterations=2)", *tail]
+        tail = body_values[5:]
+        body_values = [body_values[0], f"({body_values[1]})[1]", f"({body_values[2]})[1]",
+                       "cv2.morphologyEx(cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel), "
+                       "cv2.MORPH_CLOSE, kernel, iterations=2)", *tail]
     elif qid == "6.3.2":
-        values = [", ".join(values[:4]), *values[4:]]
+        body_values = [", ".join(body_values[:4]), *body_values[4:]]
     elif qid == "6.3.3":
         for index in (1, 3):
-            values[index] = ast.unparse(nodes[index])
+            body_values[index] = ast.unparse(body_nodes[index])
+
+    values = [*prefix_values, *body_values]
 
     blocks = []
     position = 0

@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 from competition_syllabus_expansion import generate_expanded_questions
-from competition_real_exam_workflow import enhance_task, extra_workflow_answers, extra_workflow_code
+from competition_real_exam_workflow import (enhance_task, pre_workflow_code, post_workflow_code, pre_workflow_answers, post_workflow_answers)
 from competition_todo_alignment import alignment_answers, alignment_code
 
 ROOT=Path(__file__).resolve().parent
@@ -78,9 +78,10 @@ def md_cell(text):
 def write_nb(qid,title,task,cells):
     task=enhance_task(qid,task)
     align=alignment_code(qid)
+    cells=[code_cell(pre_workflow_code(qid)),*cells]
     if align:
         cells=[*cells,code_cell(align)]
-    cells=[*cells,code_cell(extra_workflow_code(qid))]
+    cells=[*cells,code_cell(post_workflow_code(qid))]
     nb={"cells":[md_cell(f"# {qid} {title}\n\n{task}\n\n> 按 TODO 编号补全代码。不要删除 TODO 标记。"),*cells],
         "metadata":{"kernelspec":{"display_name":"Python 3 (ipykernel)","language":"python","name":"python3"},
                     "language_info":{"name":"python","version":"3.12"}},
@@ -90,8 +91,8 @@ def write_nb(qid,title,task,cells):
 
 def write_answer(qid,title,solution):
     ANS.mkdir(parents=True,exist_ok=True)
-    extras="\n".join([*alignment_answers(qid),*extra_workflow_answers(qid)])
-    solution=solution.strip()+("\n"+extras if extras else "")
+    parts=[*pre_workflow_answers(qid),solution.strip(),*alignment_answers(qid),*post_workflow_answers(qid)]
+    solution="\n".join(x for x in parts if x)
     (ANS/f"{qid}_答案.md").write_text(f"# {qid} {title} - 参考答案\n\n~~~python\n{solution}\n~~~\n",encoding="utf-8")
 
 def img_dir(qid,name):
@@ -869,10 +870,10 @@ sum(k in a for k in keys)/len(keys)"""
     write_answer(qid,title,sol)
 
 def generate(force=False):
-    marker=SRC/".advanced_competition_v6"
+    marker=SRC/".advanced_competition_v7"
     upgrading = not marker.exists()
     for qid in [*[f"6.{j}.{i}" for j in range(1,6) for i in range(1,6)], "6.2.6", "6.3.6"]:
-        # 首次升级到 v6 时清理旧强化题目录，避免旧版题目和代码排版残留。
+        # 首次升级到 v7 时清理旧强化题目录，避免旧版题目和代码排版残留。
         if (force or upgrading) and (SRC/qid).exists(): shutil.rmtree(SRC/qid)
     gen_a1("6.1.1"); gen_a2("6.1.2"); gen_a3("6.1.3")
     gen_b("6.2.1","cluster"); gen_b("6.2.2","churn"); gen_b("6.2.3","house")
@@ -881,7 +882,7 @@ def generate(force=False):
     gen_e("6.5.1",1); gen_e("6.5.2",2); gen_e("6.5.3",3)
     generate_expanded_questions()
     marker.write_text("generated\n",encoding="utf-8")
-    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2", SRC/".advanced_competition_v3", SRC/".advanced_competition_v4", SRC/".advanced_competition_v5"):
+    for legacy in (SRC/".advanced_competition_v1", SRC/".advanced_competition_v2", SRC/".advanced_competition_v3", SRC/".advanced_competition_v4", SRC/".advanced_competition_v5", SRC/".advanced_competition_v6"):
         legacy.unlink(missing_ok=True)
     print("已生成 27 道竞赛强化训练题：原 6.1.1 ~ 6.5.5，并新增 6.2.6 / 6.3.6")
 

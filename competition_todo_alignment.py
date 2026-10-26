@@ -10,12 +10,12 @@
 from __future__ import annotations
 
 EXPECTED_TODO_GROUPS = {
-    **{f"6.{m}.{i}": tuple(range(1, 6)) for m in range(1, 6) for i in range(1, 6)},
-    "6.2.6": tuple(range(1, 6)),
-    "6.3.6": tuple(range(1, 6)),
-    "6.5.1": tuple(range(1, 7)),
-    "6.5.2": tuple(range(1, 7)),
-    "6.5.3": tuple(range(1, 7)),
+    **{f"6.{m}.{i}": tuple(range(0, 7)) for m in range(1, 6) for i in range(1, 6)},
+    "6.2.6": tuple(range(0, 7)),
+    "6.3.6": tuple(range(0, 7)),
+    "6.5.1": tuple(range(0, 8)),
+    "6.5.2": tuple(range(0, 8)),
+    "6.5.3": tuple(range(0, 8)),
 }
 
 ALIGNMENT = {
