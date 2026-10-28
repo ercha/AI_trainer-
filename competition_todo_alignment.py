@@ -201,7 +201,7 @@ for epoch in range(5):
     model.train(); total=correct=0; loss_sum=0.0
     for x,y in train_loader:
         opt.zero_grad()
-        # TODO 4-1：前向计算并计算交叉熵损失
+        # TODO 4-1：用 model(x) 获得四类 logits，再用 criterion(out, y) 计算交叉熵损失
         out = _____________
         loss = _____________
         loss.backward(); opt.step()
@@ -218,17 +218,17 @@ for epoch in range(5):
     if row["val_acc"]>best_acc:
         best_acc=row["val_acc"]; best_state=copy.deepcopy(model.state_dict())
 
-# TODO 4-2：保存最佳权重
+# TODO 4-2：将验证准确率最高时保存的 best_state 写入 best_flower_cnn.pt
 _____________
 hist=pd.DataFrame(history)
 fig,ax=plt.subplots(1,2,figsize=(10,4))
-# TODO 5-1：绘制 loss 与 accuracy 训练曲线
+# TODO 5-1：左图绘制 train_loss/val_loss，右图绘制 train_acc/val_acc；两图均添加图例和标题
 _____________
 plt.tight_layout()
-# TODO 5-2：保存 training_curve.png
+# TODO 5-2：以 150 dpi 保存 training_curve.png，bbox_inches="tight"
 _____________
 from sklearn.metrics import confusion_matrix
-# TODO 5-3：输出最终验证混淆矩阵
+# TODO 5-3：用最后一轮收集的 all_true 与 all_pred 计算验证集混淆矩阵
 final_confusion = _____________
 final_confusion
 ''', [
