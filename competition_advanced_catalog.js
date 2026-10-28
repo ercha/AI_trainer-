@@ -84,8 +84,8 @@ window.ADVANCED_DETAILS={
  tags:['PyTorch','Dataset','DataLoader','CNN','CrossEntropyLoss'],
  taskText:'使用本地生成的圆形、方形、三角形图片训练三分类 CNN。要求自行完成 Dataset、数据划分、网络结构、训练验证、模型保存和测试评估。',
  req:[
-  'TODO 1：使用 ImageFolder 读取 shape_images；固定随机种子划分训练/验证集',
-  'TODO 2：64×64 两次池化后为 16×16；定义 CrossEntropyLoss 和 Adam',
+  'TODO 1：使用 ImageFolder 读取 shape_images；按 8:2 划分训练/验证集，使用 torch.Generator().manual_seed(42) 固定划分',
+  'TODO 2：64×64 两次池化后为 16×16；定义 nn.CrossEntropyLoss()，以及学习率 lr=1e-3 的 Adam 优化器',
   'TODO 3：写出两次池化后的全连接输入特征数',
   'TODO 4：重新定义交叉熵损失；重新建立 Adam 优化器',
   'TODO 5：得到验证集类别预测；计算验证准确率；保存权重和训练历史'
@@ -96,11 +96,11 @@ window.ADVANCED_DETAILS={
  tags:['PyTorch','torchvision','数据增强','BatchNorm','Dropout'],
  taskText:'在基础 CNN 上加入训练时数据增强、BatchNorm 和 Dropout，完成四类花卉图像分类，并比较训练集与验证集指标以判断过拟合。',
  req:[
-  'TODO 1：按顺序使用 RandomHorizontalFlip(p=0.5)、RandomRotation(15)、ColorJitter(brightness=0.2, contrast=0.2) 和 ToTensor()',
-  'TODO 2：在 24 通道卷积后加入 BatchNorm2d(24)；在 128 维全连接层后加入 Dropout(0.4)',
+  'TODO 1：依次使用 RandomHorizontalFlip(p=0.5)、RandomRotation(15)、ColorJitter(brightness=0.2, contrast=0.2)、ToTensor()',
+  'TODO 2：在 24 通道卷积层后加入 nn.BatchNorm2d(24)；加入 Dropout(0.4)',
   'TODO 3：确认网络同时包含 BatchNorm2d 和 Dropout',
-  'TODO 4：前向计算 logits 并计算交叉熵损失；按最高验证准确率保存 best_flower_cnn.pt',
-  'TODO 5：左右两幅图分别对比训练/验证 loss 和 accuracy；保存 training_curve.png（150 dpi）；输出最后一轮验证集混淆矩阵'
+  'TODO 4：用 model(x) 获得四类 logits，再用 criterion(out, y) 计算交叉熵损失；将验证准确率最高时保存的 best_state 写入 best_flower_cnn.pt',
+  'TODO 5：左图绘制 train_loss/val_loss，右图绘制 train_acc/val_acc；两图均添加图例和标题；以 150 dpi 保存 training_curve.png，bbox_inches="tight"；用最后一轮收集的 all_true 与 all_pred 计算验证集混淆矩阵'
  ]
 },
 '6.3.3':{
