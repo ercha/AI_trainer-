@@ -96,11 +96,11 @@ window.ADVANCED_DETAILS={
  tags:['PyTorch','torchvision','数据增强','BatchNorm','Dropout'],
  taskText:'在基础 CNN 上加入训练时数据增强、BatchNorm 和 Dropout，完成四类花卉图像分类，并比较训练集与验证集指标以判断过拟合。',
  req:[
-  'TODO 1：训练增强：翻转、旋转、ColorJitter、ToTensor',
-  'TODO 2：加入 BatchNorm2d；加入 Dropout(0.4)',
+  'TODO 1：按顺序使用 RandomHorizontalFlip(p=0.5)、RandomRotation(15)、ColorJitter(brightness=0.2, contrast=0.2) 和 ToTensor()',
+  'TODO 2：在 24 通道卷积后加入 BatchNorm2d(24)；在 128 维全连接层后加入 Dropout(0.4)',
   'TODO 3：确认网络同时包含 BatchNorm2d 和 Dropout',
-  'TODO 4：前向计算并计算交叉熵损失；保存最佳权重',
-  'TODO 5：绘制 loss 与 accuracy 训练曲线；保存 training_curve.png；输出最终验证混淆矩阵'
+  'TODO 4：前向计算 logits 并计算交叉熵损失；按最高验证准确率保存 best_flower_cnn.pt',
+  'TODO 5：左右两幅图分别对比训练/验证 loss 和 accuracy；保存 training_curve.png（150 dpi）；输出最后一轮验证集混淆矩阵'
  ]
 },
 '6.3.3':{
