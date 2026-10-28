@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "生成竞赛强化训练.py"
+      - "验证竞赛强化题.py"
       - "competition_syllabus_expansion.py"
       - "competition_real_exam_workflow.py"
       - "competition_todo_alignment.py"
