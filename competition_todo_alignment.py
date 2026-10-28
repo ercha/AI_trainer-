@@ -22,9 +22,9 @@ ALIGNMENT = {
 "6.1.2": (r'''
 # TODO 3-1：从闭运算结果重新提取外轮廓
 audit_contours,_ = _____________
-# TODO 3-2：按面积和宽高比筛选候选框
+# TODO 3-2：筛选矩形面积 w*h≥1200 且宽高比 1.2～5.0 的候选框
 audit_boxes = _____________
-# TODO 4-1：保存当前二值图、边缘图和绘框结果
+# TODO 4-1：将二值图、边缘图和绘框图按原文件名分别保存到 binary/、edges/、visualized/
 save_flags = _____________
 # TODO 5-1：由 records 构造汇总表
 detection_summary = _____________
@@ -42,11 +42,11 @@ _____________
 combined_mask = _____________
 # TODO 3-1：对过滤后的缺陷掩膜执行连通域统计
 component_result = _____________
-# TODO 4-1：按缺陷面积占比重新判定当前样本等级
+# TODO 4-1：按缺陷面积占比重新分级：<0.002 为正常，0.002～<0.01 为轻微，其余为严重
 audit_level = _____________
 # TODO 5-1：构造缺陷统计表
 defect_table = _____________
-# TODO 5-2：保存掩膜、可视化图和 defect_report.csv
+# TODO 5-2：保存 masks/ 掩膜、defect_vis/ 可视化图（原文件名），导出 defect_report.csv（index=False，utf-8-sig）
 _____________
 ''', [
 'cv2.bitwise_or(bright,dark)',
@@ -60,7 +60,7 @@ _____________
 audit_contours,_ = _____________
 # TODO 3-2：筛选面积不少于 500 的红色目标轮廓
 large_contours = _____________
-# TODO 4-1：保存红色掩膜和绘框结果
+# TODO 4-1：分别按原文件名写入 masks/ 红色掩膜和 visualized/ 绘框图
 save_flags = _____________
 # TODO 5-1：构造颜色检测统计表
 color_table = _____________
@@ -80,7 +80,7 @@ audit_match = _____________
 _,audit_score,_,audit_loc = _____________
 # TODO 4-1：复制当前场景图用于绘框
 audit_vis = _____________
-# TODO 4-2：绘制检测框并保存可视化图
+# TODO 4-2：以绿色线宽 2 绘制模板匹配框，并按原文件名保存到检测输出目录 OUT
 _____________
 # TODO 5-1：合并预测与 ground_truth
 audit_eval = _____________
@@ -102,7 +102,7 @@ _____________
 audit_best_k = _____________
 # TODO 4-1：统计各聚类的样本数和数值特征均值
 cluster_profile = _____________
-# TODO 5-1：保存聚类结果、K 选择结果和最佳模型
+# TODO 5-1：导出 customer_clusters.csv、k_selection.csv（均 index=False），并用 joblib 保存 best_cluster_model.pkl（预处理器与 KMeans）
 _____________
 ''', [
 'int(scores.loc[scores.silhouette.idxmax(),"k"])',
@@ -110,12 +110,12 @@ _____________
 '(df.to_csv("customer_clusters.csv",index=False),scores.to_csv("k_selection.csv",index=False),joblib.dump((pre,best),"best_cluster_model.pkl"))',
 ]),
 "6.2.2": (r'''
-# TODO 3-1：使用调优后的模型预测测试集并计算四项分类指标
+# TODO 3-1：使用 search.predict(X_test) 预测，并计算 accuracy、precision、recall、f1（零除时得 0）
 audit_pred = _____________
 audit_metrics = _____________
-# TODO 4-1：按题目网格重新建立以 F1 为评分的 GridSearchCV
+# TODO 4-1：复用题目 grid，按 scoring=f1、cv=4、n_jobs=-1 建立 GridSearchCV
 audit_search = _____________
-# TODO 5-1：保存最佳模型、预测结果和 metrics.json
+# TODO 5-1：保存 best_churn_model.pkl、predictions.csv（y_true/y_pred，不写索引）和 metrics.json（accuracy/precision/recall/f1）
 _____________
 ''', [
 'search.predict(X_test)',
@@ -124,13 +124,13 @@ _____________
 '(joblib.dump(search.best_estimator_,"best_churn_model.pkl"),pd.DataFrame({"y_true":y_test,"y_pred":audit_pred}).to_csv("predictions.csv",index=False),open("metrics.json","w",encoding="utf-8").write(json.dumps(audit_metrics,ensure_ascii=False,indent=2)))',
 ]),
 "6.2.3": (r'''
-# TODO 3-1：建立三种回归模型字典
+# TODO 3-1：构造 LinearRegression、DecisionTreeRegressor(max_depth=8,random_state=42)、RandomForestRegressor(n_estimators=180,random_state=42) 的模型字典
 audit_models = _____________
 # TODO 4-1：整理 RMSE 与 R² 对比结果
 audit_comparison = _____________
 # TODO 5-1：按 RMSE 选出最佳模型
 audit_best_name = _____________
-# TODO 5-2：保存最佳模型和测试集预测
+# TODO 5-2：保存 best_house_model.pkl、test_predictions.csv（actual/pred），同时输出 model_comparison.csv（不写索引）
 _____________
 ''', [
 '{"LinearRegression":LinearRegression(),"DecisionTree":DecisionTreeRegressor(max_depth=8,random_state=42),"RandomForest":RandomForestRegressor(n_estimators=180,random_state=42)}',
@@ -155,9 +155,9 @@ _____________
 audit_cluster_stats = _____________
 # TODO 4-1：使用 PCA 将标准化特征降到二维
 audit_pca = _____________
-# TODO 4-2：使用 t-SNE 将标准化特征降到二维
+# TODO 4-2：使用 TSNE(n_components=2, random_state=42, perplexity=30, init=pca, learning_rate=auto) 将标准化特征降到二维
 audit_tsne = _____________
-# TODO 5-1：保存聚类比较、降维结果和当前可视化图
+# TODO 5-1：保存 cluster_comparison.csv、cluster_results.csv（均不写索引）及 pca_tsne.png（150 dpi）
 _____________
 ''', [
 'comparison[["model","clusters","silhouette","noise"]].copy()',
@@ -166,11 +166,11 @@ _____________
 '(comparison.to_csv("cluster_comparison.csv",index=False),out.to_csv("cluster_results.csv",index=False),plt.savefig("pca_tsne.png",dpi=150,bbox_inches="tight"))',
 ]),
 "6.3.1": (r'''
-# TODO 3-1：写出两次池化后的全连接输入特征数
+# TODO 3-1：卷积层输出 32 个通道、64×64 两次池化后为 16×16，写出 32*16*16
 audit_feature_dim = _____________
 # TODO 4-1：重新定义交叉熵损失
 audit_criterion = _____________
-# TODO 4-2：重新建立 Adam 优化器
+# TODO 4-2：使用 model.parameters() 和 lr=1e-3 重新建立 Adam 优化器
 audit_optimizer = _____________
 model.eval()
 val_correct=0; val_total=0
@@ -182,7 +182,7 @@ with torch.no_grad():
         val_total += len(y)
 # TODO 5-2：计算验证准确率
 val_accuracy = _____________
-# TODO 5-3：保存权重和训练历史
+# TODO 5-3：保存 shape_cnn.pt 模型权重与 training_history.csv 训练历史（不写索引）
 _____________
 ''', [
 '32*16*16',
@@ -249,9 +249,9 @@ layer4_trainable = _____________
 x_batch,y_batch=next(iter(train_loader))
 opt.zero_grad(); out=model(x_batch); loss=criterion(out,y_batch)
 _____________
-# TODO 4-1：保存当前模型权重
+# TODO 4-1：使用 torch.save(model.state_dict()) 将当前权重保存为 best_resnet18.pt
 _____________
-# TODO 4-2：重新创建同结构 ResNet18 并加载权重
+# TODO 4-2：使用 weights=None 重新创建同结构 ResNet18，将 fc 改为 4 类，加载 best_resnet18.pt（map_location=cpu）
 reloaded = models.resnet18(weights=None)
 reloaded.fc = nn.Linear(reloaded.fc.in_features,4)
 _____________
@@ -284,7 +284,7 @@ reload_consistent = _____________
 "6.3.4": (r'''
 # TODO 3-1：完成一次检测损失反向传播与优化更新
 audit_train_step = _____________
-# TODO 4-1：根据 IoU>=0.5 重新计算 AP50
+# TODO 4-1：按 IoU≥0.5 的样本命中比例计算题目中的简化 AP50（非严格检测 AP）
 audit_ap50 = _____________
 # TODO 5-1：保存 detection_metrics.json 和 detection_preview.png
 _____________
@@ -298,7 +298,7 @@ _____________
 audit_iou = _____________
 # TODO 4-1：整理 GAN 最终生成器与判别器损失
 gan_metrics = _____________
-# TODO 5-1：保存分割指标和两类预览图
+# TODO 5-1：将 mean_iou、deeplab_output_shape 保存到 segmentation_metrics.json，并保存 GAN 样本预览 gan_samples.png（150 dpi）
 _____________
 ''', [
 'inter/max(union,1)',
@@ -312,7 +312,7 @@ from pathlib import Path
 news_report = _____________
 # TODO 4-1：重新整理每个类别权重最高的 10 个关键词
 audit_keywords = _____________
-# TODO 5-1：保存分类器、评价报告和关键词 JSON
+# TODO 5-1：保存 news_classifier.pkl、news_metrics.txt（UTF-8）、class_keywords.json（UTF-8，保留中文）
 _____________
 ''', [
 'classification_report(y_test,pred)',
@@ -339,7 +339,7 @@ _____________
 "6.4.3": (r'''
 # TODO 3-1：重新整理每个主题的 Top-10 关键词
 audit_topics = _____________
-# TODO 4-1：建立 TF-IDF 特征并计算文章余弦相似度
+# TODO 4-1：用 TfidfVectorizer(max_features=1500) 建立文本特征，再计算文章间余弦相似度矩阵
 audit_similarity = _____________
 # TODO 5-1：排除自身后找最相似的 5 篇
 audit_idx = _____________
@@ -354,7 +354,7 @@ _____________
 "6.4.4": (r'''
 # TODO 4-1：计算全部翻译结果的平均 BLEU-2
 mean_bleu2 = _____________
-# TODO 5-1：保存 NER 与翻译结果
+# TODO 5-1：将命名实体识别结果保存为 ner_results.csv，将翻译和 BLEU 指标保存为 translation_results.csv（均不写索引）
 _____________
 ''', [
 'float(out.bleu2.mean())',
@@ -365,7 +365,7 @@ _____________
 audit_lcs = _____________
 # TODO 4-1：使用 rouge_l 计算一个示例 ROUGE-L
 audit_rouge = _____________
-# TODO 5-1：保存生成结果和 ROUGE 汇总报告
+# TODO 5-1：保存 generation_results.csv（不写索引）和 rouge_report.json（UTF-8，保留中文）
 _____________
 ''', [
 'lcs(str(df.iloc[0].reference),str(df.iloc[0].reference))',
@@ -377,9 +377,9 @@ from pathlib import Path
 
 # TODO 4-1：构造包含现状、问题、原因、建议四部分要求的 Prompt
 audit_prompt = _____________
-# TODO 5-1：构造 OpenAI 兼容 chat/completions 请求体
+# TODO 5-1：使用 MODEL、user 消息 audit_prompt、temperature=0.2 构造 OpenAI 兼容 chat/completions 请求体
 api_payload = _____________
-# TODO 6-1：保存最终 Markdown 经营报告
+# TODO 6-1：将最终经营报告按 UTF-8 编码保存为 business_report.md
 _____________
 ''', [
 'f"请根据 GMV={gmv:.2f}、订单数={orders}、客单价={aov:.2f}、复购率={repeat_rate:.2%}，按现状、问题、原因、建议四部分输出 Markdown 报告。"',
@@ -390,11 +390,11 @@ _____________
 from pathlib import Path
 
 sample_row=df.sort_values("priority_score",ascending=False).iloc[0]
-# TODO 4-1：为高优先级投诉构造严格 JSON 输出 Prompt
+# TODO 4-1：针对高优先级投诉创建要求返回 summary、risk、action、reply 四字段的严格 JSON Prompt
 audit_prompt = _____________
 # TODO 5-1：筛选成功解析且包含 result 的 AI 处置记录
 valid_actions = _____________
-# TODO 6-1：保存投诉结果和 AI 动作 JSON
+# TODO 6-1：保存 complaint_results.xlsx（不写索引）和 ai_actions.json（UTF-8，保留中文）
 _____________
 ''', [
 'f"请针对投诉输出严格 JSON，字段 summary/risk/action/reply：{sample_row.text}"',
@@ -404,11 +404,11 @@ _____________
 "6.5.3": (r'''
 from pathlib import Path
 
-# TODO 4-1：读取评测问题并确认批量问答数量
+# TODO 4-1：用 pd.read_csv 读取 questions.csv，核对批量评测问题数量
 audit_questions = _____________
 # TODO 5-1：计算所有问题的平均关键词覆盖率
 mean_keyword_score = _____________
-# TODO 6-1：保存 RAG 明细与 Markdown 评测报告
+# TODO 6-1：保存 rag_results.csv（不写索引）与 rag_evaluation.md（UTF-8，含平均关键词覆盖率）
 _____________
 ''', [
 'pd.read_csv("questions.csv")',
