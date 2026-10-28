@@ -143,13 +143,13 @@ for fp in sorted(INPUT.glob("*.jpg")):
     img=cv2.imread(str(fp))
     # TODO 1-1：BGR 转 HSV
     hsv=_____________
-    # TODO 1-2：提取低色相红色区域
+    # TODO 1-2：使用 cv2.inRange 提取 HSV 下限 [0,100,80]、上限 [10,255,255] 的低色相红色区域
     low_red=_____________
-    # TODO 1-3：提取高色相红色区域并合并
+    # TODO 1-3：用 HSV [170,100,80]～[180,255,255] 提取高色相红色区域，再与低色相区域做 bitwise_or
     high_red=_____________
     mask=cv2.bitwise_or(low_red,high_red)
     kernel=np.ones((5,5),np.uint8)
-    # TODO 2-1：先开运算去噪，再闭运算连接
+    # TODO 2-1：使用已有 5×5 核，先开运算再闭运算，默认各执行 1 次
     clean=_____________
     contours,_=cv2.findContours(clean,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     count=0
@@ -258,7 +258,7 @@ from sklearn.metrics import accuracy_score,recall_score,f1_score,confusion_matri
 df=pd.read_csv("classification.csv")
 X=df.drop(columns="target"); y=df["target"]
 X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=.2,random_state=42,stratify=y)
-# TODO 1-1：建立逻辑回归、SVM、KNN 三个分类器
+# TODO 1-1：建立 LogisticRegression(max_iter=1000)、默认 SVC()、KNeighborsClassifier(n_neighbors=7) 三个分类器
 models=_____________
 rows=[]
 for name,model in models.items():
@@ -310,7 +310,7 @@ from sklearn.manifold import TSNE
 df=pd.read_csv("cluster_features.csv")
 # TODO 1-1：标准化
 X=_____________
-# TODO 1-2：建立四种聚类算法
+# TODO 1-2：建立 KMeans(k=3,random_state=42,n_init=10)、Agglomerative(k=3)、DBSCAN(eps=0.8,min_samples=6)、GMM(n_components=3,random_state=42)
 models=_____________
 rows=[]; labels_all={}
 for name,model in models.items():
@@ -325,7 +325,7 @@ comparison.to_csv("cluster_comparison.csv",index=False)
 
 # TODO 2-1：PCA 降到二维
 pca_xy=_____________
-# TODO 2-2：t-SNE 降到二维
+# TODO 2-2：使用 TSNE(n_components=2,random_state=42,perplexity=30,init=pca,learning_rate=auto) 降到二维
 tsne_xy=_____________
 out=df.copy()
 out["kmeans"]=labels_all["KMeans"]
@@ -384,11 +384,11 @@ ann=pd.read_csv("annotations.csv")
 
 def read_yolo_label(image_file):
     cls,cx,cy,w,h=map(float,open("yolo_labels/"+image_file.replace(".png",".txt")).read().split())
-    # TODO 1-1：将 YOLO 归一化 cx,cy,w,h 转为像素 xyxy
+    # TODO 1-1：按输入图片 128×128，将归一化中心点 cx/cy 和宽高 w/h 转成像素 xyxy
     return _____________
 
 yolo_boxes=[read_yolo_label(x) for x in ann.file]
-# TODO 1-2：创建不下载预训练权重的 Faster R-CNN，两类（背景+目标）
+# TODO 1-2：使用 fasterrcnn_mobilenet_v3_large_320_fpn，weights=None、weights_backbone=None、num_classes=2、min_size=max_size=128
 model=_____________
 model.train()
 row=ann.iloc[0]
@@ -396,7 +396,7 @@ img=cv2.cvtColor(cv2.imread("detection_images/"+row.file),cv2.COLOR_BGR2RGB)
 x=to_tensor(img)
 target={"boxes":torch.tensor([[row.x1,row.y1,row.x2,row.y2]],dtype=torch.float32),
         "labels":torch.tensor([1],dtype=torch.int64)}
-# TODO 1-3：SGD 优化器
+# TODO 1-3：使用 torch.optim.SGD(model.parameters(),lr=0.001,momentum=0.9)
 optimizer=_____________
 losses=model([x],[target])
 # TODO 1-4：合计检测损失
@@ -466,17 +466,17 @@ class TinyUNet(nn.Module):
         self.e1=nn.Sequential(nn.Conv2d(1,16,3,padding=1),nn.ReLU(),nn.Conv2d(16,16,3,padding=1),nn.ReLU())
         self.pool=nn.MaxPool2d(2)
         self.e2=nn.Sequential(nn.Conv2d(16,32,3,padding=1),nn.ReLU())
-        # TODO 1-1：2 倍上采样 32→16
+        # TODO 1-1：使用 ConvTranspose2d(in_channels=32,out_channels=16,kernel_size=2,stride=2) 实现 2 倍上采样
         self.up=_____________
         self.out=nn.Conv2d(32,1,1)
     def forward(self,x):
         e1=self.e1(x); e2=self.e2(self.pool(e1)); u=self.up(e2)
-        # TODO 1-2：跳跃连接
+        # TODO 1-2：按通道维 dim=1 拼接 u 与 e1，形成 32 通道特征
         z=_____________
         return self.out(z)
 
-model=TinyUN()
-# TODO 1-3：二值分割损失
+model=TinyUNet()
+# TODO 1-3：二值分割 logits 使用 nn.BCEWithLogitsLoss() 计算损失
 criterion=_____________
 optimizer=torch.optim.Adam(model.parameters(),lr=0.003)
 for epoch in range(4):
@@ -488,7 +488,7 @@ with torch.no_grad():
     truth=torch.tensor(Y[:8])
     inter=(pred*truth).sum().item(); union=((pred+truth)>0).sum().item()
     iou=inter/max(union,1)
-# TODO 1-4：创建不下载权重的 DeepLabV3（二分类）
+# TODO 1-4：使用 deeplabv3_resnet50(weights=None,weights_backbone=None,num_classes=2) 创建离线模型
 deeplab=_____________
 deeplab.eval()
 with torch.inference_mode():
@@ -504,7 +504,7 @@ plt.tight_layout(); plt.savefig("segmentation_preview.png",dpi=150)
 real=torch.nn.functional.interpolate(torch.tensor(Y),size=(16,16)).flatten(1)
 G=nn.Sequential(nn.Linear(32,128),nn.ReLU(),nn.Linear(128,256),nn.Sigmoid())
 D=nn.Sequential(nn.Linear(256,64),nn.LeakyReLU(.2),nn.Linear(64,1),nn.Sigmoid())
-# TODO 2-1：GAN 二分类损失
+# TODO 2-1：GAN 判别器输出已使用 Sigmoid，使用 nn.BCELoss()
 bce=_____________
 go=torch.optim.Adam(G.parameters(),lr=.002); do=torch.optim.Adam(D.parameters(),lr=.002)
 for step in range(40):
@@ -594,7 +594,7 @@ class Translator(nn.Module):
         self.tgt_emb=nn.Embedding(len(tgt_stoi)+3,d,padding_idx=PAD)
         self.src_pos=nn.Embedding(max_src,d)
         self.tgt_pos=nn.Embedding(max_tgt,d)
-        # TODO 2-1：创建 encoder-decoder Transformer，4 个注意力头
+        # TODO 2-1：创建 nn.Transformer(d_model=32,nhead=4,num_encoder_layers=2,num_decoder_layers=2,dim_feedforward=64,batch_first=True)
         self.tr=_____________
         self.fc=nn.Linear(d,len(tgt_stoi)+3)
     def forward(self,src_ids,tgt_ids):
@@ -632,7 +632,7 @@ smooth=SmoothingFunction().method1
 for i in range(len(pairs)):
     prediction=greedy_decode(src[i:i+1])
     ref=pairs.iloc[i].en.split(); hyp=prediction.split()
-    # TODO 3-1：计算 BLEU-2
+    # TODO 3-1：使用 sentence_bleu 的 2-gram 权重 weights=(0.5,0.5)，并使用题目给定 smooth 平滑器
     bleu=_____________
     rows.append({"source":pairs.iloc[i].zh,"reference":pairs.iloc[i].en,
                  "prediction":prediction,"bleu2":bleu})
@@ -675,7 +675,7 @@ BASE=os.getenv("OPENAI_BASE_URL",""); KEY=os.getenv("OPENAI_API_KEY",""); MODEL=
 def call_gpt(prompt):
     if not (BASE and KEY and MODEL):
         return prompt.split("，")[0][:32]
-    # TODO 1-1：调用 OpenAI 兼容 chat/completions
+    # TODO 1-1：请求 BASE/v1/chat/completions，Bearer Key，MODEL、user prompt，temperature=0.3，timeout=60
     r=_____________
     r.raise_for_status()
     # TODO 1-2：提取生成文本
@@ -737,7 +737,7 @@ labels=torch.tensor(data["labels"],dtype=torch.long)
 config=BertConfig(vocab_size=128,hidden_size=48,num_hidden_layers=2,num_attention_heads=4,
                   intermediate_size=96,num_labels=2,max_position_embeddings=64)
 base=BertForSequenceClassification(config)
-# TODO 1-1：LoRA 配置，分类任务，r=4，作用于 query/value
+# TODO 1-1：设置 LoraConfig：r=4、lora_alpha=8、lora_dropout=0.05、target_modules=[query,value]、task_type=SEQ_CLS
 lora_cfg=_____________
 # TODO 1-2：包装为 PEFT 模型
 model=_____________
@@ -764,7 +764,7 @@ def benchmark(batch):
         for _ in range(loops):
             model(input_ids=ids[:batch],attention_mask=mask[:batch])
     elapsed=time.perf_counter()-t0
-    # TODO 2-1：吞吐量 samples/s
+    # TODO 2-1：采用 throughput=batch*loops/elapsed 计算每秒处理样本数
     throughput=_____________
     return {"batch":batch,"latency_ms":elapsed/loops*1000,"throughput":throughput}
 
@@ -811,7 +811,7 @@ for fp in Path("knowledge_docs").glob("*.txt"):
     for text in fp.read_text(encoding="utf-8").splitlines():
         if text.strip(): chunks.append({"source":fp.name,"text":text.strip()})
 texts=[x["text"] for x in chunks]
-# TODO 1-1：建立 TF-IDF 检索矩阵
+# TODO 1-1：使用默认 TfidfVectorizer() 拟合全部知识文本，构造检索矩阵
 vectorizer=_____________; matrix=vectorizer.fit_transform(texts)
 
 def retrieve(query,k=2):
@@ -975,7 +975,7 @@ for fp in files:
 X=np.asarray(X,dtype=np.float32); y=np.asarray(y)
 indices=np.arange(len(y))
 
-# TODO 2-1：按 3:1 分层划分训练/测试索引
+# TODO 2-1：使用 train_test_split(indices,test_size=0.25,random_state=42,stratify=y) 按 3:1 分层划分
 train_idx,test_idx=_____________
 
 model=Pipeline([
@@ -1002,7 +1002,7 @@ print("test accuracy =",acc)
 
 preview_bgr=cv2.imread("predict_image.png")
 preview_gray=cv2.cvtColor(preview_bgr,cv2.COLOR_BGR2GRAY)
-# TODO 4-1：按训练时相同方式构造待预测特征
+# TODO 4-1：将灰度待测图缩放到 32×32，转换 float32，展平为单行并除以 255
 preview_feat=_____________
 # TODO 4-2：预测类别
 preview_label=_____________
@@ -1010,14 +1010,14 @@ preview_label=_____________
 preview_prob=_____________
 print("prediction =",preview_label,"probability =",preview_prob)
 
-# TODO 5-1：创建 Matplotlib 画布
+# TODO 5-1：创建 figsize=(5,5) 的 Matplotlib 单子图画布
 fig,ax=_____________
 ax.imshow(cv2.cvtColor(preview_bgr,cv2.COLOR_BGR2RGB))
 # TODO 5-2：标题写出预测类别和概率
 _____________
 ax.axis("off")
 plt.tight_layout()
-# TODO 5-3：保存预测结果图
+# TODO 5-3：以 150 dpi 保存 gender_prediction.png（bbox_inches=tight）
 _____________
 plt.show()
 """
@@ -1081,7 +1081,7 @@ class FaceAttributeDataset(Dataset):
 dataset=FaceAttributeDataset("face_attributes")
 n_train=int(len(dataset)*0.8)
 n_val=len(dataset)-n_train
-# TODO 2-1：固定随机种子完成 8:2 划分
+# TODO 2-1：用 random_split 按 8:2 划分 dataset，generator=torch.Generator().manual_seed(42)
 train_set,val_set=_____________
 # TODO 2-2：建立 batch_size=16 的训练 DataLoader
 train_loader=_____________
@@ -1161,7 +1161,7 @@ ax.imshow(Image.open("woman_preview.png"))
 _____________
 ax.axis("off")
 plt.tight_layout()
-# TODO 5-2：保存最终预测可视化
+# TODO 5-2：以 150 dpi 保存 age_gender_prediction.png（bbox_inches=tight）
 _____________
 plt.show()
 """

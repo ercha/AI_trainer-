@@ -139,24 +139,24 @@ for fp in sorted(INPUT.glob("*.jpg")):
 
     # TODO 3-1：5×5 均值滤波
     mean_blur = _____________
-    # TODO 3-2：5×5 高斯滤波
+    # TODO 3-2：对灰度图使用 5×5 高斯滤波，sigmaX=0（由 OpenCV 自动计算）
     gaussian = _____________
     # TODO 3-3：核大小 5 的中值滤波
     median = _____________
 
     stem=fp.stem
 
-    # TODO 4-1：将缩放图保存到 processed
+    # TODO 4-1：将处理结果写入 processed/{stem}_resized.jpg
     _____________
-    # TODO 4-2：将灰度图保存到 processed
+    # TODO 4-2：将处理结果写入 processed/{stem}_gray.jpg
     _____________
-    # TODO 4-3：将加边框图保存到 processed
+    # TODO 4-3：将处理结果写入 processed/{stem}_border.jpg
     _____________
-    # TODO 4-4：将均值滤波图保存到 processed
+    # TODO 4-4：将处理结果写入 processed/{stem}_mean.jpg
     _____________
-    # TODO 4-5：将高斯滤波图保存到 processed
+    # TODO 4-5：将处理结果写入 processed/{stem}_gaussian.jpg
     _____________
-    # TODO 4-6：将中值滤波图保存到 processed
+    # TODO 4-6：将处理结果写入 processed/{stem}_median.jpg
     _____________
 
     rows.append({
@@ -170,7 +170,7 @@ for fp in sorted(INPUT.glob("*.jpg")):
     })
 
 summary=pd.DataFrame(rows)
-# TODO 4-7：输出 basic_processing.csv
+# TODO 4-7：输出 basic_processing.csv（index=False，encoding=utf-8-sig）
 _____________
 summary.head()"""),
 code_cell("""# TODO 5-1：选取首张输入图像
@@ -190,7 +190,7 @@ for ax,(title,image,cmap) in zip(axes.ravel(),items):
     _____________
 
 plt.tight_layout()
-# TODO 5-5：将对比预览保存为 filter_comparison.png
+# TODO 5-5：以 150 dpi 将对比预览保存为 filter_comparison.png（bbox_inches=tight）
 _____________
 plt.show()""")]
     write_nb(qid,"图像基础处理、颜色空间与三种滤波","完成读取/保存、尺寸统一、颜色空间转换、边界填充和三类经典去噪方法，并生成处理统计和对比图。",cells)
@@ -248,7 +248,7 @@ for fp in sorted(INPUT.glob("*.jpg")):
     # TODO 1-1：统一尺寸为 640×360
     img = _____________
     gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    # TODO 1-2：5×5 高斯滤波
+    # TODO 1-2：对灰度图使用 5×5 高斯滤波（sigmaX=0）
     blur = _____________
     # TODO 1-3：Otsu 自动阈值二值化
     binary = _____________
@@ -259,7 +259,7 @@ for fp in sorted(INPUT.glob("*.jpg")):
     cv2.imwrite(str(EDGE/fp.name),edges)
 
     kernel=cv2.getStructuringElement(cv2.MORPH_RECT,(9,5))
-    # TODO 2-1：闭运算连接边缘
+    # TODO 2-1：用已有 9×5 矩形核做闭运算，iterations=2，以连接边缘
     closed = _____________
     contours,_=cv2.findContours(closed,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     kept=[]
@@ -310,7 +310,7 @@ for fp in sorted(INPUT.glob("*.png")):
     dark = _____________
     mask=cv2.bitwise_or(bright,dark)
     kernel=np.ones((3,3),np.uint8)
-    # TODO 1-4：开运算去噪后闭运算连接
+    # TODO 1-4：对 3×3 核先做开运算，再做闭运算（iterations=2）
     mask = _____________
     n,labels,stats,cent=cv2.connectedComponentsWithStats(mask,8)
     keep=np.zeros_like(mask); areas=[]
@@ -350,9 +350,9 @@ from sklearn.metrics import silhouette_score
 
 df=pd.read_csv("customer_behavior.csv")
 num=["Age","Income","MonthlySpend","Visits"]; cat=["Region","Member"]
-# TODO 1-1：数值列中位数填补并标准化
+# TODO 1-1：在数值 Pipeline 中使用 SimpleImputer(strategy=median) 和 StandardScaler()
 num_pipe=Pipeline([("imputer",_____________),("scaler",_____________)])
-# TODO 1-2：类别列众数填补并 OneHot
+# TODO 1-2：在类别 Pipeline 中使用 SimpleImputer(strategy=most_frequent) 和 OneHotEncoder(handle_unknown=ignore)
 cat_pipe=Pipeline([("imputer",_____________),("onehot",_____________)])
 pre=ColumnTransformer([("num",num_pipe,num),("cat",cat_pipe,cat)])
 X=pre.fit_transform(df)
@@ -365,7 +365,7 @@ for k in range(2,7):
     rows.append((k,score))
 scores=pd.DataFrame(rows,columns=["k","silhouette"])
 best_k=int(scores.loc[scores.silhouette.idxmax(),"k"])
-# TODO 2-2：训练最佳 KMeans
+# TODO 2-2：使用最佳簇数 best_k，random_state=42、n_init=10 训练 KMeans
 best=_____________
 df["cluster"]=best.fit_predict(X)
 df.to_csv("customer_clusters.csv",index=False)
@@ -399,15 +399,15 @@ df=pd.read_csv("telecom_churn.csv"); X=df.drop(columns="Churn"); y=df["Churn"]
 num=X.select_dtypes(include="number").columns; cat=X.select_dtypes(exclude="number").columns
 pre=ColumnTransformer([("num",SimpleImputer(strategy="median"),num),
  ("cat",Pipeline([("imp",SimpleImputer(strategy="most_frequent")),("oh",OneHotEncoder(handle_unknown="ignore"))]),cat)])
-# TODO 1-1：按 8:2 分层划分
+# TODO 1-1：使用 train_test_split 按 8:2 分层划分，random_state=42，stratify=y
 X_train,X_test,y_train,y_test=_____________
 pipe=Pipeline([("pre",pre),("model",RandomForestClassifier(random_state=42,class_weight="balanced"))])
 pipe.fit(X_train,y_train); pred=pipe.predict(X_test)
-# TODO 2-1：计算四项分类指标
+# TODO 2-1：计算 accuracy、precision、recall、f1，precision/recall/f1 的 zero_division=0
 metrics={"accuracy":_____________,"precision":_____________,"recall":_____________,"f1":_____________}
 print(metrics,confusion_matrix(y_test,pred))
 grid={"model__n_estimators":[100,200],"model__max_depth":[None,8,14],"model__min_samples_split":[2,5]}
-# TODO 2-2：以 F1 为评分做 GridSearchCV
+# TODO 2-2：根据给定 grid 创建 GridSearchCV（scoring=f1，cv=4，n_jobs=-1）
 search=_____________
 search.fit(X_train,y_train)
 joblib.dump(search.best_estimator_,"best_churn_model.pkl")
@@ -439,9 +439,9 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error,r2_score
 
 df=pd.read_csv("housing.csv")
-# TODO 1-1：构造房龄
+# TODO 1-1：以 2026 年为计算基准，根据 BuildYear 构造 HouseAge
 df["HouseAge"]=_____________
-# TODO 1-2：构造平均房间面积
+# TODO 1-2：使用 Area/Rooms 构造 AreaPerRoom
 df["AreaPerRoom"]=_____________
 X=df.drop(columns="Price"); y=df["Price"]
 num=X.select_dtypes(include="number").columns; cat=X.select_dtypes(exclude="number").columns
@@ -453,7 +453,7 @@ models={"LinearRegression":LinearRegression(),
 rows=[]; fitted={}
 for name,m in models.items():
     pipe=Pipeline([("pre",pre),("model",m)]); pipe.fit(X_train,y_train); pred=pipe.predict(X_test)
-    # TODO 2-1：计算 RMSE
+    # TODO 2-1：依据 y_test 与 pred 计算均方误差并开平方得到 RMSE
     rmse=_____________
     # TODO 2-2：计算 R²
     r2=_____________
@@ -504,7 +504,7 @@ transform=transforms.Compose([transforms.ToTensor()])
 # TODO 1-1：使用 ImageFolder 读取 shape_images
 dataset=_____________
 train_n=int(len(dataset)*0.8); val_n=len(dataset)-train_n
-# TODO 1-2：固定随机种子划分训练/验证集
+# TODO 1-2：按 8:2 划分训练/验证集，使用 torch.Generator().manual_seed(42) 固定划分
 train_set,val_set=_____________
 train_loader=DataLoader(train_set,batch_size=32,shuffle=True); val_loader=DataLoader(val_set,batch_size=64)
 class Net(nn.Module):
@@ -512,11 +512,11 @@ class Net(nn.Module):
         super().__init__()
         self.features=nn.Sequential(nn.Conv2d(3,16,3,padding=1),nn.ReLU(),nn.MaxPool2d(2),
                                     nn.Conv2d(16,32,3,padding=1),nn.ReLU(),nn.MaxPool2d(2))
-        # TODO 2-1：64×64 两次池化后为 16×16
+        # TODO 2-1：网络输出 32 通道、空间尺寸 16×16，建立 nn.Linear(32*16*16,3)
         self.fc=_____________
     def forward(self,x): return self.fc(self.features(x).flatten(1))
 model=Net()
-# TODO 2-2：定义 CrossEntropyLoss 和 Adam
+# TODO 2-2：定义 nn.CrossEntropyLoss()，以及学习率 lr=1e-3 的 Adam 优化器
 criterion=_____________; optimizer=_____________
 history=[]
 for epoch in range(8):
@@ -542,7 +542,7 @@ from torchvision.datasets import ImageFolder
 from torchvision import transforms
 import pandas as pd, matplotlib.pyplot as plt
 
-# TODO 1-1：训练增强：翻转、旋转、ColorJitter、ToTensor
+# TODO 1-1：依次使用 RandomHorizontalFlip(p=0.5)、RandomRotation(15)、ColorJitter(brightness=0.2, contrast=0.2)、ToTensor()
 train_tf=transforms.Compose([_____________])
 val_tf=transforms.Compose([transforms.ToTensor()])
 base=ImageFolder("flower_images")
@@ -554,7 +554,7 @@ class FlowerNet(nn.Module):
     def __init__(self):
         super().__init__()
         self.net=nn.Sequential(nn.Conv2d(3,24,3,padding=1),
-          # TODO 2-1：加入 BatchNorm2d
+          # TODO 2-1：在 24 通道卷积层后加入 nn.BatchNorm2d(24)
           _____________,nn.ReLU(),nn.MaxPool2d(2),
           nn.Conv2d(24,48,3,padding=1),nn.BatchNorm2d(48),nn.ReLU(),nn.MaxPool2d(2),
           nn.Flatten(),nn.Linear(48*16*16,128),nn.ReLU(),
@@ -581,7 +581,7 @@ tf=transforms.Compose([transforms.Resize((128,128)),transforms.ToTensor()])
 ds=ImageFolder("scene_images",transform=tf)
 n=int(len(ds)*.8); train_ds,val_ds=random_split(ds,[n,len(ds)-n],generator=torch.Generator().manual_seed(42))
 train_loader=DataLoader(train_ds,32,shuffle=True); val_loader=DataLoader(val_ds,64)
-# TODO 1-1：创建 ResNet18，不下载预训练权重
+# TODO 1-1：使用 models.resnet18(weights=None) 创建离线 ResNet18
 model=_____________
 # TODO 1-2：冻结所有参数
 for p in model.parameters(): _____________
@@ -591,7 +591,7 @@ criterion=nn.CrossEntropyLoss(); opt=torch.optim.Adam(model.fc.parameters(),lr=1
 # 第一阶段训练代码按课堂模板补全
 # TODO 2-1：解冻 layer4
 for p in model.layer4.parameters(): _____________
-# TODO 2-2：以更小学习率优化 layer4 + fc
+# TODO 2-2：使用 Adam 仅优化 requires_grad=True 的 layer4 + fc，学习率 lr=1e-4
 opt=_____________
 torch.save(model.state_dict(),"best_resnet18.pt")
 print("模型已保存")"""
@@ -641,7 +641,7 @@ X_train,X_test,y_train,y_test=train_test_split(df["cut"],df["label"],test_size=.
 # TODO 1-2：TF-IDF，最大 2000 特征，1-2 gram
 vec=_____________
 Xtr=vec.fit_transform(X_train); Xte=vec.transform(X_test)
-# TODO 2-1：训练 LogisticRegression
+# TODO 2-1：创建 LogisticRegression(max_iter=1000) 并训练
 model=_____________; model.fit(Xtr,y_train)
 pred=model.predict(Xte); print(classification_report(y_test,pred))
 features=vec.get_feature_names_out(); kws={}
@@ -667,7 +667,7 @@ df=pd.read_csv("reviews.csv")
 stop=set(x.strip() for x in open("stopwords.txt",encoding="utf-8") if x.strip())
 # TODO 1-1：完成分词并过滤停用词
 tokens=_____________
-# TODO 1-2：训练 100 维 Word2Vec
+# TODO 1-2：使用 Word2Vec：vector_size=100、window=5、min_count=1、workers=2、seed=42
 w2v=_____________
 w2v.save("reviews_word2vec.model")
 def sentence_vector(words):
@@ -695,7 +695,7 @@ df=pd.read_csv("corpus_news.csv")
 df["cut"]=df["text"].map(lambda s:" ".join(jieba.cut(str(s))))
 # TODO 1-1：构建 CountVectorizer，max_features=1500
 cv=_____________; X=cv.fit_transform(df["cut"])
-# TODO 1-2：训练 5 主题 LDA
+# TODO 1-2：训练 LatentDirichletAllocation(n_components=5,random_state=42)
 lda=_____________; topic_dist=lda.fit_transform(X)
 df["dominant_topic"]=topic_dist.argmax(1)
 words=cv.get_feature_names_out(); topics={}
@@ -750,12 +750,12 @@ df.to_excel("orders_clean.xlsx",index=False)
 prompt=(f"你是经营分析师。根据指标生成 Markdown 报告，必须包含：现状、问题、原因、建议。\\n"
         f"GMV={gmv:.2f}，订单数={orders}，客单价={aov:.2f}，复购率={repeat_rate:.2%}\\n"
         f"品类销售额={category.to_dict()}")
-# TODO 3-1：从环境变量读取 BASE_URL/API_KEY/MODEL
+# TODO 3-1：从 OPENAI_BASE_URL、OPENAI_API_KEY、OPENAI_MODEL 读取 BASE_URL、API_KEY、MODEL（缺省空字符串）
 BASE_URL=_____________; API_KEY=_____________; MODEL=_____________
 report="# 电商经营分析\\n\\n"+prompt
 if BASE_URL and API_KEY and MODEL:
     try:
-        # TODO 3-2：调用 /v1/chat/completions
+        # TODO 3-2：用 requests.post 调用 BASE_URL/v1/chat/completions，使用 Bearer Key、MODEL、prompt、temperature=0.2，timeout=60
         r=_____________
         r.raise_for_status(); report=r.json()["choices"][0]["message"]["content"]
     except Exception as e: report += f"\\n\\n> AI 调用失败：{e}"
@@ -786,12 +786,12 @@ from sklearn.metrics import classification_report
 
 df=pd.read_csv("complaints.csv").fillna({"text":"","amount":0})
 Xtr,Xte,ytr,yte=train_test_split(df["text"],df["category"],test_size=.2,random_state=42,stratify=df["category"])
-# TODO 1-1：TF-IDF + LogisticRegression Pipeline
+# TODO 1-1：创建 TF-IDF(max_features=2000) + LogisticRegression(max_iter=1000) 的 Pipeline
 clf=_____________; clf.fit(Xtr,ytr)
 print(classification_report(yte,clf.predict(Xte)))
 df["pred_category"]=clf.predict(df["text"])
 negative=["生气","差","破损","未处理","不回复"]
-# TODO 2-1：金额、负面词和类别共同计算优先级分数
+# TODO 2-1：金额>2000、包含任一负面词、预测类别为退款或质量各记 1 分，相加为 priority_score
 df["priority_score"]=_____________
 df["priority"]=pd.cut(df["priority_score"],[-1,1,3,99],labels=["P3","P2","P1"])
 BASE=os.getenv("OPENAI_BASE_URL",""); KEY=os.getenv("OPENAI_API_KEY",""); MODEL=os.getenv("OPENAI_MODEL","")
@@ -801,7 +801,7 @@ for _,row in df[df["priority"]=="P1"].head(20).iterrows():
     item={"id":int(row.id),"error":None}
     try:
         if not (BASE and KEY and MODEL): raise RuntimeError("未配置 API")
-        # TODO 3-1：调用兼容接口并解析 JSON 文本
+        # TODO 3-1：请求 /v1/chat/completions：Bearer Key，response_format=json_object，timeout=60；提取 message.content 作为 JSON 文本
         content=_____________
         item["result"]=json.loads(content)
     except Exception as e: item["error"]=str(e)
@@ -835,7 +835,7 @@ for fp in Path("knowledge_docs").glob("*.txt"):
     for para in fp.read_text(encoding="utf-8").splitlines():
         if para.strip(): chunks.append({"source":fp.name,"text":para.strip()})
 texts=[x["text"] for x in chunks]
-# TODO 1-1：使用字符级 2~4 gram TF-IDF 建库，适配中文无空格文本\nvectorizer=_____________; matrix=vectorizer.fit_transform(texts)
+# TODO 1-1：使用 TfidfVectorizer(analyzer=char,ngram_range=(2,4)) 建立中文字符级 TF-IDF 检索库\nvectorizer=_____________; matrix=vectorizer.fit_transform(texts)
 def retrieve(query,top_k=3):
     q=vectorizer.transform([query]); scores=cosine_similarity(q,matrix)[0]
     # TODO 1-2：取相似度最高的 top_k
@@ -849,7 +849,7 @@ def answer(query):
     prompt=f"仅依据资料回答并在句末注明来源文件。\\n资料：\\n{context}\\n\\n问题：{query}"
     if not (BASE and KEY and MODEL):
         return context,[x["source"] for x in refs]
-    # TODO 2-1：调用 OpenAI 兼容接口
+    # TODO 2-1：向 BASE/v1/chat/completions 发送 Bearer Key、MODEL、user prompt，temperature=0.1、timeout=60
     content=_____________
     return content,[x["source"] for x in refs]
 
@@ -857,7 +857,7 @@ rows=[]
 for _,r in pd.read_csv("questions.csv").iterrows():
     t=time.time(); a,sources=answer(r.question)
     keys=str(r.expected_keywords).split(",")
-    # TODO 3-1：关键词覆盖率
+    # TODO 3-1：按 expected_keywords 中逗号分隔的关键词计算覆盖率（命中数 / 关键词总数）
     score=_____________
     rows.append({"question":r.question,"answer":a,"sources":";".join(sources),"score":score,"latency":time.time()-t})
 out=pd.DataFrame(rows); out.to_csv("rag_results.csv",index=False)
