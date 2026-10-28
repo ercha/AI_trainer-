@@ -14,9 +14,9 @@ window.ADVANCED_DETAILS={
  req:[
   'TODO 1：统一缩放到 320×240（OpenCV 参数顺序是宽、高）；BGR 转灰度；BGR 转 HSV',
   'TODO 2：上下 20、左右 30 像素白色常量边框',
-  'TODO 3：5×5 均值滤波；5×5 高斯滤波；核大小 5 的中值滤波',
-  'TODO 4：将缩放图保存到 processed；将灰度图保存到 processed；将加边框图保存到 processed；将均值滤波图保存到 processed；将高斯滤波图保存到 processed；将中值滤波图保存到 processed；输出 basic_processing.csv',
-  'TODO 5：选取首张输入图像；组织原图、缩放图、灰度图、边框图和三种滤波结果；创建 2×4 子图用于对比预览；显示图像并设置标题；将对比预览保存为 filter_comparison.png'
+  'TODO 3：5×5 均值滤波；对灰度图使用 5×5 高斯滤波，sigmaX=0（由 OpenCV 自动计算）；核大小 5 的中值滤波',
+  'TODO 4：将处理结果写入 processed/{stem}_resized.jpg；将处理结果写入 processed/{stem}_gray.jpg；将处理结果写入 processed/{stem}_border.jpg；将处理结果写入 processed/{stem}_mean.jpg；将处理结果写入 processed/{stem}_gaussian.jpg；将处理结果写入 processed/{stem}_median.jpg；输出 basic_processing.csv（index=False，encoding=utf-8-sig）',
+  'TODO 5：选取首张输入图像；组织原图、缩放图、灰度图、边框图和三种滤波结果；创建 2×4 子图用于对比预览；显示图像并设置标题；以 150 dpi 将对比预览保存为 filter_comparison.png（bbox_inches=tight）'
  ]
 },
 '6.1.2':{
@@ -24,8 +24,8 @@ window.ADVANCED_DETAILS={
  tags:['OpenCV','Canny','Otsu','轮廓','ROI'],
  taskText:'为道路车辆检测准备输入数据。完成统一尺寸、灰度化、高斯去噪、Otsu 阈值分割、Canny 边缘检测、形态学连接、轮廓筛选与目标区域裁剪，并输出候选区域统计。',
  req:[
-  'TODO 1：统一尺寸为 640×360；5×5 高斯滤波；Otsu 自动阈值二值化；Canny(50,150)',
-  'TODO 2：闭运算连接边缘',
+  'TODO 1：统一尺寸为 640×360；对灰度图使用 5×5 高斯滤波（sigmaX=0）；Otsu 自动阈值二值化；Canny(50,150)',
+  'TODO 2：用已有 9×5 矩形核做闭运算，iterations=2，以连接边缘',
   'TODO 3：从闭运算结果重新提取外轮廓；筛选矩形面积 w*h≥1200 且宽高比 1.2～5.0 的候选框',
   'TODO 4：将二值图、边缘图和绘框图按原文件名分别保存到 binary/、edges/、visualized/',
   'TODO 5：由 records 构造汇总表；保存 detection_summary.csv'
@@ -36,7 +36,7 @@ window.ADVANCED_DETAILS={
  tags:['OpenCV','CLAHE','阈值分割','连通域','缺陷检测'],
  taskText:'某工业质检线采集了金属表面灰度图。请增强局部对比度，分割亮斑/暗斑缺陷，利用形态学与连通域去噪，并按缺陷总面积将样本划分为正常、轻微和严重。',
  req:[
-  'TODO 1：CLAHE 增强；检测亮缺陷 >180；检测暗缺陷 <70；开运算去噪后闭运算连接',
+  'TODO 1：CLAHE 增强；检测亮缺陷 >180；检测暗缺陷 <70；对 3×3 核先做开运算，再做闭运算（iterations=2）',
   'TODO 2：合并亮缺陷与暗缺陷掩膜',
   'TODO 3：对过滤后的缺陷掩膜执行连通域统计',
   'TODO 4：按缺陷面积占比重新分级：<0.002 为正常，0.002～<0.01 为轻微，其余为严重',
@@ -48,8 +48,8 @@ window.ADVANCED_DETAILS={
  tags:['pandas','ColumnTransformer','KMeans','silhouette_score'],
  taskText:'根据用户消费、活跃度和会员属性构建用户画像。数据包含缺失值、数值特征和类别特征，需要完成预处理，并通过轮廓系数自动选择最佳聚类数。',
  req:[
-  'TODO 1：数值列中位数填补并标准化；类别列众数填补并 OneHot',
-  'TODO 2：计算轮廓系数；训练最佳 KMeans',
+  'TODO 1：在数值 Pipeline 中使用 SimpleImputer(strategy=median) 和 StandardScaler()；在类别 Pipeline 中使用 SimpleImputer(strategy=most_frequent) 和 OneHotEncoder(handle_unknown=ignore)',
+  'TODO 2：计算轮廓系数；使用最佳簇数 best_k，random_state=42、n_init=10 训练 KMeans',
   'TODO 3：根据轮廓系数重新取得最佳 K',
   'TODO 4：统计各聚类的样本数和数值特征均值',
   'TODO 5：导出 customer_clusters.csv、k_selection.csv（均 index=False），并用 joblib 保存 best_cluster_model.pkl（预处理器与 KMeans）'
@@ -60,8 +60,8 @@ window.ADVANCED_DETAILS={
  tags:['RandomForest','GridSearchCV','F1','混淆矩阵','joblib'],
  taskText:'基于电信客户数据预测客户是否流失。要求从清洗、特征预处理、训练测试划分、基础模型评估一直做到网格搜索和最佳模型保存。',
  req:[
-  'TODO 1：按 8:2 分层划分',
-  'TODO 2：计算四项分类指标；以 F1 为评分做 GridSearchCV',
+  'TODO 1：使用 train_test_split 按 8:2 分层划分，random_state=42，stratify=y',
+  'TODO 2：计算 accuracy、precision、recall、f1，precision/recall/f1 的 zero_division=0；根据给定 grid 创建 GridSearchCV（scoring=f1，cv=4，n_jobs=-1）',
   'TODO 3：使用 search.predict(X_test) 预测，并计算 accuracy、precision、recall、f1（零除时得 0）',
   'TODO 4：复用题目 grid，按 scoring=f1、cv=4、n_jobs=-1 建立 GridSearchCV',
   'TODO 5：保存 best_churn_model.pkl、predictions.csv（y_true/y_pred，不写索引）和 metrics.json（accuracy/precision/recall/f1）'
@@ -72,8 +72,8 @@ window.ADVANCED_DETAILS={
  tags:['LinearRegression','DecisionTree','RandomForest','RMSE','R2'],
  taskText:'根据房屋面积、房龄、区域、学区评分等信息预测成交价。要求构造新特征，对比线性回归、决策树回归和随机森林回归，并根据 RMSE 自动选择最佳模型。',
  req:[
-  'TODO 1：构造房龄；构造平均房间面积',
-  'TODO 2：计算 RMSE；计算 R²',
+  'TODO 1：以 2026 年为计算基准，根据 BuildYear 构造 HouseAge；使用 Area/Rooms 构造 AreaPerRoom',
+  'TODO 2：依据 y_test 与 pred 计算均方误差并开平方得到 RMSE；计算 R²',
   'TODO 3：构造 LinearRegression、DecisionTreeRegressor(max_depth=8,random_state=42)、RandomForestRegressor(n_estimators=180,random_state=42) 的模型字典',
   'TODO 4：整理 RMSE 与 R² 对比结果',
   'TODO 5：按 RMSE 选出最佳模型；保存 best_house_model.pkl、test_predictions.csv（actual/pred），同时输出 model_comparison.csv（不写索引）'
@@ -85,7 +85,7 @@ window.ADVANCED_DETAILS={
  taskText:'使用本地生成的圆形、方形、三角形图片训练三分类 CNN。要求自行完成 Dataset、数据划分、网络结构、训练验证、模型保存和测试评估。',
  req:[
   'TODO 1：使用 ImageFolder 读取 shape_images；按 8:2 划分训练/验证集，使用 torch.Generator().manual_seed(42) 固定划分',
-  'TODO 2：64×64 两次池化后为 16×16；定义 nn.CrossEntropyLoss()，以及学习率 lr=1e-3 的 Adam 优化器',
+  'TODO 2：网络输出 32 通道、空间尺寸 16×16，建立 nn.Linear(32*16*16,3)；定义 nn.CrossEntropyLoss()，以及学习率 lr=1e-3 的 Adam 优化器',
   'TODO 3：卷积层输出 32 个通道、64×64 两次池化后为 16×16，写出 32*16*16',
   'TODO 4：重新定义交叉熵损失；使用 model.parameters() 和 lr=1e-3 重新建立 Adam 优化器',
   'TODO 5：得到验证集类别预测；计算验证准确率；保存 shape_cnn.pt 模型权重与 training_history.csv 训练历史（不写索引）'
@@ -108,8 +108,8 @@ window.ADVANCED_DETAILS={
  tags:['PyTorch','ResNet18','迁移学习','冻结层','混淆矩阵'],
  taskText:'模拟迁移学习竞赛任务：使用本地四类场景图像和 ResNet18 结构，冻结大部分骨干层，仅训练分类头，再解冻最后一个残差阶段进行微调，最后重新加载模型验证推理一致性。',
  req:[
-  'TODO 1：创建 ResNet18，不下载预训练权重；冻结所有参数；替换 fc 为 4 类输出，并保持可训练',
-  'TODO 2：解冻 layer4；以更小学习率优化 layer4 + fc',
+  'TODO 1：使用 models.resnet18(weights=None) 创建离线 ResNet18；冻结所有参数；替换 fc 为 4 类输出，并保持可训练',
+  'TODO 2：解冻 layer4；使用 Adam 仅优化 requires_grad=True 的 layer4 + fc，学习率 lr=1e-4',
   'TODO 3：确认 layer4 已解冻；使用当前较小学习率对一个训练批次执行第二阶段微调',
   'TODO 4：使用 torch.save(model.state_dict()) 将当前权重保存为 best_resnet18.pt；使用 weights=None 重新创建同结构 ResNet18，将 fc 改为 4 类，加载 best_resnet18.pt（map_location=cpu）',
   'TODO 5：计算验证准确率；计算验证混淆矩阵；确认加载前后预测一致'
@@ -121,7 +121,7 @@ window.ADVANCED_DETAILS={
  taskText:'对科技、体育、财经、娱乐四类中文新闻进行分词、停用词过滤和 TF-IDF 表示，训练分类器，并输出每个类别最具代表性的关键词。',
  req:[
   'TODO 1：jieba 精确分词并过滤停用词；TF-IDF，最大 2000 特征，1-2 gram',
-  'TODO 2：训练 LogisticRegression；取该类别系数最大的 10 个词',
+  'TODO 2：创建 LogisticRegression(max_iter=1000) 并训练；取该类别系数最大的 10 个词',
   'TODO 3：生成测试集 classification_report 文本',
   'TODO 4：重新整理每个类别权重最高的 10 个关键词',
   'TODO 5：保存 news_classifier.pkl、news_metrics.txt（UTF-8）、class_keywords.json（UTF-8，保留中文）'
@@ -132,7 +132,7 @@ window.ADVANCED_DETAILS={
  tags:['jieba','Word2Vec','句向量','LogisticRegression','情感分析'],
  taskText:'训练商品评论 Word2Vec 词向量，将每条评论表示为词向量平均值，再训练情感分类器，并完成相似词查询和错误样本分析。',
  req:[
-  'TODO 1：完成分词并过滤停用词；训练 100 维 Word2Vec',
+  'TODO 1：完成分词并过滤停用词；使用 Word2Vec：vector_size=100、window=5、min_count=1、workers=2、seed=42',
   'TODO 2：返回平均词向量；无有效词返回全零；查询“满意”最相似的 5 个词',
   'TODO 3：将首条评论转换为 100 维平均词向量',
   'TODO 4：计算测试集 F1 与混淆矩阵',
@@ -144,7 +144,7 @@ window.ADVANCED_DETAILS={
  tags:['CountVectorizer','LDA','主题模型','cosine_similarity'],
  taskText:'在没有人工主题标签的新闻语料上完成主题发现：构建词袋、训练 LDA、解释主题关键词、给每篇文章分配主主题，并基于 TF-IDF 余弦相似度完成相似文章推荐。',
  req:[
-  'TODO 1：构建 CountVectorizer，max_features=1500；训练 5 主题 LDA',
+  'TODO 1：构建 CountVectorizer，max_features=1500；训练 LatentDirichletAllocation(n_components=5,random_state=42)',
   'TODO 2：每主题 Top-10 关键词；排除自身，找最相似 5 篇',
   'TODO 3：重新整理每个主题的 Top-10 关键词',
   'TODO 4：用 TfidfVectorizer(max_features=1500) 建立文本特征，再计算文章间余弦相似度矩阵',
@@ -158,7 +158,7 @@ window.ADVANCED_DETAILS={
  req:[
   'TODO 1：日期转 datetime；计算 sales=price*qty',
   'TODO 2：计算客单价；计算复购率（订单数>1客户占比）',
-  'TODO 3：从环境变量读取 BASE_URL/API_KEY/MODEL；调用 /v1/chat/completions',
+  'TODO 3：从 OPENAI_BASE_URL、OPENAI_API_KEY、OPENAI_MODEL 读取 BASE_URL、API_KEY、MODEL（缺省空字符串）；用 requests.post 调用 BASE_URL/v1/chat/completions，使用 Bearer Key、MODEL、prompt、temperature=0.2，timeout=60',
   'TODO 4：构造包含现状、问题、原因、建议四部分要求的 Prompt',
   'TODO 5：使用 MODEL、user 消息 audit_prompt、temperature=0.2 构造 OpenAI 兼容 chat/completions 请求体',
   'TODO 6：将最终经营报告按 UTF-8 编码保存为 business_report.md'
@@ -169,9 +169,9 @@ window.ADVANCED_DETAILS={
  tags:['文本分类','优先级','OpenAI兼容接口','JSON结构化输出'],
  taskText:'对客户投诉数据进行清洗与分类，训练本地投诉类别模型，结合金额、情绪和关键词生成优先级，再要求大模型以 JSON 输出处置建议。',
  req:[
-  'TODO 1：TF-IDF + LogisticRegression Pipeline',
-  'TODO 2：金额、负面词和类别共同计算优先级分数',
-  'TODO 3：调用兼容接口并解析 JSON 文本',
+  'TODO 1：创建 TF-IDF(max_features=2000) + LogisticRegression(max_iter=1000) 的 Pipeline',
+  'TODO 2：金额>2000、包含任一负面词、预测类别为退款或质量各记 1 分，相加为 priority_score',
+  'TODO 3：请求 /v1/chat/completions：Bearer Key，response_format=json_object，timeout=60；提取 message.content 作为 JSON 文本',
   'TODO 4：针对高优先级投诉创建要求返回 summary、risk、action、reply 四字段的严格 JSON Prompt',
   'TODO 5：筛选成功解析且包含 result 的 AI 处置记录',
   'TODO 6：保存 complaint_results.xlsx（不写索引）和 ai_actions.json（UTF-8，保留中文）'
@@ -182,9 +182,9 @@ window.ADVANCED_DETAILS={
  tags:['RAG','TF-IDF','Top-K','Prompt','自动评测'],
  taskText:'使用本地企业制度文档实现一个轻量级 RAG：切分文档、TF-IDF 建库、Top-K 检索、拼接上下文调用 OpenAI 兼容接口，并利用标准答案关键词进行自动评测。',
  req:[
-  'TODO 1：使用字符级 2~4 gram TF-IDF 建库，适配中文无空格文本；取相似度最高的 top_k',
-  'TODO 2：调用 OpenAI 兼容接口',
-  'TODO 3：关键词覆盖率',
+  'TODO 1：使用 TfidfVectorizer(analyzer=char,ngram_range=(2,4)) 建立中文字符级 TF-IDF 检索库；取相似度最高的 top_k',
+  'TODO 2：向 BASE/v1/chat/completions 发送 Bearer Key、MODEL、user prompt，temperature=0.1、timeout=60',
+  'TODO 3：按 expected_keywords 中逗号分隔的关键词计算覆盖率（命中数 / 关键词总数）',
   'TODO 4：用 pd.read_csv 读取 questions.csv，核对批量评测问题数量',
   'TODO 5：计算所有问题的平均关键词覆盖率',
   'TODO 6：保存 rag_results.csv（不写索引）与 rag_evaluation.md（UTF-8，含平均关键词覆盖率）'
