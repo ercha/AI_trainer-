@@ -110,7 +110,7 @@ def _input_block(qid: str):
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-# TODO 0-1：重新读取{label}，用于交付前的数据质量核验
+# TODO 0-1：使用 {reader} 重新读取{label}（{path}），核验 shape、dtype 和缺失值
 audit_df = _____________
 print("shape =", audit_df.shape)
 print("dtypes =")
@@ -125,7 +125,7 @@ quality = pd.DataFrame({{
     "dtype": audit_clean.dtypes.astype(str).to_numpy(),
     "missing": audit_clean.isna().sum().to_numpy(),
 }})
-# TODO 0-3：将字段类型和缺失值统计保存为 UTF-8-SIG CSV
+# TODO 0-3：把字段类型与缺失值统计保存为 data_quality_check.csv（index=False，编码 utf-8-sig）
 _____________'''
         answers = [reader, 'audit_df.drop_duplicates().copy()',
                    'quality.to_csv("data_quality_check.csv",index=False,encoding="utf-8-sig")']
@@ -150,7 +150,7 @@ quality = pd.DataFrame([{{
     "channels": 1 if audit_image.ndim == 2 else audit_image.shape[2],
     "dtype": str(audit_image.dtype),
 }}])
-# TODO 0-2：保存图像输入核验结果
+# TODO 0-2：将文件数量、图像尺寸、通道数和 dtype 保存到 data_quality_check.csv（index=False，编码 utf-8-sig）
 _____________'''
         answers = ['cv2.imread(str(audit_files[0]),cv2.IMREAD_UNCHANGED)',
                    'quality.to_csv("data_quality_check.csv",index=False,encoding="utf-8-sig")']
@@ -163,7 +163,7 @@ from pathlib import Path
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 
-# TODO 0-1：使用 ImageFolder 重新读取{label}
+# TODO 0-1：用 ImageFolder 从 {path} 重新读取{label}，transform=transforms.ToTensor()
 audit_dataset = _____________
 class_counts = pd.Series([y for _, y in audit_dataset.samples]).value_counts().sort_index()
 quality = pd.DataFrame({{
@@ -172,7 +172,7 @@ quality = pd.DataFrame({{
 }})
 print("classes =", audit_dataset.classes)
 print("samples =", len(audit_dataset))
-# TODO 0-2：保存类别与样本数核验结果
+# TODO 0-2：将 class_name 和 samples 两列保存为 data_quality_check.csv（index=False，编码 utf-8-sig）
 _____________'''
         answers = [f'ImageFolder("{path}",transform=transforms.ToTensor())',
                    'quality.to_csv("data_quality_check.csv",index=False,encoding="utf-8-sig")']
@@ -184,7 +184,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-# TODO 0-1：重新读取 NPZ 训练数据
+# TODO 0-1：使用 np.load("{path}") 重新读取 NPZ 训练数据
 audit_npz = _____________
 quality = pd.DataFrame([{{
     "arrays": ",".join(audit_npz.files),
@@ -194,7 +194,7 @@ quality = pd.DataFrame([{{
     "label_dtype": str(audit_npz["labels"].dtype),
 }}])
 print(quality)
-# TODO 0-2：保存数组结构核验结果
+# TODO 0-2：将数组名称、shape 和 dtype 保存为 data_quality_check.csv（index=False，编码 utf-8-sig）
 _____________'''
         answers = [f'np.load("{path}")',
                    'quality.to_csv("data_quality_check.csv",index=False,encoding="utf-8-sig")']
@@ -252,7 +252,7 @@ plt.xlabel("{x or "Category"}")
 plt.ylabel("{ylabel}")
 plt.xticks(rotation=45,ha="right")
 plt.tight_layout()
-# TODO {todo_group}-2：以 150 dpi 保存可视化结果
+# TODO {todo_group}-2：以 150 dpi 保存图像为 {output}（bbox_inches="tight"）
 _____________
 plt.show()
 
