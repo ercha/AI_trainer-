@@ -504,7 +504,7 @@ transform=transforms.Compose([transforms.ToTensor()])
 # TODO 1-1：使用 ImageFolder 读取 shape_images
 dataset=_____________
 train_n=int(len(dataset)*0.8); val_n=len(dataset)-train_n
-# TODO 1-2：固定随机种子划分训练/验证集
+# TODO 1-2：按 8:2 划分训练/验证集，使用 torch.Generator().manual_seed(42) 固定划分
 train_set,val_set=_____________
 train_loader=DataLoader(train_set,batch_size=32,shuffle=True); val_loader=DataLoader(val_set,batch_size=64)
 class Net(nn.Module):
@@ -516,7 +516,7 @@ class Net(nn.Module):
         self.fc=_____________
     def forward(self,x): return self.fc(self.features(x).flatten(1))
 model=Net()
-# TODO 2-2：定义 CrossEntropyLoss 和 Adam
+# TODO 2-2：定义 nn.CrossEntropyLoss()，以及学习率 lr=1e-3 的 Adam 优化器
 criterion=_____________; optimizer=_____________
 history=[]
 for epoch in range(8):
@@ -542,7 +542,7 @@ from torchvision.datasets import ImageFolder
 from torchvision import transforms
 import pandas as pd, matplotlib.pyplot as plt
 
-# TODO 1-1：训练增强：翻转、旋转、ColorJitter、ToTensor
+# TODO 1-1：依次使用 RandomHorizontalFlip(p=0.5)、RandomRotation(15)、ColorJitter(brightness=0.2, contrast=0.2)、ToTensor()
 train_tf=transforms.Compose([_____________])
 val_tf=transforms.Compose([transforms.ToTensor()])
 base=ImageFolder("flower_images")
@@ -554,7 +554,7 @@ class FlowerNet(nn.Module):
     def __init__(self):
         super().__init__()
         self.net=nn.Sequential(nn.Conv2d(3,24,3,padding=1),
-          # TODO 2-1：加入 BatchNorm2d
+          # TODO 2-1：在 24 通道卷积层后加入 nn.BatchNorm2d(24)
           _____________,nn.ReLU(),nn.MaxPool2d(2),
           nn.Conv2d(24,48,3,padding=1),nn.BatchNorm2d(48),nn.ReLU(),nn.MaxPool2d(2),
           nn.Flatten(),nn.Linear(48*16*16,128),nn.ReLU(),
