@@ -195,8 +195,8 @@ window.ADVANCED_DETAILS={
  tags:['HSV','inRange','形态学','轮廓'],
  taskText:'使用 HSV 颜色空间提取红色目标，完成掩膜去噪、轮廓检测、目标框绘制与数量统计。',
  req:[
-  'TODO 1：BGR 转 HSV；提取低色相红色区域；提取高色相红色区域并合并',
-  'TODO 2：先开运算去噪，再闭运算连接',
+  'TODO 1：BGR 转 HSV；使用 cv2.inRange 提取 HSV 下限 [0,100,80]、上限 [10,255,255] 的低色相红色区域；用 HSV [170,100,80]～[180,255,255] 提取高色相红色区域，再与低色相区域做 bitwise_or',
+  'TODO 2：使用已有 5×5 核，先开运算再闭运算，默认各执行 1 次',
   'TODO 3：从清理后的红色掩膜提取外轮廓；筛选面积不少于 500 的红色目标轮廓',
   'TODO 4：分别按原文件名写入 masks/ 红色掩膜和 visualized/ 绘框图',
   'TODO 5：构造颜色检测统计表；保存 color_detection.csv'
@@ -219,7 +219,7 @@ window.ADVANCED_DETAILS={
  tags:['LogisticRegression','SVC','KNN','Accuracy','Recall','F1'],
  taskText:'对同一二分类数据完成标准化、训练、预测，并用准确率、召回率、F1 和混淆矩阵比较三种分类器。',
  req:[
-  'TODO 1：建立逻辑回归、SVM、KNN 三个分类器',
+  'TODO 1：建立 LogisticRegression(max_iter=1000)、默认 SVC()、KNeighborsClassifier(n_neighbors=7) 三个分类器',
   'TODO 2：准确率；召回率；F1',
   'TODO 3：使用 StandardScaler + 当前分类器建立 Pipeline',
   'TODO 4：整理当前模型 accuracy、recall、F1 和混淆矩阵',
@@ -231,8 +231,8 @@ window.ADVANCED_DETAILS={
  tags:['KMeans','Agglomerative','DBSCAN','GMM','PCA','t-SNE'],
  taskText:'比较 K-Means、层次聚类、DBSCAN、高斯混合模型，并使用 PCA 与 t-SNE 对高维样本进行二维可视化。',
  req:[
-  'TODO 1：标准化；建立四种聚类算法',
-  'TODO 2：PCA 降到二维；t-SNE 降到二维',
+  'TODO 1：标准化；建立 KMeans(k=3,random_state=42,n_init=10)、Agglomerative(k=3)、DBSCAN(eps=0.8,min_samples=6)、GMM(n_components=3,random_state=42)',
+  'TODO 2：PCA 降到二维；使用 TSNE(n_components=2,random_state=42,perplexity=30,init=pca,learning_rate=auto) 降到二维',
   'TODO 3：整理各聚类算法的簇数、噪声数和轮廓系数',
   'TODO 4：使用 PCA 将标准化特征降到二维；使用 TSNE(n_components=2, random_state=42, perplexity=30, init=pca, learning_rate=auto) 将标准化特征降到二维',
   'TODO 5：保存 cluster_comparison.csv、cluster_results.csv（均不写索引）及 pca_tsne.png（150 dpi）'
@@ -243,7 +243,7 @@ window.ADVANCED_DETAILS={
  tags:['YOLO','Faster R-CNN','IoU','AP50','torchvision'],
  taskText:'掌握 YOLO 归一化标注与 xyxy 转换，并使用 torchvision Faster R-CNN 完成检测模型构建、训练更新、IoU、AP50 和可视化。',
  req:[
-  'TODO 1：将 YOLO 归一化 cx,cy,w,h 转为像素 xyxy；创建不下载预训练权重的 Faster R-CNN，两类（背景+目标）；SGD 优化器；合计检测损失',
+  'TODO 1：按输入图片 128×128，将归一化中心点 cx/cy 和宽高 w/h 转成像素 xyxy；使用 fasterrcnn_mobilenet_v3_large_320_fpn，weights=None、weights_backbone=None、num_classes=2、min_size=max_size=128；使用 torch.optim.SGD(model.parameters(),lr=0.001,momentum=0.9)；合计检测损失',
   'TODO 2：交集面积',
   'TODO 3：完成一次检测损失反向传播与优化更新',
   'TODO 4：按 IoU≥0.5 的样本命中比例计算题目中的简化 AP50（非严格检测 AP）',
@@ -255,8 +255,8 @@ window.ADVANCED_DETAILS={
  tags:['U-Net','DeepLab','语义分割','IoU','GAN'],
  taskText:'在本地合成数据上完成 U-Net 跳跃连接与 IoU 评估，掌握 DeepLabV3 离线调用，并训练轻量 GAN 生成掩膜样本。',
  req:[
-  'TODO 1：2 倍上采样 32→16；跳跃连接；二值分割损失；创建不下载权重的 DeepLabV3（二分类）',
-  'TODO 2：GAN 二分类损失',
+  'TODO 1：使用 ConvTranspose2d(in_channels=32,out_channels=16,kernel_size=2,stride=2) 实现 2 倍上采样；按通道维 dim=1 拼接 u 与 e1，形成 32 通道特征；二值分割 logits 使用 nn.BCEWithLogitsLoss() 计算损失；使用 deeplabv3_resnet50(weights=None,weights_backbone=None,num_classes=2) 创建离线模型',
+  'TODO 2：GAN 判别器输出已使用 Sigmoid，使用 nn.BCELoss()',
   'TODO 3：重新计算预测掩膜与真值的 IoU',
   'TODO 4：整理 GAN 最终生成器与判别器损失',
   'TODO 5：将 mean_iou、deeplab_output_shape 保存到 segmentation_metrics.json，并保存 GAN 样本预览 gan_samples.png（150 dpi）'
@@ -268,8 +268,8 @@ window.ADVANCED_DETAILS={
  taskText:'使用 jieba 词性完成中文实体提取，并构建 encoder-decoder Transformer，通过 teacher forcing 训练、greedy decoding 完成中英短句翻译与 BLEU-2 评估。',
  req:[
   'TODO 1：jieba 词性标注',
-  'TODO 2：创建 encoder-decoder Transformer，4 个注意力头；交叉熵损失，忽略 PAD',
-  'TODO 3：计算 BLEU-2',
+  'TODO 2：创建 nn.Transformer(d_model=32,nhead=4,num_encoder_layers=2,num_decoder_layers=2,dim_feedforward=64,batch_first=True)；交叉熵损失，忽略 PAD',
+  'TODO 3：使用 sentence_bleu 的 2-gram 权重 weights=(0.5,0.5)，并使用题目给定 smooth 平滑器',
   'TODO 4：计算全部翻译结果的平均 BLEU-2',
   'TODO 5：将命名实体识别结果保存为 ner_results.csv，将翻译和 BLEU 指标保存为 translation_results.csv（均不写索引）'
  ]
@@ -279,7 +279,7 @@ window.ADVANCED_DETAILS={
  tags:['GPT','OpenAI兼容接口','摘要','对话','ROUGE'],
  taskText:'调用 OpenAI 兼容 GPT 接口完成摘要、对话回复和诗歌生成，并实现 ROUGE-L 自动评价；未配置 API 时保留离线基线。',
  req:[
-  'TODO 1：调用 OpenAI 兼容 chat/completions；提取生成文本',
+  'TODO 1：请求 BASE/v1/chat/completions，Bearer Key，MODEL、user prompt，temperature=0.3，timeout=60；提取生成文本',
   'TODO 2：ROUGE-L F1',
   'TODO 3：使用最长公共子序列函数计算一个示例',
   'TODO 4：使用 rouge_l 计算一个示例 ROUGE-L',
@@ -291,8 +291,8 @@ window.ADVANCED_DETAILS={
  tags:['Transformers','LoRA','PEFT','Latency','Throughput'],
  taskText:'使用本地随机初始化的小型 BERT 完成 LoRA/PEFT 参数高效微调，统计可训练参数比例、准确率、延迟与吞吐量，全程无需下载模型。',
  req:[
-  'TODO 1：LoRA 配置，分类任务，r=4，作用于 query/value；包装为 PEFT 模型',
-  'TODO 2：吞吐量 samples/s',
+  'TODO 1：设置 LoraConfig：r=4、lora_alpha=8、lora_dropout=0.05、target_modules=[query,value]、task_type=SEQ_CLS；包装为 PEFT 模型',
+  'TODO 2：采用 throughput=batch*loops/elapsed 计算每秒处理样本数',
   'TODO 3：计算 LoRA 可训练参数比例',
   'TODO 4：整理准确率、参数量和可训练参数比例',
   'TODO 5：评测 batch=1/8/32 并保存 benchmark.csv 与 lora_metrics.json'
@@ -303,7 +303,7 @@ window.ADVANCED_DETAILS={
  tags:['工程化','RAG','Tkinter','测试','文档'],
  taskText:'完成一个可复现的智慧校园制度问答原型：本地知识检索、自动评测、响应时间/吞吐量统计、Tkinter 界面和 README 交付文档。',
  req:[
-  'TODO 1：建立 TF-IDF 检索矩阵；按相似度取 Top-K',
+  'TODO 1：使用默认 TfidfVectorizer() 拟合全部知识文本，构造检索矩阵；按相似度取 Top-K',
   'TODO 2：每秒可处理查询数',
   'TODO 3：计算原型问答准确率',
   'TODO 4：根据总耗时计算查询吞吐量',
@@ -316,10 +316,10 @@ window.ADVANCED_DETAILS={
  taskText:'使用本地生成的合成人像完成二分类训练与概率预测。重点练习图像读取/缩放/展平、SVC(probability=True)、predict_proba，以及在结果图标题中写出预测类别和概率。',
  req:[
   'TODO 1：统一缩放到 32×32；转为 0~1 的一维特征',
-  'TODO 2：按 3:1 分层划分训练/测试索引',
+  'TODO 2：使用 train_test_split(indices,test_size=0.25,random_state=42,stratify=y) 按 3:1 分层划分',
   'TODO 3：训练 SVC 概率分类模型',
-  'TODO 4：按训练时相同方式构造待预测特征；预测类别；取得预测类别的最大概率',
-  'TODO 5：创建 Matplotlib 画布；标题写出预测类别和概率；保存预测结果图'
+  'TODO 4：将灰度待测图缩放到 32×32，转换 float32，展平为单行并除以 255；预测类别；取得预测类别的最大概率',
+  'TODO 5：创建 figsize=(5,5) 的 Matplotlib 单子图画布；标题写出预测类别和概率；以 150 dpi 保存 gender_prediction.png（bbox_inches=tight）'
  ]
 },
 '6.3.6':{
@@ -328,10 +328,10 @@ window.ADVANCED_DETAILS={
  taskText:'使用本地生成的合成人像训练双输出 CNN，同时预测性别标签与年龄段标签，并把女性合成人像、两项预测结果及各自概率显示在 Matplotlib 标题中。',
  req:[
   'TODO 1：将 gender 字符串映射为类别编号；将 age 字符串映射为类别编号',
-  'TODO 2：固定随机种子完成 8:2 划分；建立 batch_size=16 的训练 DataLoader',
+  'TODO 2：用 random_split 按 8:2 划分 dataset，generator=torch.Generator().manual_seed(42)；建立 batch_size=16 的训练 DataLoader',
   'TODO 3：分别输出性别 logits 和年龄段 logits；两个分类损失相加作为总损失',
   'TODO 4：Softmax 得到两个任务的概率；取得预测类别编号',
-  'TODO 5：标题同时写出性别、年龄段及两项概率；保存最终预测可视化'
+  'TODO 5：标题同时写出性别、年龄段及两项概率；以 150 dpi 保存 age_gender_prediction.png（bbox_inches=tight）'
  ]
 }
 };
