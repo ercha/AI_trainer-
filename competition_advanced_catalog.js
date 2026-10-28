@@ -26,8 +26,8 @@ window.ADVANCED_DETAILS={
  req:[
   'TODO 1：统一尺寸为 640×360；5×5 高斯滤波；Otsu 自动阈值二值化；Canny(50,150)',
   'TODO 2：闭运算连接边缘',
-  'TODO 3：从闭运算结果重新提取外轮廓；按面积和宽高比筛选候选框',
-  'TODO 4：保存当前二值图、边缘图和绘框结果',
+  'TODO 3：从闭运算结果重新提取外轮廓；筛选矩形面积 w*h≥1200 且宽高比 1.2～5.0 的候选框',
+  'TODO 4：将二值图、边缘图和绘框图按原文件名分别保存到 binary/、edges/、visualized/',
   'TODO 5：由 records 构造汇总表；保存 detection_summary.csv'
  ]
 },
@@ -39,8 +39,8 @@ window.ADVANCED_DETAILS={
   'TODO 1：CLAHE 增强；检测亮缺陷 >180；检测暗缺陷 <70；开运算去噪后闭运算连接',
   'TODO 2：合并亮缺陷与暗缺陷掩膜',
   'TODO 3：对过滤后的缺陷掩膜执行连通域统计',
-  'TODO 4：按缺陷面积占比重新判定当前样本等级',
-  'TODO 5：构造缺陷统计表；保存掩膜、可视化图和 defect_report.csv'
+  'TODO 4：按缺陷面积占比重新分级：<0.002 为正常，0.002～<0.01 为轻微，其余为严重',
+  'TODO 5：构造缺陷统计表；保存 masks/ 掩膜、defect_vis/ 可视化图（原文件名），导出 defect_report.csv（index=False，utf-8-sig）'
  ]
 },
 '6.2.1':{
@@ -52,7 +52,7 @@ window.ADVANCED_DETAILS={
   'TODO 2：计算轮廓系数；训练最佳 KMeans',
   'TODO 3：根据轮廓系数重新取得最佳 K',
   'TODO 4：统计各聚类的样本数和数值特征均值',
-  'TODO 5：保存聚类结果、K 选择结果和最佳模型'
+  'TODO 5：导出 customer_clusters.csv、k_selection.csv（均 index=False），并用 joblib 保存 best_cluster_model.pkl（预处理器与 KMeans）'
  ]
 },
 '6.2.2':{
@@ -62,9 +62,9 @@ window.ADVANCED_DETAILS={
  req:[
   'TODO 1：按 8:2 分层划分',
   'TODO 2：计算四项分类指标；以 F1 为评分做 GridSearchCV',
-  'TODO 3：使用调优后的模型预测测试集并计算四项分类指标',
-  'TODO 4：按题目网格重新建立以 F1 为评分的 GridSearchCV',
-  'TODO 5：保存最佳模型、预测结果和 metrics.json'
+  'TODO 3：使用 search.predict(X_test) 预测，并计算 accuracy、precision、recall、f1（零除时得 0）',
+  'TODO 4：复用题目 grid，按 scoring=f1、cv=4、n_jobs=-1 建立 GridSearchCV',
+  'TODO 5：保存 best_churn_model.pkl、predictions.csv（y_true/y_pred，不写索引）和 metrics.json（accuracy/precision/recall/f1）'
  ]
 },
 '6.2.3':{
@@ -74,9 +74,9 @@ window.ADVANCED_DETAILS={
  req:[
   'TODO 1：构造房龄；构造平均房间面积',
   'TODO 2：计算 RMSE；计算 R²',
-  'TODO 3：建立三种回归模型字典',
+  'TODO 3：构造 LinearRegression、DecisionTreeRegressor(max_depth=8,random_state=42)、RandomForestRegressor(n_estimators=180,random_state=42) 的模型字典',
   'TODO 4：整理 RMSE 与 R² 对比结果',
-  'TODO 5：按 RMSE 选出最佳模型；保存最佳模型和测试集预测'
+  'TODO 5：按 RMSE 选出最佳模型；保存 best_house_model.pkl、test_predictions.csv（actual/pred），同时输出 model_comparison.csv（不写索引）'
  ]
 },
 '6.3.1':{
@@ -86,9 +86,9 @@ window.ADVANCED_DETAILS={
  req:[
   'TODO 1：使用 ImageFolder 读取 shape_images；按 8:2 划分训练/验证集，使用 torch.Generator().manual_seed(42) 固定划分',
   'TODO 2：64×64 两次池化后为 16×16；定义 nn.CrossEntropyLoss()，以及学习率 lr=1e-3 的 Adam 优化器',
-  'TODO 3：写出两次池化后的全连接输入特征数',
-  'TODO 4：重新定义交叉熵损失；重新建立 Adam 优化器',
-  'TODO 5：得到验证集类别预测；计算验证准确率；保存权重和训练历史'
+  'TODO 3：卷积层输出 32 个通道、64×64 两次池化后为 16×16，写出 32*16*16',
+  'TODO 4：重新定义交叉熵损失；使用 model.parameters() 和 lr=1e-3 重新建立 Adam 优化器',
+  'TODO 5：得到验证集类别预测；计算验证准确率；保存 shape_cnn.pt 模型权重与 training_history.csv 训练历史（不写索引）'
  ]
 },
 '6.3.2':{
@@ -111,7 +111,7 @@ window.ADVANCED_DETAILS={
   'TODO 1：创建 ResNet18，不下载预训练权重；冻结所有参数；替换 fc 为 4 类输出，并保持可训练',
   'TODO 2：解冻 layer4；以更小学习率优化 layer4 + fc',
   'TODO 3：确认 layer4 已解冻；使用当前较小学习率对一个训练批次执行第二阶段微调',
-  'TODO 4：保存当前模型权重；重新创建同结构 ResNet18 并加载权重',
+  'TODO 4：使用 torch.save(model.state_dict()) 将当前权重保存为 best_resnet18.pt；使用 weights=None 重新创建同结构 ResNet18，将 fc 改为 4 类，加载 best_resnet18.pt（map_location=cpu）',
   'TODO 5：计算验证准确率；计算验证混淆矩阵；确认加载前后预测一致'
  ]
 },
@@ -124,7 +124,7 @@ window.ADVANCED_DETAILS={
   'TODO 2：训练 LogisticRegression；取该类别系数最大的 10 个词',
   'TODO 3：生成测试集 classification_report 文本',
   'TODO 4：重新整理每个类别权重最高的 10 个关键词',
-  'TODO 5：保存分类器、评价报告和关键词 JSON'
+  'TODO 5：保存 news_classifier.pkl、news_metrics.txt（UTF-8）、class_keywords.json（UTF-8，保留中文）'
  ]
 },
 '6.4.2':{
@@ -147,7 +147,7 @@ window.ADVANCED_DETAILS={
   'TODO 1：构建 CountVectorizer，max_features=1500；训练 5 主题 LDA',
   'TODO 2：每主题 Top-10 关键词；排除自身，找最相似 5 篇',
   'TODO 3：重新整理每个主题的 Top-10 关键词',
-  'TODO 4：建立 TF-IDF 特征并计算文章余弦相似度',
+  'TODO 4：用 TfidfVectorizer(max_features=1500) 建立文本特征，再计算文章间余弦相似度矩阵',
   'TODO 5：排除自身后找最相似的 5 篇；保存 topic_result.csv 与 recommendations.json'
  ]
 },
@@ -160,8 +160,8 @@ window.ADVANCED_DETAILS={
   'TODO 2：计算客单价；计算复购率（订单数>1客户占比）',
   'TODO 3：从环境变量读取 BASE_URL/API_KEY/MODEL；调用 /v1/chat/completions',
   'TODO 4：构造包含现状、问题、原因、建议四部分要求的 Prompt',
-  'TODO 5：构造 OpenAI 兼容 chat/completions 请求体',
-  'TODO 6：保存最终 Markdown 经营报告'
+  'TODO 5：使用 MODEL、user 消息 audit_prompt、temperature=0.2 构造 OpenAI 兼容 chat/completions 请求体',
+  'TODO 6：将最终经营报告按 UTF-8 编码保存为 business_report.md'
  ]
 },
 '6.5.2':{
@@ -172,9 +172,9 @@ window.ADVANCED_DETAILS={
   'TODO 1：TF-IDF + LogisticRegression Pipeline',
   'TODO 2：金额、负面词和类别共同计算优先级分数',
   'TODO 3：调用兼容接口并解析 JSON 文本',
-  'TODO 4：为高优先级投诉构造严格 JSON 输出 Prompt',
+  'TODO 4：针对高优先级投诉创建要求返回 summary、risk、action、reply 四字段的严格 JSON Prompt',
   'TODO 5：筛选成功解析且包含 result 的 AI 处置记录',
-  'TODO 6：保存投诉结果和 AI 动作 JSON'
+  'TODO 6：保存 complaint_results.xlsx（不写索引）和 ai_actions.json（UTF-8，保留中文）'
  ]
 },
 '6.5.3':{
@@ -185,9 +185,9 @@ window.ADVANCED_DETAILS={
   'TODO 1：使用字符级 2~4 gram TF-IDF 建库，适配中文无空格文本；取相似度最高的 top_k',
   'TODO 2：调用 OpenAI 兼容接口',
   'TODO 3：关键词覆盖率',
-  'TODO 4：读取评测问题并确认批量问答数量',
+  'TODO 4：用 pd.read_csv 读取 questions.csv，核对批量评测问题数量',
   'TODO 5：计算所有问题的平均关键词覆盖率',
-  'TODO 6：保存 RAG 明细与 Markdown 评测报告'
+  'TODO 6：保存 rag_results.csv（不写索引）与 rag_evaluation.md（UTF-8，含平均关键词覆盖率）'
  ]
 },
 '6.1.4':{
@@ -198,7 +198,7 @@ window.ADVANCED_DETAILS={
   'TODO 1：BGR 转 HSV；提取低色相红色区域；提取高色相红色区域并合并',
   'TODO 2：先开运算去噪，再闭运算连接',
   'TODO 3：从清理后的红色掩膜提取外轮廓；筛选面积不少于 500 的红色目标轮廓',
-  'TODO 4：保存红色掩膜和绘框结果',
+  'TODO 4：分别按原文件名写入 masks/ 红色掩膜和 visualized/ 绘框图',
   'TODO 5：构造颜色检测统计表；保存 color_detection.csv'
  ]
 },
@@ -210,7 +210,7 @@ window.ADVANCED_DETAILS={
   'TODO 1：使用 TM_CCOEFF_NORMED 做模板匹配；取得最大匹配分数和位置',
   'TODO 2：使用 TM_CCOEFF_NORMED 重新计算模板匹配结果',
   'TODO 3：取得最大匹配分数和位置',
-  'TODO 4：复制当前场景图用于绘框；绘制检测框并保存可视化图',
+  'TODO 4：复制当前场景图用于绘框；以绿色线宽 2 绘制模板匹配框，并按原文件名保存到检测输出目录 OUT',
   'TODO 5：合并预测与 ground_truth；计算中心点定位误差；保存 template_detection.csv'
  ]
 },
@@ -234,8 +234,8 @@ window.ADVANCED_DETAILS={
   'TODO 1：标准化；建立四种聚类算法',
   'TODO 2：PCA 降到二维；t-SNE 降到二维',
   'TODO 3：整理各聚类算法的簇数、噪声数和轮廓系数',
-  'TODO 4：使用 PCA 将标准化特征降到二维；使用 t-SNE 将标准化特征降到二维',
-  'TODO 5：保存聚类比较、降维结果和当前可视化图'
+  'TODO 4：使用 PCA 将标准化特征降到二维；使用 TSNE(n_components=2, random_state=42, perplexity=30, init=pca, learning_rate=auto) 将标准化特征降到二维',
+  'TODO 5：保存 cluster_comparison.csv、cluster_results.csv（均不写索引）及 pca_tsne.png（150 dpi）'
  ]
 },
 '6.3.4':{
@@ -246,7 +246,7 @@ window.ADVANCED_DETAILS={
   'TODO 1：将 YOLO 归一化 cx,cy,w,h 转为像素 xyxy；创建不下载预训练权重的 Faster R-CNN，两类（背景+目标）；SGD 优化器；合计检测损失',
   'TODO 2：交集面积',
   'TODO 3：完成一次检测损失反向传播与优化更新',
-  'TODO 4：根据 IoU>=0.5 重新计算 AP50',
+  'TODO 4：按 IoU≥0.5 的样本命中比例计算题目中的简化 AP50（非严格检测 AP）',
   'TODO 5：保存 detection_metrics.json 和 detection_preview.png'
  ]
 },
@@ -259,7 +259,7 @@ window.ADVANCED_DETAILS={
   'TODO 2：GAN 二分类损失',
   'TODO 3：重新计算预测掩膜与真值的 IoU',
   'TODO 4：整理 GAN 最终生成器与判别器损失',
-  'TODO 5：保存分割指标和两类预览图'
+  'TODO 5：将 mean_iou、deeplab_output_shape 保存到 segmentation_metrics.json，并保存 GAN 样本预览 gan_samples.png（150 dpi）'
  ]
 },
 '6.4.4':{
@@ -271,7 +271,7 @@ window.ADVANCED_DETAILS={
   'TODO 2：创建 encoder-decoder Transformer，4 个注意力头；交叉熵损失，忽略 PAD',
   'TODO 3：计算 BLEU-2',
   'TODO 4：计算全部翻译结果的平均 BLEU-2',
-  'TODO 5：保存 NER 与翻译结果'
+  'TODO 5：将命名实体识别结果保存为 ner_results.csv，将翻译和 BLEU 指标保存为 translation_results.csv（均不写索引）'
  ]
 },
 '6.4.5':{
@@ -283,7 +283,7 @@ window.ADVANCED_DETAILS={
   'TODO 2：ROUGE-L F1',
   'TODO 3：使用最长公共子序列函数计算一个示例',
   'TODO 4：使用 rouge_l 计算一个示例 ROUGE-L',
-  'TODO 5：保存生成结果和 ROUGE 汇总报告'
+  'TODO 5：保存 generation_results.csv（不写索引）和 rouge_report.json（UTF-8，保留中文）'
  ]
 },
 '6.5.4':{
