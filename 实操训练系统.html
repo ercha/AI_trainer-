@@ -25,7 +25,7 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:15px;margin:16px 0 8px}.muted{colo
 </style>
 </head>
 <body>
-<header><h1>实操训练系统</h1><div class="sub">72 道操作技能题 · 456 道理论题 · 含 A-E 五模块 27 道竞赛强化训练</div></header>
+<header><h1>实操训练系统</h1><div class="sub">72 道操作技能题 · 456 道理论题 · 含 A-E 五模块 27 道竞赛强化训练</div><a class="btn primary" href="beginner_course.html" target="_top" style="margin-left:auto;text-decoration:none;white-space:nowrap">零基础学习（A-E）</a></header>
 <div class="layout">
   <aside class="card sidebar">
     <input id="qSearch" class="search" placeholder="搜索题号 / 题目 / 章节" oninput="renderQuestionList()">
@@ -114,7 +114,7 @@ const CHEATS=[
 ['读取CSV','pd.read_csv("file.csv")'],['保存CSV','df.to_csv("out.csv", index=False)'],['查看前5行','df.head()'],['缺失值统计','df.isna().sum() / df.isnull().sum()'],['删除缺失行','df.dropna()'],['填充缺失值','df.fillna(value) / Series.ffill() / Series.bfill()'],['转数值','pd.to_numeric(s, errors="coerce")'],['类型转换','s.astype(int/float/str)'],['条件筛选','df[df["col"] > 0]'],['分类计数','s.value_counts()'],['分组统计','df.groupby("col")["x"].mean()'],['区间切分','pd.cut(s, bins, labels=labels)'],['数组形状','arr.shape / arr.reshape(...)'],['NaN判断','pd.isna(x) / np.isnan(x)'],['布尔过滤NaN','arr = arr[~pd.isna(arr)]'],['划分数据集','train_test_split(X, y, test_size=0.2, random_state=42)'],['标准化训练集','scaler.fit_transform(X_train)'],['标准化测试集','scaler.transform(X_test)'],['模型训练','model.fit(X_train, y_train)'],['模型预测','model.predict(X_test)'],['词袋模型','CountVectorizer().fit_transform(texts)'],['删除变量','del variable'],['查看变量名','dir()']
 ];
 const Q=[];for(const u of UNITS){const count=u.count||5;for(let i=1;i<=count;i++){const id=`${u.id}.${i}`,d=DETAILS[id]||{};Q.push({id,unit:u.id,chapter:u.name,title:d.title||`${id} 实操题`,tags:d.tags||[],req:d.req||[],blanks:d.blanks||[],taskText:d.taskText||'',importRequired:!!d.importRequired,generatedRequired:id.startsWith('6.'),notebook:d.notebook||BASE+id+'/'+id+'.ipynb',answer:d.answer||ANSW+id+'_答案.md',notebookAvailable:null})}}
-let current=Q[0],mode='exam',funcIndex=0,guidePinnedUnit=null;
+let current=Q.find(q=>q.id===new URLSearchParams(location.search).get('question'))||Q[0],mode='exam',funcIndex=0,guidePinnedUnit=null;
 const KEY='ai3_practical_stats_v1',UNIT_KEY='ai3_practical_units_v2';
 function loadStats(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}}
 function saveStats(s){localStorage.setItem(KEY,JSON.stringify(s));renderStats()}
@@ -127,7 +127,7 @@ function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function decodeQuestionPage(html,id){return TaskContent.decodeQuestionPage(html,id)}
 async function probeQuestion(q){try{const r=await fetch(encodeURI(MOCK+q.id+'.html'),{cache:'no-store'});if(r.ok){const d=decodeQuestionPage(await r.text(),q.id);q.title=d.title;if(d.taskText)q.taskText=d.taskText}}catch(_){}try{const r=await fetch(encodeURI(q.notebook),{method:'HEAD',cache:'no-store'});q.notebookAvailable=r.ok}catch(_){q.notebookAvailable=false}}
 async function hydrateCatalog(){await Promise.all(Q.map(probeQuestion));renderQuestionList();renderTask();try{if(mode==='exam'&&parent!==window&&typeof parent.renderNotebookExam==='function')parent.renderNotebookExam()}catch(_){}}
-function unitOpen(id,searching){if(searching)return true;const s=loadUnitState();if(id in s)return !!s[id];return id==='1.1'}
+function unitOpen(id,searching){if(searching)return true;const s=loadUnitState();if(id in s)return !!s[id];return id==='1.1'||id===current.unit}
 function toggleUnit(id){const s=loadUnitState();s[id]=!unitOpen(id,false);saveUnitState(s);renderQuestionList()}
 function renderQuestionList(){const x=(document.getElementById('qSearch').value||'').trim().toLowerCase(),searching=!!x;let html='';for(const u of UNITS){const rows=Q.filter(q=>q.unit===u.id&&(!x||(q.id+' '+q.title+' '+q.chapter+' '+q.tags.join(' ')).toLowerCase().includes(x)));if(!rows.length)continue;const open=unitOpen(u.id,searching);html+=`<div class="unit ${open?'':'collapsed'}"><div class="unit-head" onclick="toggleUnit('${u.id}')"><span class="unit-arrow">${open?'▼':'▶'}</span><span class="unit-title">${u.id} ${esc(u.name)}</span><span class="unit-count">${rows.length}</span></div><div class="unit-body">`;for(const q of rows){const nb=q.notebookAvailable===true?'<span class="tag notebook">Notebook</span>':q.notebookAvailable===false?'<span class="tag other">非Notebook素材</span>':'<span class="tag">检测中</span>';html+=`<div class="qitem ${q.id===current.id?'active':''}" onclick="selectQ('${q.id}')"><div class="qid">${q.id}</div><div class="qtitle">${esc(q.title)}</div><div class="qmeta">${nb}</div></div>`}html+='</div></div>'}questionList.innerHTML=html||'<div class="loading-list">没有匹配的题目</div>'}
 function selectQ(id){const q=Q.find(x=>x.id===id);if(!q)return;current=q;guidePinnedUnit=null;renderQuestionList();renderTask();if(mode==='exam')renderExam();else if(mode==='fill')renderFill();else if(mode==='func')renderFunc();else renderGuide()}

@@ -60,6 +60,11 @@ echo Installing requirements.txt...
 if errorlevel 1 goto :fail
 
 echo.
+echo Installing PyTorch for available NVIDIA GPU or CPU...
+".venv\Scripts\python.exe" "install_torch.py" --auto
+if errorlevel 1 goto :fail
+
+echo.
 echo Verifying Jupyter Notebook and tray environment...
 ".venv\Scripts\python.exe" -c "import sys, notebook, jupyter_server, ipykernel, nbformat, numpy, pandas, sklearn, pystray, PIL; assert sys.version_info[:2] == (3,12); print('Python:', sys.version.split()[0]); print('Notebook:', notebook.__version__); print('pandas:', pandas.__version__); print('numpy:', numpy.__version__); print('scikit-learn:', sklearn.__version__); print('Tray launcher: OK')"
 if errorlevel 1 goto :fail
