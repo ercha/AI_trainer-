@@ -11,49 +11,31 @@ if not exist "%PY%" (
 )
 
 echo =============================================
-echo 安装竞赛强化训练额外依赖
+echo 竞赛强化依赖：自动检测 NVIDIA GPU / CPU
 echo =============================================
 echo.
-echo 检查系统 Python / 已安装 PyTorch / pip 缓存...
-where py >nul 2>&1
-if not errorlevel 1 (
-    py -3.12 -c "import sys; print('Global Python:',sys.executable); import torch; print('Global torch:',torch.__version__); print('Global torch CUDA:',torch.version.cuda)" 2>nul
-)
-where python >nul 2>&1
-if not errorlevel 1 (
-    python -c "import sys; print('PATH Python:',sys.executable); import torch; print('PATH torch:',torch.__version__); print('PATH torch CUDA:',torch.version.cuda)" 2>nul
-)
-echo.
-"%PY%" -m pip cache dir
-"%PY%" -m pip cache list | findstr /I "torch torchvision"
-echo.
-echo [1/3] 安装 NVIDIA CUDA 13.2 版 PyTorch
-echo      目标：torch 2.14.1+cu132 / torchvision 0.29.1+cu132
-echo.
-
-"%PY%" -m pip uninstall -y torch torchvision >nul 2>&1
-"%PY%" -m pip install --upgrade torch==2.14.1 torchvision==0.29.1 --index-url https://download.pytorch.org/whl/cu132
+echo [1/3] 检测 GPU 并安装匹配的 PyTorch
+"%PY%" "install_torch.py" --auto
 if errorlevel 1 goto :fail
 
 echo.
-echo [2/3] 安装其余竞赛强化依赖
+echo [2/3] 安装强化训练依赖
 "%PY%" -m pip install -r "competition_advanced_requirements.txt"
 if errorlevel 1 goto :fail
 
 echo.
-echo [3/3] 验证 CUDA / RTX GPU / 深度学习依赖
-"%PY%" -c "import torch, torchvision, jieba, gensim, requests, nltk, transformers, peft; assert '+cpu' not in torch.__version__, '检测到 CPU 版 PyTorch'; assert torch.version.cuda is not None, 'PyTorch 未包含 CUDA'; assert torch.cuda.is_available(), 'CUDA 不可用，请检查 NVIDIA 驱动'; name=torch.cuda.get_device_name(0); cap=torch.cuda.get_device_capability(0); x=torch.randn(1024,1024,device='cuda'); y=x@x; torch.cuda.synchronize(); print('torch:',torch.__version__); print('torchvision:',torchvision.__version__); print('PyTorch CUDA:',torch.version.cuda); print('GPU:',name); print('Compute Capability:',cap); print('CUDA available:',torch.cuda.is_available()); print('GPU tensor test:',float(y[0,0])); print('transformers:',transformers.__version__); print('peft:',peft.__version__); print('jieba/gensim/requests/nltk: OK')"
+echo [3/3] 验证深度学习及自然语言处理模块
+"%PY%" -c "import torch, torchvision, jieba, gensim, requests, nltk, transformers, peft; device='cuda' if torch.cuda.is_available() else 'mps' if hasattr(torch.backends,'mps') and torch.backends.mps.is_available() else 'cpu'; x=torch.ones(2,device=device); assert float(x.sum().cpu())==2; print('torch:',torch.__version__,'CUDA:',torch.version.cuda,'device:',device); print('torchvision:',torchvision.__version__); print('transformers:',transformers.__version__,'peft:',peft.__version__); print('NLP dependencies: OK')"
 if errorlevel 1 goto :fail
 
 echo.
-echo =============================================
-echo CUDA 版竞赛环境安装完成
-echo =============================================
+echo 安装完成：无显卡设备可使用 CPU 执行入门课程。
 pause
 exit /b 0
 
 :fail
 echo.
-echo 安装或 CUDA 验证失败，请检查上方错误信息
+echo ERROR: 安装失败，请检查上方错误。驱动不兼容可运行：
+echo        .venv\Scripts\python.exe install_torch.py --cpu
 pause
 exit /b 1

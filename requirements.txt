@@ -24,3 +24,7 @@ xgboost>=2.0,<4
 imbalanced-learn>=0.12,<1
 onnxruntime>=1.17,<2
 opencv-python>=4.9,<5
+
+# torch / torchvision are installed by install_torch.py after common dependencies.
+# requirements.txt cannot detect GPU hardware; run install_env.bat (Windows)
+# or python install_torch.py --auto (NVIDIA CUDA / CPU; Mac MPS / CPU).

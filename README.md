@@ -1,3 +1,9 @@
+# 2027 五模块零基础学习入口
+
+2027 备赛新增 **A～E 五个模块、30 节零基础课程**：每节包括概念解释、可运行示例、练习、自测、进度记录和原竞赛题衔接。见 [初学者学习说明.md](初学者学习说明.md)，启动本地实操 WebUI 后可点击“零基础学习（A-E）”。Windows 使用 `安装环境.bat` 自动检测 NVIDIA GPU 并选择官方 CUDA/CPU PyTorch wheel；`requirements.txt` 是静态依赖表，本身无法执行设备检测。
+
+---
+
 # 人工智能训练师（三级）备考资料 / AI Trainer Level 3 Study Materials
 
 ## 项目简介 / Overview
