@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>竞赛五模块 · 零基础学习</title>
+<style>
+:root{color-scheme:light;--bg:#f5f7fb;--paper:#fff;--border:#dce4ef;--ink:#1e293b;--muted:#64748b;--blue:#2563eb;--green:#166534}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft YaHei",system-ui,sans-serif}
+header{background:#0f172a;color:#fff;padding:14px clamp(16px,4vw,50px);display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+header h1{font-size:19px;margin:0 0 4px}header p{font-size:13px;color:#cbd5e1;margin:0}header a{color:#bfdbfe}
+.layout{max-width:1550px;margin:0 auto;display:grid;grid-template-columns:290px minmax(0,1fr);gap:18px;padding:18px}
+.sidebar{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px;align-self:start;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}
+.content{min-width:0}.panel{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:clamp(18px,3vw,32px);margin-bottom:16px}
+h2{font-size:22px;margin:0 0 10px}h3{font-size:16px;margin:22px 0 8px}p,li{line-height:1.85}.muted{color:var(--muted);font-size:13px}.subtitle{font-size:14px;color:var(--muted);margin:0 0 14px}
+.overall{margin:14px 0;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border)}
+.progress{height:8px;border-radius:20px;overflow:hidden;background:#e2e8f0;margin:8px 0}.progress>span{display:block;height:100%;background:var(--blue);width:0}
+.mod{margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.mod-head{display:flex;width:100%;justify-content:space-between;align-items:center;padding:12px;background:#f8fafc;border:0;text-align:left;font-size:14px;font-weight:700;cursor:pointer;color:var(--ink)}
+.lessons{padding:5px}.lesson-button{display:block;width:100%;border:0;text-align:left;padding:10px 12px;line-height:1.5;border-radius:6px;background:transparent;color:var(--ink);cursor:pointer}.lesson-button:hover{background:#eff6ff}.lesson-button.active{background:#dbeafe;color:#1d4ed8;font-weight:700}.done{color:var(--green);font-weight:700}
+.tag{display:inline-block;font-size:12px;font-weight:700;color:#1d4ed8;background:#eff6ff;border-radius:20px;padding:4px 10px;margin-bottom:10px}
+.section{border-top:1px solid var(--border);padding-top:14px;margin-top:18px}
+pre{white-space:pre;overflow:auto;background:#0f172a;color:#e2e8f0;border-radius:10px;padding:16px;line-height:1.65;font-family:Consolas,"Cascadia Code",monospace;font-size:13px}
+code{font-family:Consolas,monospace}li{padding:2px 0}
+button,.action{border-radius:7px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;padding:9px 13px;font:inherit;font-size:13px;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:5px}
+button:hover,.action:hover{border-color:var(--blue)}.primary{background:var(--blue);color:#fff;border-color:var(--blue)}.actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:14px 0}
+.note{padding:12px 14px;background:#f8fafc;border-left:3px solid #94a3b8;border-radius:4px;font-size:14px;line-height:1.8}
+.option{display:flex;gap:10px;align-items:center;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:14px}
+.option:hover{border-color:#93c5fd}.option input{accent-color:var(--blue)}
+.feedback{min-height:25px;margin:8px 0;font-size:14px}.feedback.good{color:var(--green)}.feedback.bad{color:#b91c1c}
+.small{font-size:12px}#answer{display:none}#answer.show{display:block}.index{color:var(--muted);font-weight:700}.between{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media(max-width:900px){.layout{display:block;padding:10px}.sidebar{position:static;max-height:none;margin-bottom:12px}.panel{padding:16px}}
+</style>
+</head>
+<body>
+<header><div><h1>2027 竞赛准备 · 五模块零基础学习</h1><p>30 节基础课 · 分步讲解 · 可运行示例 · 练习与自测 · 竞赛实操衔接</p></div><a href="practice.html">返回实操训练与理论题库</a></header>
+<div class="layout">
+<aside class="sidebar" aria-label="课程目录">
+  <strong>学习目录</strong><div id="overall" class="overall">正在加载...</div>
+  <label class="muted"><input type="checkbox" id="unfinished"> 仅显示未完成课程</label>
+  <div id="nav"></div>
+  <div class="note small">学习记录保存于当前浏览器。完成知识自测后标记进度，清除浏览器数据会丢失记录。</div>
+</aside>
+<main class="content">
+  <section class="panel"><h2 id="courseTitle">正在加载课程...</h2><p class="subtitle" id="moduleIntro"></p><div id="lessonContent"></div></section>
+  <section class="panel"><div class="between"><div id="pageIndex" class="muted"></div><div class="actions"><button type="button" id="prev">上一课</button><button type="button" id="next" class="primary">下一课</button></div></div></section>
+</main>
+</div>
+<script src="beginner_course_data.js"></script>
+<script src="beginner_course_app.js"></script>
+</body>
+</html>
