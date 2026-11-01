@@ -36,6 +36,51 @@ class BeginnerCourseTests(unittest.TestCase):
                 self.assertTrue(0 <= q["answer"] < len(q["options"]))
                 self.assertTrue(q["reason"])
 
+    def test_detailed_lesson_material(self):
+        content = (ROOT / "beginner_course_extras.js").read_text(encoding="utf-8")
+        marker = "window.BEGINNER_COURSE_EXTRAS="
+        self.assertIn(marker, content)
+        details = json.loads(content.split(marker, 1)[1].strip().removesuffix(";"))["lessons"]
+        all_ids = {step["id"] for module in self.modules for step in module["steps"]}
+        self.assertEqual(set(details), all_ids)
+        for lesson_id, detail in details.items():
+            self.assertGreaterEqual(len(detail["terms"]), 3, lesson_id)
+            self.assertGreaterEqual(len(detail["walkthrough"]), 3, lesson_id)
+            self.assertGreaterEqual(len(detail["apis"]), 2, lesson_id)
+            self.assertGreaterEqual(len(detail["pitfalls"]), 2, lesson_id)
+            self.assertEqual(len(detail["levels"]), 3, lesson_id)
+            self.assertTrue(detail["expected"], lesson_id)
+            self.assertTrue(detail["check"], lesson_id)
+            for api in detail["apis"]:
+                self.assertTrue(all(api.get(key) for key in
+                    ("api", "signature", "parameters", "returns", "tip")), lesson_id)
+
+    def test_30_single_lesson_notebooks(self):
+        all_lessons = [lesson for m in self.modules for lesson in m["steps"]]
+        for lesson in all_lessons:
+            lesson_id = lesson["id"]
+            module = lesson_id[0]
+            path = ROOT / "beginner_notebooks" / module / f"{lesson_id}.ipynb"
+            data = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(data["nbformat"], 4)
+            self.assertEqual(data["metadata"]["ai_trainer"]["lesson_id"], lesson_id)
+            cells = data["cells"]
+            self.assertGreaterEqual(len(cells), 12)
+            self.assertEqual(cells[3]["cell_type"], "code")
+            self.assertEqual("".join(cells[3]["source"]), lesson["code"])
+            for cell in cells:
+                if cell["cell_type"] == "code":
+                    compile("".join(cell["source"]), str(path), "exec")
+
+    def test_detailed_webui_and_progress_backup(self):
+        page = (ROOT / "beginner_course.html").read_text(encoding="utf-8")
+        app = (ROOT / "beginner_course_app.js").read_text(encoding="utf-8")
+        self.assertIn("beginner_course_extras.js", page)
+        self.assertIn("exportProgress", app)
+        self.assertIn("importProgress", app)
+        self.assertIn("beginner_notebooks/", app)
+        self.assertIn("practice.html?question=", app)
+
     def test_five_valid_notebooks_with_compilable_code_cells(self):
         for module in "ABCDE":
             path = ROOT / "beginner_notebooks" / f"{module}.ipynb"
