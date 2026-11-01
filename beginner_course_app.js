@@ -98,6 +98,18 @@
     output+=section("九、达到什么程度才能去做竞赛题？",'<p class="note">'+esc(d.check||"能独立理解示例并尝试完成练习。")+'</p>'+
       '<div class="actions"><a class="action" href="practice.html?question='+encodeURIComponent(l.exam)+'">进入 '+esc(l.exam)+' 竞赛强化题</a></div>'+
       '<p class="muted">竞赛题比基础课难，建议先做完当前模块的基础课程。原有实操评分与参考答案不变。</p>');
+    if(l.id.endsWith("6")){
+      const project=(window.BEGINNER_PROJECTS||[]).find(x=>x.id===l.moduleId);
+      if(project){
+        output+=section("十、本模块综合小项目",
+          '<p><b>'+esc(project.title)+'</b></p><p>'+esc(project.overview)+'</p>'+
+          '<ol>'+project.tasks.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ol>'+
+          '<p><b>项目交付：</b>'+project.outputs.map(esc).join('、')+'</p>'+
+          '<div class="actions"><a class="action primary" download href="beginner_projects/'+esc(project.id)+'_project.ipynb">下载综合项目学员版</a></div>'+
+          '<details class="summary"><summary>完成后查看参考项目</summary><div><p>建议独立完成项目 TODO 后再查阅答案。</p>'+
+          '<a class="action" download href="beginner_projects/solutions/'+esc(project.id)+'_project_solution.ipynb">下载可运行参考答案 Notebook</a></div></details>');
+      }
+    }
     $("lessonContent").innerHTML=output;
     $("exampleCode").textContent=l.code;$("answerCode").textContent=l.solution;
     $("copyExample").addEventListener("click",async()=>{

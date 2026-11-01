@@ -1,0 +1,90 @@
+// 五模块综合项目
+window.BEGINNER_PROJECTS=[
+  {
+    "id": "A",
+    "title": "OpenCV 图像处理与检测交付",
+    "overview": "用程序生成一张彩色图，再完成中文路径读写、缩放、灰度滤波、颜色目标检测、绘框、统计与 PNG/CSV 交付。",
+    "tasks": [
+      "生成素材并核对图像尺寸、BGR 通道",
+      "通过中文路径读取图片，缩放并做灰度/滤波/Canny",
+      "HSV 提取红色目标并绘制外接矩形",
+      "保存处理图、数据 CSV 与对比 Matplotlib 图片",
+      "验证所有文件存在"
+    ],
+    "outputs": [
+      "A_原始图片.png",
+      "A_目标检测.png",
+      "A_boxes.csv",
+      "A_对比图.png"
+    ]
+  },
+  {
+    "id": "B",
+    "title": "sklearn 分类完整工作流",
+    "overview": "使用含缺失值和类别列的模拟客户数据，完成预处理、分类训练、评价与模型/图表交付。",
+    "tasks": [
+      "生成客户表并拆分 X/y",
+      "训练集/测试集分层划分，数值和类别列分别预处理",
+      "Pipeline 训练逻辑回归与测试预测",
+      "输出准确率、F1、混淆矩阵和图表",
+      "保存并重新加载 joblib 模型"
+    ],
+    "outputs": [
+      "B_predictions.csv",
+      "B_classifier.pkl",
+      "B_confusion.png"
+    ]
+  },
+  {
+    "id": "C",
+    "title": "CPU/GPU 通用的微型 CNN 图像分类",
+    "overview": "自己生成两类 20×20 图片，不依赖下载真实数据或预训练权重；完整实现 Dataset、训练、验证、模型保存和曲线。",
+    "tasks": [
+      "使用 Tensor 制作两类合成图像并核对 NCHW",
+      "DataLoader 创建批次，构造 Conv2d + Pool + Linear",
+      "用 zero_grad→forward→loss→backward→step 训练",
+      "在 eval+no_grad 验证，记录损失和准确率",
+      "保存 .pt 权重、训练历史 CSV、曲线 PNG"
+    ],
+    "outputs": [
+      "C_cnn_weights.pt",
+      "C_history.csv",
+      "C_loss.png"
+    ]
+  },
+  {
+    "id": "D",
+    "title": "中文新闻分类与概率采样",
+    "overview": "模拟中文科技/体育新闻，用 jieba 分词、TF-IDF 和逻辑回归训练文本分类；理解预测概率形状并完成采样和评估。",
+    "tasks": [
+      "准备中文新闻文本和标签，分层划分",
+      "使用 jieba + TF-IDF + LogisticRegression Pipeline",
+      "计算准确率、F1 和预测概率",
+      "修正 np.random.choice 的 p 概率形状并执行采样",
+      "导出预测 CSV、指标 JSON 和混淆矩阵 PNG"
+    ],
+    "outputs": [
+      "D_predictions.csv",
+      "D_metrics.json",
+      "D_confusion.png"
+    ]
+  },
+  {
+    "id": "E",
+    "title": "数据分析 + 检索 + 可交付报告",
+    "overview": "使用本地订单 JSON 模拟小型 AI 经营项目：清洗订单数据、统计、图表、TF-IDF 检索和 Markdown 报告，不依赖外部 API。",
+    "tasks": [
+      "生成订单 JSON 并转换为 DataFrame",
+      "清洗金额与数量，计算 GMV、类别贡献",
+      "绘制经营柱形图并保存 PNG",
+      "用 TF-IDF 检索企业知识库并生成报告",
+      "检查 CSV、PNG、Markdown 全部交付文件"
+    ],
+    "outputs": [
+      "E_orders.json",
+      "E_category_sales.csv",
+      "E_sales.png",
+      "E_report.md"
+    ]
+  }
+];

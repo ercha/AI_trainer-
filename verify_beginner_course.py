@@ -77,6 +77,7 @@ def smoke(modules_to_run, scripts):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--run",action="store_true",help="依次在独立临时目录运行课程示例")
+    parser.add_argument("--run-projects",action="store_true",help="运行五个综合项目参考答案")
     parser.add_argument("--modules",default="ABCDE",help="指定需运行模块，如 AC")
     args=parser.parse_args()
     if set(args.modules)-set("ABCDE"):
@@ -87,6 +88,18 @@ def main():
         return 1
     scripts=validate_notebooks(lessons())
     print(f"课程与 Notebook 静态检测通过：{len(scripts)} 节")
+    if args.run_projects:
+        projects=json.loads((ROOT/"beginner_projects"/"projects.json").read_text(encoding="utf-8"))
+        project_scripts=[]
+        for project in projects:
+            mid=project["id"]
+            doc=json.loads((ROOT/"beginner_projects"/"solutions"/f"{mid}_project_solution.ipynb").read_text(encoding="utf-8"))
+            source="\n\n".join("".join(c["source"]) for c in doc["cells"] if c["cell_type"]=="code")
+            project_scripts.append((mid,source))
+        failed=smoke(set(args.modules),project_scripts)
+        if failed:
+            print("项目参考答案运行失败：",", ".join(failed))
+            return 1
     if args.run:
         failed=smoke(set(args.modules),scripts)
         if failed:

@@ -72,6 +72,20 @@ class BeginnerCourseTests(unittest.TestCase):
                 if cell["cell_type"] == "code":
                     compile("".join(cell["source"]), str(path), "exec")
 
+    def test_five_module_projects(self):
+        projects = json.loads((ROOT / "beginner_projects" / "projects.json").read_text(encoding="utf-8"))
+        self.assertEqual([x["id"] for x in projects], list("ABCDE"))
+        for project in projects:
+            mid = project["id"]
+            for name in [f"{mid}_project.ipynb", f"solutions/{mid}_project_solution.ipynb"]:
+                path = ROOT / "beginner_projects" / name
+                notebook = json.loads(path.read_text(encoding="utf-8"))
+                self.assertEqual(notebook["nbformat"], 4)
+                self.assertEqual(notebook["metadata"]["ai_trainer"]["project"], mid)
+                for cell in notebook["cells"]:
+                    if cell["cell_type"] == "code":
+                        compile("".join(cell["source"]), str(path), "exec")
+
     def test_detailed_webui_and_progress_backup(self):
         page = (ROOT / "beginner_course.html").read_text(encoding="utf-8")
         app = (ROOT / "beginner_course_app.js").read_text(encoding="utf-8")
