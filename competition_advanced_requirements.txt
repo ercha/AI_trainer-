@@ -1,5 +1,5 @@
-# PyTorch / torchvision 不在此文件安装。
-# Windows RTX 50 系显卡由“安装竞赛强化依赖.bat”强制安装官方 CUDA 13.2 (cu132) wheel。
+# PyTorch / torchvision 由 install_torch.py 自动选择 CPU/CUDA/MPS wheel。
+# 首次使用请先运行 install_env.bat 或安装环境.bat。
 
 # 竞赛强化训练额外依赖
 # 在完成 install_env.bat 后，再运行“安装竞赛强化依赖.bat”。

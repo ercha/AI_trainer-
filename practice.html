@@ -13,11 +13,13 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:"Microsoft
 <style>.record-actions{flex-wrap:wrap}@media(max-width:600px){.mask{padding:8px}.panel{max-height:calc(100vh - 16px)}.record{grid-template-columns:minmax(0,1fr)}.body{padding:12px}}</style>
 </head>
 <body>
-<iframe id="appFrame" src="%E5%AE%9E%E6%93%8D%E8%AE%AD%E7%BB%83%E7%B3%BB%E7%BB%9F.html"></iframe>
+<iframe id="appFrame" title="实操训练系统" src=""></iframe>
 <div id="recordsMask" class="mask"><div class="panel"><div class="head"><div class="title">模拟考试作答记录</div><button class="close" onclick="closeRecords()">关闭</button></div><div class="body"><div id="recordsBox" class="records"><div class="empty">正在读取...</div></div></div></div></div>
 <script src="answer_viewer.js"></script>
 <script>
 const frame=document.getElementById('appFrame'),recordsMask=document.getElementById('recordsMask');
+const initialQuestion=new URLSearchParams(location.search).get('question');
+frame.src='实操训练系统.html'+(initialQuestion?'?question='+encodeURIComponent(initialQuestion):'');
 let examActive=false,activeSession=null,examTimer=null,examPoll=null;
 function escHtml(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function closeAnswer(){AnswerViewer.close()}function closeRecords(){recordsMask.classList.remove('show')}
