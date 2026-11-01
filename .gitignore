@@ -7,3 +7,15 @@ _exam_history/
 _trainer_service.log
 __pycache__/
 *.pyc
+
+# 2027 beginner notebooks and project runtime outputs
+beginner_notebooks/**/output/
+beginner_notebooks/**/beginner_outputs/
+beginner_notebooks/**/demo.pt
+beginner_notebooks/**/kmeans_model.pkl
+beginner_notebooks/**/cleaned.csv
+beginner_projects/**/A_results/
+beginner_projects/**/B_results/
+beginner_projects/**/C_results/
+beginner_projects/**/D_results/
+beginner_projects/**/E_results/
