@@ -30,6 +30,30 @@ button:hover,.action:hover{border-color:var(--blue)}.primary{background:var(--bl
 .feedback{min-height:25px;margin:8px 0;font-size:14px}.feedback.good{color:var(--green)}.feedback.bad{color:#b91c1c}
 .small{font-size:12px}#answer{display:none}#answer.show{display:block}.index{color:var(--muted);font-weight:700}.between{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 @media(max-width:900px){.layout{display:block;padding:10px}.sidebar{position:static;max-height:none;margin-bottom:12px}.panel{padding:16px}}
+
+.lesson-api{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:10px;font-size:13px}
+.lesson-api th,.lesson-api td{border:1px solid var(--border);text-align:left;vertical-align:top;padding:10px;overflow-wrap:anywhere;line-height:1.65}
+.lesson-api th{background:#f8fafc;font-weight:700}
+.lesson-api code,.inline-code{background:#eef2f7;padding:2px 4px;border-radius:4px;font-size:13px}
+.course-search{width:100%;border:1px solid var(--border);border-radius:6px;margin:9px 0 10px;padding:9px;font:inherit;font-size:13px}
+.explain-list{counter-reset:stage;list-style:none;padding:0}
+.explain-list li{counter-increment:stage;position:relative;padding:8px 10px 8px 38px;margin-bottom:8px;background:#f8fafc;border:1px solid var(--border);border-radius:7px}
+.explain-list li:before{content:counter(stage);position:absolute;left:12px;top:9px;background:#dbeafe;color:#1d4ed8;width:18px;height:18px;border-radius:50%;text-align:center;font-size:11px;line-height:18px;font-weight:700}
+.terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}
+.term{background:#f8fafc;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:13px;line-height:1.65}
+.term strong{display:block;margin-bottom:5px;font-size:14px}
+.outcome{padding:12px;background:#f0f9ff;border-left:3px solid #0284c7;border-radius:6px;line-height:1.75}
+.warning li{margin-bottom:8px}
+.level{margin:9px 0;padding:12px;background:#fff;border:1px solid var(--border);border-radius:8px}
+.level strong{color:#1d4ed8}
+.checklist{display:grid;gap:9px;margin:12px 0}
+.checklist label{display:flex;align-items:flex-start;gap:9px;line-height:1.7;font-size:14px;cursor:pointer}
+.checklist input{margin-top:6px;accent-color:var(--blue)}
+details.summary{border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin:12px 0;background:#fff}
+details.summary summary{cursor:pointer;font-weight:700}
+details.summary>div{padding-top:10px}
+.milestone{color:#475569;font-size:13px;margin:9px 0;line-height:1.7}
+@media(max-width:760px){.lesson-api{table-layout:auto}.lesson-api th,.lesson-api td{padding:7px;font-size:12px}.terms{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -37,16 +61,21 @@ button:hover,.action:hover{border-color:var(--blue)}.primary{background:var(--bl
 <div class="layout">
 <aside class="sidebar" aria-label="课程目录">
   <strong>学习目录</strong><div id="overall" class="overall">正在加载...</div>
+  <label class="muted" for="findLesson">查找课题、函数或术语</label>
+  <input id="findLesson" class="course-search" placeholder="例如：LSTM、resize、F1" autocomplete="off">
   <label class="muted"><input type="checkbox" id="unfinished"> 仅显示未完成课程</label>
   <div id="nav"></div>
+  <div class="actions"><button type="button" id="exportProgress">导出学习进度</button><button type="button" id="importProgress">导入进度</button><input id="importFile" type="file" accept=".json,application/json" hidden></div>
+  <p id="storageMessage" class="muted" role="status" aria-live="polite"></p>
   <div class="note small">运行代码请先在项目文件夹双击“启动零基础Notebook.bat”，在 Jupyter 中打开 A～E Notebook。<hr>学习记录保存于当前浏览器。完成知识自测后标记进度，清除浏览器数据会丢失记录。</div>
 </aside>
 <main class="content">
-  <section class="panel"><h2 id="courseTitle">正在加载课程...</h2><p class="subtitle" id="moduleIntro"></p><div id="lessonContent"></div></section>
+  <section class="panel"><h2 id="courseTitle">正在加载课程...</h2><p class="subtitle" id="moduleIntro"></p><div id="courseMap" class="muted"></div><div id="lessonContent"></div></section>
   <section class="panel"><div class="between"><div id="pageIndex" class="muted"></div><div class="actions"><button type="button" id="prev">上一课</button><button type="button" id="next" class="primary">下一课</button></div></div></section>
 </main>
 </div>
 <script src="beginner_course_data.js"></script>
+<script src="beginner_course_extras.js"></script>
 <script src="beginner_course_app.js"></script>
 </body>
 </html>
