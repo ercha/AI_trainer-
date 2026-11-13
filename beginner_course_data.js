@@ -1,3 +1,4 @@
+// 五模块 30 节零基础课程数据；仅覆盖 A-E。
 window.BEGINNER_COURSE={
   "version": 1,
   "modules": [
