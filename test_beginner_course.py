@@ -72,6 +72,42 @@ class BeginnerCourseTests(unittest.TestCase):
                 if cell["cell_type"] == "code":
                     compile("".join(cell["source"]), str(path), "exec")
 
+    def test_all_30_executable_checkpoints(self):
+        import numpy as np
+        from beginner_checkpoints import CHECKPOINTS, check_lesson
+
+        expected = {lesson["id"] for module in self.modules for lesson in module["steps"]}
+        self.assertEqual(set(CHECKPOINTS), expected)
+        for lesson_id in sorted(expected):
+            path = ROOT / "beginner_notebooks" / lesson_id[0] / f"{lesson_id}.ipynb"
+            notebook = json.loads(path.read_text(encoding="utf-8"))
+            source = "\n".join("".join(cell["source"]) for cell in notebook["cells"])
+            self.assertIn(f'check_lesson("{lesson_id}", globals())', source)
+            self.assertIn("answer_" + lesson_id.lower(), source)
+            with self.assertRaises(AssertionError):
+                check_lesson(lesson_id, {}, save=False)
+
+        result = check_lesson("A1", {"answer_a1": np.zeros((3, 3), dtype=np.uint8)}, save=False)
+        self.assertTrue(result["passed"])
+        with self.assertRaises(AssertionError):
+            check_lesson("A1", {"answer_a1": np.zeros((3, 3))}, save=False)
+
+    def test_python_primer_structure(self):
+        path = ROOT / "beginner_notebooks" / "A" / "Python零基础预备.ipynb"
+        primer = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(primer["nbformat"], 4)
+        self.assertGreaterEqual(sum(cell["cell_type"] == "code" for cell in primer["cells"]), 6)
+        for cell in primer["cells"]:
+            if cell["cell_type"] == "code":
+                compile("".join(cell["source"]), str(path), "exec")
+
+    def test_webui_grade_sync_is_read_only(self):
+        app = (ROOT / "beginner_course_app.js").read_text(encoding="utf-8")
+        server = (ROOT / "serve_practice.py").read_text(encoding="utf-8")
+        self.assertIn("syncAutoGrades", app)
+        self.assertIn("/api/beginner/grades", server)
+        self.assertIn("BEGINNER_GRADE_ROOT", server)
+
     def test_five_module_projects(self):
         projects = json.loads((ROOT / "beginner_projects" / "projects.json").read_text(encoding="utf-8"))
         self.assertEqual([x["id"] for x in projects], list("ABCDE"))
