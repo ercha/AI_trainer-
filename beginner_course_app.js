@@ -73,6 +73,7 @@
     $("moduleIntro").textContent=m.intro;
     $("courseMap").textContent="模块 "+l.moduleId+" · "+m.name+" ｜ 从概念到竞赛 ｜ 推荐约 "+l.minutes+" 分钟（实践可按需增加）";
     let output='<p class="outcome"><b>为什么要学这一课：</b>'+esc(d.why||l.concept)+'</p>';
+    if(l.id==="A1") output+=section("开始前：Python 必备语法",'<p>如果完全没有 Python 基础，请先掌握变量、列表、字典、for/if、函数、Path、异常处理和数组索引。</p><a class="action primary" download href="beginner_notebooks/A/Python零基础预备.ipynb">下载零基础预备课 Notebook</a>');
     output+=section("一、学习目标与概念",'<p>'+esc(l.concept)+'</p><div class="terms">'+(d.terms||[]).map(t=>'<div class="term"><strong>'+esc(t.name)+'</strong>'+esc(t.meaning)+'</div>').join("")+'</div>');
     output+=section("二、先运行完整示例",'<p class="muted">建议双击项目根目录的“启动零基础Notebook.bat”，在 Jupyter 中按 Shift+Enter 逐格执行。网页显示代码，不直接运行 Python。</p>'+
        '<pre><code id="exampleCode"></code></pre>'+
@@ -88,6 +89,8 @@
       (d.levels||[]).map((x,i)=>'<div class="level"><strong>'+["① 入门","② 巩固","③ 挑战"][i]+'</strong><p>'+esc(x.replace(/^(入门|巩固|挑战)：/,""))+'</p></div>').join("")+
       '<div class="actions"><button type="button" id="showHint">查看原练习参考写法</button></div>'+
       '<div id="answer"><pre><code id="answerCode"></code></pre><p class="muted">参考代码只是其中一种写法，需在 Jupyter 中运行并核验。</p></div>'+
+      '<p class="muted">本课 Notebook 新增可执行检查点：完成指定 answer_ 变量后运行检查单元，成功后记录在本地。概念自测和示例运行需分别完成。</p>'+
+      '<div class="actions"><button type="button" id="syncGrades">同步 Notebook 检查</button><span class="muted" id="gradeSyncMessage"></span></div>'+
       '<div class="checklist">'+
       '<label><input type="checkbox" id="runChecked" '+(run?"checked":"")+'><span>我已在 Jupyter 中实际运行本课示例，并对照预期结果检查</span></label>'+
       '<label><input type="checkbox" id="challengeChecked" '+(challenge?"checked":"")+'><span>我已独立完成至少一道练习，并检查代码运行结果</span></label></div>');
@@ -116,6 +119,7 @@
       try{await navigator.clipboard.writeText(l.code);$("copyExample").textContent="复制成功"}
       catch(_){$("copyExample").textContent="复制失败，请手动选中代码"}
     });
+    $("syncGrades").addEventListener("click",()=>syncAutoGrades(true));
     $("showHint").addEventListener("click",()=>{
       $("answer").classList.toggle("show");
       $("showHint").textContent=$("answer").classList.contains("show")?"隐藏参考写法":"查看原练习参考写法";
@@ -150,6 +154,25 @@
     }
     refreshStatus();drawNav();
   }
+  async function syncAutoGrades(showFeedback=false){
+    try{
+      const response=await fetch("api/beginner/grades",{cache:"no-store"});
+      if(!response.ok) throw new Error("HTTP "+response.status);
+      const payload=await response.json();
+      let newly=0;
+      for(const id of Object.keys(payload.grades||{})){
+        if(!ids.has(id)||payload.grades[id]?.passed!==true)continue;
+        if(!practice[id]?.challenge){
+          practice[id]={...(practice[id]||{run:false,challenge:false}),challenge:true};
+          newly++;
+        }
+      }
+      if(newly){writeStorage();render()}
+      if(showFeedback)$("gradeSyncMessage").textContent="已同步，新增 "+newly+" 节已通过练习。请单独确认示例运行。";
+    }catch(err){
+      if(showFeedback)$("gradeSyncMessage").textContent="同步失败："+String(err.message||err)+"；请确认本地训练服务已启动。";
+    }
+  }
   function exportProgress(){
     const payload={schema:"ai-trainer-beginner-progress",version:progressVersion,exportedAt:new Date().toISOString(),quiz:passed,practice};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
@@ -182,4 +205,5 @@
     if(ids.has(id)){current=id;render()}
   });
   render();
+  syncAutoGrades(false);
 })();
