@@ -129,6 +129,8 @@ class BeginnerCourseTests(unittest.TestCase):
         self.assertIn("beginner_course_extras.js", page)
         self.assertIn("exportProgress", app)
         self.assertIn("importProgress", app)
+        self.assertIn("weakKey", app)
+        self.assertIn("hintStep", app)
         self.assertIn("beginner_notebooks/", app)
         self.assertIn("practice.html?question=", app)
 
