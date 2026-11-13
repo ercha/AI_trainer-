@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -20,6 +21,7 @@ TORCH_VERSION = "2.14.1"
 VISION_VERSION = "0.29.1"
 CUDA_INDEX = "https://download.pytorch.org/whl/cu132"
 CPU_INDEX = "https://download.pytorch.org/whl/cpu"
+REQUIRED_CUDA = (13, 2)  # 当前固定安装的 cu132 wheel
 
 
 def detect_nvidia() -> tuple[bool, str]:
@@ -40,7 +42,29 @@ def detect_nvidia() -> tuple[bool, str]:
     return True, "；".join(lines)
 
 
-def choose_backend(mode: str, system: str, has_nvidia: bool) -> str:
+def driver_cuda_version() -> tuple[int, int] | None:
+    """从 nvidia-smi 摘要读取驱动所支持的最高 CUDA 版本。"""
+    exe = shutil.which("nvidia-smi")
+    if not exe:
+        return None
+    try:
+        result = subprocess.run(
+            [exe], capture_output=True, text=True, errors="replace",
+            timeout=15, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    found = re.search(r"CUDA Version:\s*(\d+)\.(\d+)", result.stdout)
+    return (int(found.group(1)), int(found.group(2))) if found else None
+
+
+def choose_backend(
+    mode: str, system: str, has_nvidia: bool,
+    driver_cuda: tuple[int, int] | None = None,
+) -> str:
+    incompatible = bool(has_nvidia and driver_cuda and driver_cuda < REQUIRED_CUDA)
     if mode == "cpu":
         return "cpu"
     if mode == "gpu":
@@ -48,9 +72,20 @@ def choose_backend(mode: str, system: str, has_nvidia: bool) -> str:
             return "mps"
         if not has_nvidia:
             raise RuntimeError("强制 GPU 模式要求 NVIDIA GPU 和正确安装的驱动（macOS 使用 MPS）")
+        if incompatible:
+            raise RuntimeError(
+                f"当前驱动只宣告 CUDA {driver_cuda[0]}.{driver_cuda[1]}，"
+                "不满足当前固定的 cu132 运行时。请升级驱动，或改用 --cpu。"
+            )
         return "cuda"
     if system == "Darwin":
         return "mps"  # 通过 PyPI 安装官方 macOS wheel，可能可使用 Apple MPS。
+    if incompatible:
+        print(
+            f"警告：NVIDIA 驱动只宣告 CUDA {driver_cuda[0]}.{driver_cuda[1]}，"
+            "当前固定的 cu132 wheel 可能无法运行；自动改用 CPU。"
+        )
+        return "cpu"
     return "cuda" if has_nvidia else "cpu"
 
 
@@ -134,8 +169,13 @@ def main(argv: list[str] | None = None) -> int:
     print("操作系统：", system)
     print("设备检测：", detail)
     mode = "cpu" if args.cpu else "gpu" if args.gpu else "auto"
+    supported_cuda = driver_cuda_version() if has_nvidia and system != "Darwin" else None
+    if supported_cuda:
+        print(f"驱动最高 CUDA：{supported_cuda[0]}.{supported_cuda[1]}，目标 wheel：cu132")
+    elif has_nvidia and system != "Darwin":
+        print("未能读取驱动宣告的 CUDA 版本，将在安装后执行实际运算验证。")
     try:
-        backend = choose_backend(mode, system, has_nvidia)
+        backend = choose_backend(mode, system, has_nvidia, supported_cuda)
         print("选择运行时：", backend.upper())
         if args.dry_run:
             return 0
