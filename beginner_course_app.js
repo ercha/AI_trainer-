@@ -7,21 +7,27 @@
   const ids=new Set(lessons.map(l=>l.id));
   const quizKey="ai_trainer_beginner_course_v1";
   const practiceKey="ai_trainer_beginner_practice_v1";
+  const weakKey="ai_trainer_beginner_weak_v1";
   const progressVersion=2;
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
   const getSaved=(key)=>{try{const obj=JSON.parse(localStorage.getItem(key)||"{}");return obj&&typeof obj==="object"&&!Array.isArray(obj)?obj:{}}catch(_){return {}}};
-  let passed=getSaved(quizKey),practice=getSaved(practiceKey),current="",search="";
+  let passed=getSaved(quizKey),practice=getSaved(practiceKey),wrongAttempts=getSaved(weakKey),current="",search="";
   const sanitize=(obj)=>Object.fromEntries(Object.entries(obj||{}).filter(([k,v])=>ids.has(k)&&v===true));
   passed=sanitize(passed);
   const filterPractice=obj=>Object.fromEntries(Object.entries(obj||{}).filter(([k,v])=>ids.has(k)&&v&&typeof v==="object").map(([k,v])=>[k,{run:v.run===true,challenge:v.challenge===true}]));
   practice=filterPractice(practice);
+  const filterWrong=obj=>Object.fromEntries(
+    Object.entries(obj||{}).filter(([k,v])=>ids.has(k)&&Number.isInteger(v)&&v>0)
+      .map(([k,v])=>[k,Math.min(v,999)])
+  );
+  wrongAttempts=filterWrong(wrongAttempts);
   const hash=decodeURIComponent(location.hash.slice(1));
   current=ids.has(hash)?hash:(lessons.find(l=>!passed[l.id])||lessons[0]||{}).id;
   const count=(values,predicate)=>values.filter(predicate).length;
   const allDone=l=>!!passed[l.id]&&!!practice[l.id]?.run&&!!practice[l.id]?.challenge;
   function writeStorage(){
-    try{localStorage.setItem(quizKey,JSON.stringify(passed));localStorage.setItem(practiceKey,JSON.stringify(practice));return true}
+    try{localStorage.setItem(quizKey,JSON.stringify(passed));localStorage.setItem(practiceKey,JSON.stringify(practice));localStorage.setItem(weakKey,JSON.stringify(wrongAttempts));return true}
     catch(_){$("storageMessage").textContent="浏览器无法保存进度；请允许本地存储或及时导出备份。";return false}
   }
   function move(id){
@@ -38,6 +44,13 @@
     $("overall").innerHTML='<b>已完成 '+finished+' / '+lessons.length+' 节</b>'+
       '<div class="progress"><span style="width:'+pct+'%"></span></div>'+
       '<div class="muted">自测通过 '+theory+' 节 · 完整实践 '+finished+' 节</div>';
+    const review=lessons.filter(l=>!passed[l.id]&&wrongAttempts[l.id]>0)
+      .sort((a,b)=>wrongAttempts[b.id]-wrongAttempts[a.id]).slice(0,3);
+    if(review.length){
+      $("overall").innerHTML+='<div class="muted" style="margin-top:9px"><b>优先复习（概念自测错误）</b><div>'+
+        review.map(l=>'<a href="#'+encodeURIComponent(l.id)+'">'+esc(l.id)+' · '+esc(l.title)+'</a>（'+wrongAttempts[l.id]+'次）').join('、')+
+        '</div></div>';
+    }
     const showIncomplete=$("unfinished").checked;
     const container=$("nav");container.replaceChildren();
     for(const m of modules){
@@ -87,7 +100,8 @@
     output+=section("六、常见错误与排查",bullet(d.pitfalls||[]));
     output+=section("七、分层动手练习",'<p>'+esc(l.challenge)+'</p>'+
       (d.levels||[]).map((x,i)=>'<div class="level"><strong>'+["① 入门","② 巩固","③ 挑战"][i]+'</strong><p>'+esc(x.replace(/^(入门|巩固|挑战)：/,""))+'</p></div>').join("")+
-      '<div class="actions"><button type="button" id="showHint">查看原练习参考写法</button></div>'+
+      '<div class="actions"><button type="button" id="showHint">查看第 1 级提示</button></div>'+
+      '<p id="hintText" class="note" hidden></p>'+
       '<div id="answer"><pre><code id="answerCode"></code></pre><p class="muted">参考代码只是其中一种写法，需在 Jupyter 中运行并核验。</p></div>'+
       '<p class="muted">本课 Notebook 新增可执行检查点：完成指定 answer_ 变量后运行检查单元，成功后记录在本地。概念自测和示例运行需分别完成。</p>'+
       '<div class="actions"><button type="button" id="syncGrades">同步 Notebook 检查</button><span class="muted" id="gradeSyncMessage"></span></div>'+
@@ -120,9 +134,16 @@
       catch(_){$("copyExample").textContent="复制失败，请手动选中代码"}
     });
     $("syncGrades").addEventListener("click",()=>syncAutoGrades(true));
+    let hintStep=0;
     $("showHint").addEventListener("click",()=>{
-      $("answer").classList.toggle("show");
-      $("showHint").textContent=$("answer").classList.contains("show")?"隐藏参考写法":"查看原练习参考写法";
+      hintStep=(hintStep+1)%4;
+      const hint=$("hintText");
+      $("answer").classList.toggle("show",hintStep===3);
+      hint.hidden=hintStep===0||hintStep===3;
+      if(hintStep===1)hint.textContent="第 1 级：先明确目标。"+(d.walkthrough?.[0]||l.steps?.[0]||l.challenge);
+      if(hintStep===2)hint.textContent="第 2 级：可参考 "+(d.apis||[]).slice(0,2).map(a=>a.signature).join("；")+"。注意结果应符合："+(d.expected||"任务要求");
+      if(hintStep===3)hint.textContent="";
+      $("showHint").textContent=["查看第 1 级提示","查看第 2 级提示","查看完整参考写法","收起提示并重新开始"][hintStep];
     });
     for(const field of ["run","challenge"]){
       const el=$(field==="run"?"runChecked":"challengeChecked");
@@ -137,7 +158,9 @@
       feedback.className="feedback";
       if(!chosen){feedback.textContent="请先选一个答案。";return}
       if(Number(chosen.value)!==l.quiz.answer){
-        feedback.textContent="当前答案不正确。请回到『概念』和『逐句说明』重新检查。";
+        wrongAttempts[l.id]=(wrongAttempts[l.id]||0)+1;
+        writeStorage();drawNav();
+        feedback.textContent="当前答案不正确。已记录为待复习课程，请回到『概念』和『逐句说明』重新检查。";
         feedback.classList.add("bad");return;
       }
       passed[l.id]=true;writeStorage();feedback.classList.add("good");
@@ -174,7 +197,7 @@
     }
   }
   function exportProgress(){
-    const payload={schema:"ai-trainer-beginner-progress",version:progressVersion,exportedAt:new Date().toISOString(),quiz:passed,practice};
+    const payload={schema:"ai-trainer-beginner-progress",version:progressVersion,exportedAt:new Date().toISOString(),quiz:passed,practice,weak:wrongAttempts};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
@@ -190,6 +213,7 @@
       if(!data.quiz||!data.practice||typeof data.quiz!=="object"||typeof data.practice!=="object")throw Error("学习进度字段缺失");
       if(!window.confirm("导入将覆盖当前浏览器中的零基础学习进度，确定继续吗？"))return;
       passed=sanitize(data.quiz);practice=filterPractice(data.practice);
+      wrongAttempts=filterWrong(data.weak||{});
       writeStorage();render();
       $("storageMessage").textContent="进度已恢复。";
     }catch(err){$("storageMessage").textContent="导入失败："+String(err.message||err)}
