@@ -19,3 +19,6 @@ beginner_projects/**/B_results/
 beginner_projects/**/C_results/
 beginner_projects/**/D_results/
 beginner_projects/**/E_results/
+
+# Auto-graded notebook practice, stored locally only
+_beginner_grades/
