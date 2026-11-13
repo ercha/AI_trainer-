@@ -1,4 +1,3 @@
-// 仅覆盖竞赛 A-E 五个模块；每个知识点从概念、可运行代码到自测题。
 window.BEGINNER_COURSE={
   "version": 1,
   "modules": [
@@ -448,15 +447,15 @@ window.BEGINNER_COURSE={
         },
         {
           "title": "迁移学习、检测框与 IoU",
-          "concept": "迁移学习常冻结已有骨干并替换分类头；目标检测返回框和类别；IoU = 两个框的交集面积 / 并集面积。语义分割输出每像素类别。",
-          "code": "import torch\nbox_a=torch.tensor([0.,0.,4.,4.])\nbox_b=torch.tensor([2.,2.,6.,6.])\ninter_w=max(0.,float(min(box_a[2],box_b[2])-max(box_a[0],box_b[0])))\ninter_h=max(0.,float(min(box_a[3],box_b[3])-max(box_a[1],box_b[1])))\ninter=inter_w*inter_h\niou=inter/(16+16-inter)\nprint(\"IoU:\",iou)",
+          "concept": "迁移学习通常冻结预训练骨干，仅更新新的分类头；本课用 weights=None 的随机骨干演示冻结/训练操作，不能称作已完成真实迁移学习。目标检测返回边框，IoU 衡量两框重合程度。",
+          "code": "import torch\nfrom torch import nn\nfrom torchvision.models import resnet18\n\n# 示范冻结与替换分类头：weights=None 是随机权重，并非真正预训练\ntorch.manual_seed(42)\nmodel = resnet18(weights=None)\nfor param in model.parameters():\n    param.requires_grad_(False)\nmodel.fc = nn.Linear(model.fc.in_features, 2)\noptimizer = torch.optim.SGD(model.fc.parameters(), lr=0.01)\nmodel.eval()  # 保持随机初始化骨干的 BatchNorm 统计不变\ninputs = torch.rand(2, 3, 64, 64)\nlabels = torch.tensor([0, 1])\noptimizer.zero_grad()\nscores = model(inputs)\nloss = nn.CrossEntropyLoss()(scores, labels)\nloss.backward()\noptimizer.step()\nprint(\"可训练参数:\", [n for n,p in model.named_parameters() if p.requires_grad])\nprint(\"分类输出形状:\", tuple(scores.shape))\n\n# 计算两个检测框交并比\nbox_a = torch.tensor([0., 0., 4., 4.])\nbox_b = torch.tensor([2., 2., 6., 6.])\ninter_w = max(0., float(min(box_a[2],box_b[2])-max(box_a[0],box_b[0])))\ninter_h = max(0., float(min(box_a[3],box_b[3])-max(box_a[1],box_b[1])))\ninter = inter_w * inter_h\niou = inter / (16 + 16 - inter)\nprint(\"IoU:\", iou)",
           "steps": [
-            "xyxy 表示左上和右下角坐标",
-            "计算交集面积要避免负宽高",
-            "检测、分割都要先核对坐标或像素格式"
+            "创建 ResNet18 并冻结骨干（注意 weights=None 不是预训练）",
+            "用新 nn.Linear 替换 fc，更新一个批次的分类头",
+            "计算两个检测框的交集面积与交并比"
           ],
-          "challenge": "把 box_b 改成和 box_a 完全一样，验证 IoU=1。",
-          "solution": "box_b=box_a.clone()\nprint(\"重合框的 IoU 为 1\")",
+          "challenge": "将 box_b 改为 box_a.clone()，重新计算 IoU=1；再观察哪些网络参数具有 requires_grad=True。",
+          "solution": "box_b = box_a.clone()\nprint('可训练层:', [n for n,p in model.named_parameters() if p.requires_grad])\nprint('重合框的 IoU 应为 1')",
           "quiz": {
             "question": "两个框完全重合时 IoU 为多少？",
             "options": [
@@ -468,7 +467,7 @@ window.BEGINNER_COURSE={
             "reason": "交集等于并集，所以 IoU=1。"
           },
           "exam": "6.3.4",
-          "minutes": 20,
+          "minutes": 40,
           "id": "C6"
         }
       ]
@@ -580,15 +579,16 @@ window.BEGINNER_COURSE={
         },
         {
           "title": "序列模型、LSTM 与采样",
-          "concept": "RNN/LSTM 按顺序处理序列；模型输出常是二维形状 (batch,vocab)。np.random.choice 的 p 要求一维、非负、和为 1 的概率；应取某一个样本并归一化。",
-          "code": "import numpy as np\nlogits=np.array([[1.0,2.0,0.5]])\nex=np.exp(logits[0]-logits[0].max())\nprobs=ex/ex.sum()\nchoice=np.random.choice(len(probs),p=probs)\nprint(\"概率形状:\",probs.shape,\"和:\",probs.sum(),\"采样:\",choice)",
+          "concept": "LSTM 能按顺序学习符号序列。本课用随机生成的 4 类序列训练一个可运行的 Embedding→LSTM→Linear 网络，再将二维 logits 变成一维概率，并用 np.random.choice 采样。",
+          "code": "import numpy as np\nimport torch\nfrom torch import nn\n\n# 合成的 4 类符号序列，不下载语料和模型\ntorch.manual_seed(42)\nX = torch.tensor([[0,1,2],[1,2,3],[2,3,0],[3,0,1]])\ny = torch.tensor([3,0,1,2])\n\nclass TinyLSTM(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.embedding = nn.Embedding(4, 8)\n        self.lstm = nn.LSTM(8, 12, batch_first=True)\n        self.head = nn.Linear(12, 4)\n\n    def forward(self, token_ids):\n        embedded = self.embedding(token_ids)\n        sequence, _ = self.lstm(embedded)\n        return self.head(sequence[:, -1, :])\n\nmodel = TinyLSTM()\noptimizer = torch.optim.Adam(model.parameters(), lr=0.03)\nfor epoch in range(40):\n    optimizer.zero_grad()\n    logits = model(X)\n    loss = nn.CrossEntropyLoss()(logits, y)\n    loss.backward()\n    optimizer.step()\n\nwith torch.no_grad():\n    logits = model(X[:1])      # (batch=1, vocab=4)\n    probabilities = torch.softmax(logits, dim=-1)\nprobs = probabilities[0].cpu().numpy()  # np.random.choice 只接受一维 p\nsample = np.random.choice(len(probs), p=probs)\nprint(\"logits:\", tuple(logits.shape))\nprint(\"概率:\", probs.shape, \"求和:\", probs.sum())\nprint(\"采样结果:\", sample, \"训练损失:\", round(loss.item(), 4))",
           "steps": [
-            "模型的 (1,3) 输出不能直接作为 p",
-            "logits 要先 softmax 成概率",
-            "p 的长度必须等于候选项数量"
+            "Embedding 将符号 ID 转换为向量，LSTM 处理序列",
+            "CrossEntropyLoss 监督模型学习下一个符号",
+            "logits 的形状为 (1,4)，softmax 后选第 0 行得到一维概率",
+            "np.random.choice 的 p 必须是一维、非负且总和为 1"
           ],
-          "challenge": "将 probs 改为 np.array([0.2,0.3,0.5])，采样十次。",
-          "solution": "probs=np.array([0.2,0.3,0.5])\nprint(np.random.choice(3,size=10,p=probs))",
+          "challenge": "打印 logits.shape、probabilities.shape 和 probs.shape；尝试设置 p=probabilities.numpy() 并解释报错，再改回一维。",
+          "solution": "print(logits.shape, probabilities.shape, probs.shape)\n# probs = probabilities[0].cpu().numpy()\nprint(np.random.choice(len(probs), size=10, p=probs))",
           "quiz": {
             "question": "np.random.choice(3,p=...) 的 p 应是？",
             "options": [
@@ -600,20 +600,21 @@ window.BEGINNER_COURSE={
             "reason": "p 必须是一维概率数组。"
           },
           "exam": "6.4.4",
-          "minutes": 20,
+          "minutes": 40,
           "id": "D5"
         },
         {
           "title": "Transformer、生成、BLEU 与 ROUGE",
-          "concept": "Transformer 使用注意力处理上下文；生成时需要指定停止条件。BLEU 评估机器翻译的 n-gram 精度，ROUGE 常用于摘要结果的词语重合度。",
-          "code": "# 不用下载模型，先理解“参考结果”和“预测结果”\nreference=[\"人工\",\"智能\",\"发展\"]\nprediction=[\"人工\",\"智能\",\"应用\"]\noverlap=len(set(reference)&set(prediction))\nprecision=overlap/len(prediction)\nrecall=overlap/len(reference)\nprint(\"演示重合精确率:\",precision,\"召回率:\",recall)\n# 注意：上面仅是词集合演示，并非正式 BLEU 或 ROUGE 公式",
+          "concept": "Transformer 用注意力处理序列；本课先用随机向量验证 nn.Transformer 前向传播，再用 nltk 计算真实 BLEU-2，并用最长公共子序列算法计算 ROUGE-L F1。随机初始化不是一个已训练的翻译模型。",
+          "code": "import torch\nfrom torch import nn\nfrom nltk.translate.bleu_score import sentence_bleu, SmoothingFunction\n\n# 微型 Transformer 前向传播，示例是随机输入，没有进行模型训练\ntorch.manual_seed(42)\ntransformer = nn.Transformer(\n    d_model=8, nhead=2, num_encoder_layers=1,\n    num_decoder_layers=1, dim_feedforward=16,\n    dropout=0.0, batch_first=True\n)\ntransformer.eval()\nwith torch.no_grad():\n    output = transformer(torch.randn(2, 3, 8), torch.randn(2, 2, 8))\nprint(\"Transformer 输出:\", tuple(output.shape))\n\nreference = [\"人工\", \"智能\", \"发展\"]\nprediction = [\"人工\", \"智能\", \"应用\"]\nbleu2 = sentence_bleu(\n    [reference], prediction, weights=(0.5, 0.5),\n    smoothing_function=SmoothingFunction().method1\n)\n\n# ROUGE-L 基于最长公共子序列（LCS），不能用 set 交集替代\ndef lcs_length(a, b):\n    dp = [[0] * (len(b)+1) for _ in range(len(a)+1)]\n    for i in range(1, len(a)+1):\n        for j in range(1, len(b)+1):\n            dp[i][j] = dp[i-1][j-1]+1 if a[i-1]==b[j-1] else max(dp[i-1][j], dp[i][j-1])\n    return dp[-1][-1]\n\noverlap = lcs_length(reference, prediction)\nprecision = overlap / len(prediction)\nrecall = overlap / len(reference)\nrouge_l = 2 * precision * recall / (precision + recall) if precision + recall else 0.0\nprint(\"BLEU-2:\", round(bleu2, 4), \"ROUGE-L F1:\", round(rouge_l, 4))",
           "steps": [
-            "正式 BLEU 要考虑 n-gram 和长度惩罚",
-            "ROUGE-L 通常利用最长公共子序列",
-            "API 和模型生成题还要验证输出格式"
+            "Transformer 输入按 batch、序列、特征组织，演示前向输出形状",
+            "sentence_bleu 按 n-gram 精度与长度惩罚评估翻译",
+            "ROUGE-L 使用 LCS 长度计算 precision、recall 和 F1",
+            "不应把词集合的交集当作 BLEU 或 ROUGE-L"
           ],
-          "challenge": "写出对候选和参考文本相同词数的统计，说明这不等于 BLEU。",
-          "solution": "print(len(set(reference).intersection(prediction)))",
+          "challenge": "交换 prediction 中的词语顺序，比较 BLEU-2 与 ROUGE-L F1；解释为什么不能使用 set 交集替代。",
+          "solution": "prediction=['智能','人工','应用']\nnew_bleu=sentence_bleu([reference],prediction,weights=(0.5,0.5),smoothing_function=SmoothingFunction().method1)\nprint('新 BLEU-2:',new_bleu)\nprint('LCS 长度:',lcs_length(reference,prediction))",
           "quiz": {
             "question": "BLEU 主要用于评价什么？",
             "options": [
@@ -625,7 +626,7 @@ window.BEGINNER_COURSE={
             "reason": "BLEU 是翻译任务常用评价指标。"
           },
           "exam": "6.4.4",
-          "minutes": 20,
+          "minutes": 40,
           "id": "D6"
         }
       ]

@@ -1,4 +1,3 @@
-// 原竞赛 A-E 基础课扩展说明：每节含术语、逐步说明、API 参数、输出校验、易错点、三级练习。
 window.BEGINNER_COURSE_EXTRAS={
   "version": 2,
   "lessons": {
@@ -836,7 +835,7 @@ window.BEGINNER_COURSE_EXTRAS={
       "check": "能独立解释为什么使用 model.eval() 和 torch.no_grad()。"
     },
     "C6": {
-      "why": "CNN 分类之后，检测预测『框在哪』，分割预测『每个像素是哪类』。先掌握框坐标与 IoU 再碰大型网络。",
+      "why": "实际运行 ResNet18 的冻结、替换分类头、单批次更新，再计算检测框 IoU。切记随机骨干不等于真正的预训练模型。",
       "terms": [
         {
           "name": "迁移学习",
@@ -852,9 +851,10 @@ window.BEGINNER_COURSE_EXTRAS={
         }
       ],
       "walkthrough": [
-        "box_a 和 box_b 各保存 4 个坐标。",
-        "交集宽高分别由两个框右边界较小值减左边界较大值得到。",
-        "交集面积是 4；两个框面积都为 16；IoU=4/(16+16-4)=1/7。"
+        "weights=None 创建随机初始化网络结构；冻结全部参数后仍需替换分类头。",
+        "fc 替换为 2 类输出，优化器只更新 model.fc.parameters()。",
+        "model.eval() 保持 BatchNorm 统计固定；即使在 eval 状态也能对 fc 求梯度，本示例仅演示冻结机制。",
+        "两个 4×4 框交集为 2×2，IoU=4/(16+16-4)=1/7。"
       ],
       "apis": [
         {
@@ -872,10 +872,10 @@ window.BEGINNER_COURSE_EXTRAS={
           "tip": "替换分类头后重新选择可训练参数给优化器"
         }
       ],
-      "expected": "box_a 与 box_b 重叠部分为 2×2，IoU 约 0.142857。",
+      "expected": "显示可训练参数只有 fc.weight、fc.bias；分类输出 (2,2)；IoU 约 0.142857。注意这不是具有实际迁移效果的预训练模型。",
       "pitfalls": [
-        "xyxy 与 xywh 混用会算错宽高甚至得到负面积。",
-        "认为 models.resnet18(weights=None) 已经完成迁移学习；其实只有网络结构。"
+        "weights=None 只创建结构，不包含预训练知识。",
+        "冻结参数后忘记重新创建 optimizer，可能导致优化器更新了错误参数。"
       ],
       "levels": [
         "入门：手算例子 IoU=1/7。",
@@ -1081,7 +1081,7 @@ window.BEGINNER_COURSE_EXTRAS={
       "check": "能说明 CountVectorizer 与 TfidfVectorizer 的差别，以及主题模型不需要 y 标签。"
     },
     "D5": {
-      "why": "今年遇到的 np.random.choice(..., p=preds) 错误就是典型的『模型输出二维矩阵、采样函数要求一维概率』。本节专门练这一点。",
+      "why": "通过一次真实 LSTM 训练理解为什么模型输出常为二维 (batch,vocab)，以及如何安全交给 NumPy 概率采样。",
       "terms": [
         {
           "name": "logits",
@@ -1097,9 +1097,11 @@ window.BEGINNER_COURSE_EXTRAS={
         }
       ],
       "walkthrough": [
-        "logits 是形状 (1,3) 的二维数组，行数对应 batch。",
-        "先选 logits[0] 获得一维 (3,)，再做减最大值、取指数并归一化，相当于 softmax。",
-        "np.random.choice(3,p=probs) 根据三个合法概率随机采样。"
+        "Embedding(4,8) 把 4 种符号编码为 8 维向量；LSTM 的 batch_first=True 接收 (batch,seq,feature)。",
+        "每次迭代执行 zero_grad→forward→CrossEntropyLoss→backward→step。",
+        "X[:1] 得到一个样本，网络输出 logits 形状为 (1,4)。",
+        "softmax 沿最后一维生成概率；probabilities[0] 去掉 batch 维后转 NumPy。",
+        "np.random.choice 使用长度为 4 的一维概率 p 采样一个符号索引。"
       ],
       "apis": [
         {
@@ -1117,10 +1119,10 @@ window.BEGINNER_COURSE_EXTRAS={
           "tip": "NumPy 用 np.exp(x-x.max()) 再除总和也可"
         }
       ],
-      "expected": "输出概率 shape=(3,)、sum=1；采样值在 0、1、2 之间。",
+      "expected": "输出 logits=(1,4)，概率 shape=(4,)，总和约 1，采样索引为 0～3。训练损失随随机初始化及硬件可能略有差异。",
       "pitfalls": [
-        "p=preds 直接传形状 (1,100) 的二维数组，报『p must be 1-dimensional』。",
-        "直接将 logits 用作 p，即使是一维仍可能有负数或总和不为 1。"
+        "直接把 (1,4) 的 probabilities 传入 choice，会报 p must be 1-dimensional。",
+        "将 logits 当概率传入 p：logits 可能为负或总和不为 1。"
       ],
       "levels": [
         "入门：打印 logits.shape、logits[0].shape、probs.sum()。",
@@ -1130,7 +1132,7 @@ window.BEGINNER_COURSE_EXTRAS={
       "check": "遇到二维预测结果时能先取单条结果并归一化，再传给 np.random.choice。"
     },
     "D6": {
-      "why": "Transformer、GPT 和指标最容易混淆：模型生成文本是一回事，评价文本的质量是另一回事。先掌握评测目标，再学习调用真实模型。",
+      "why": "验证 Transformer 前向传播，再对相同参考与候选序列计算标准 BLEU-2 和基于 LCS 的 ROUGE-L。",
       "terms": [
         {
           "name": "Transformer",
@@ -1146,9 +1148,10 @@ window.BEGINNER_COURSE_EXTRAS={
         }
       ],
       "walkthrough": [
-        "reference 与 prediction 是手工定义的词列表。",
-        "集合交集只演示重合词统计的概念。",
-        "precision/recall 的计算不是 BLEU/ROUGE：真正的 BLEU 考虑连续 n-gram，ROUGE-L 考虑序列顺序。"
+        "nn.Transformer(d_model=8,nhead=2) 使用随机输入，仅演示前向传播，输出 (2,2,8)。",
+        "nltk.sentence_bleu 以参考列表、预测列表和权重 (0.5,0.5) 计算 BLEU-2。",
+        "lcs_length 使用动态规划找到公共子序列，顺序不同会改变结果。",
+        "使用 LCS 长度计算 ROUGE-L precision、recall 与 F1。"
       ],
       "apis": [
         {
@@ -1166,10 +1169,10 @@ window.BEGINNER_COURSE_EXTRAS={
           "tip": "ROUGE-L 不能简单地用 set 求交集代替"
         }
       ],
-      "expected": "示例词交集有『人工』『智能』，输出精确率 2/3、召回率 2/3；此值不是 BLEU。",
+      "expected": "Transformer 输出 (2,2,8)；BLEU-2 为 0～1 的数；ROUGE-L F1 约 0.6667。这不是训练完成的翻译模型。",
       "pitfalls": [
-        "把词集合的交集当作 ROUGE-L 会忽略顺序。",
-        "没有训练模型，却把参考文本与生成文本计算相似度当成模型已具备能力。"
+        "把随机 Transformer 的输出当作有效翻译结果。",
+        "把无序集合交集当作 ROUGE-L，会失去词语顺序信息。"
       ],
       "levels": [
         "入门：手算示例的精确率与召回率。",
