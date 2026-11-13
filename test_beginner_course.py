@@ -165,6 +165,23 @@ class TorchInstallerTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             install_torch.choose_backend("gpu", "Windows", False)
 
+    def test_driver_cuda_compatibility(self):
+        self.assertEqual(
+            install_torch.choose_backend("auto", "Windows", True, (13, 0)), "cpu"
+        )
+        self.assertEqual(
+            install_torch.choose_backend("auto", "Windows", True, (13, 2)), "cuda"
+        )
+        with self.assertRaises(RuntimeError):
+            install_torch.choose_backend("gpu", "Linux", True, (12, 9))
+
+    @patch("install_torch.shutil.which", return_value="nvidia-smi")
+    @patch("install_torch.subprocess.run")
+    def test_parse_driver_cuda(self, mock_run, _mock_which):
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = "NVIDIA-SMI 600.10    CUDA Version: 13.2"
+        self.assertEqual(install_torch.driver_cuda_version(), (13, 2))
+
     def test_macos_wheel(self):
         self.assertEqual(install_torch.choose_backend("auto", "Darwin", False), "mps")
 
