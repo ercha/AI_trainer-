@@ -171,13 +171,16 @@ def check_lesson(lesson_id: str, namespace: dict, *, save: bool = True) -> dict:
     v = namespace[name]
     try:
         # 表达式固定写在项目源码中；本函数只能从用户本机的 Jupyter 主动调用。
-        passed = bool(eval(expression, {
+        scope = {
             "np": np, "Path": Path, "__import__": __import__, "bytes": bytes,
             "isinstance": isinstance, "hasattr": hasattr, "bool": bool,
             "str": str, "len": len, "float": float, "int": int,
             "set": set, "all": all, "type": type, "tuple": tuple,
             "list": list, "callable": callable, "abs": abs,
-        }, {"v": v, "g": namespace}))
+            "v": v, "g": namespace,
+        }
+        # Generator/comprehension expressions must also see submitted variables.
+        passed = bool(eval(expression, scope, scope))
     except Exception as exc:
         raise AssertionError(f"{lesson_id} 检查异常：{type(exc).__name__}: {exc}。提示：{hint}") from exc
     if not passed:
