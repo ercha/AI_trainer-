@@ -16,6 +16,18 @@ on:
       - "competition_theory_practice.css"
       - "实操训练系统.html"
       - "serve_practice.py"
+      - "beginner_course_data.js"
+      - "beginner_course_extras.js"
+      - "beginner_course_app.js"
+      - "beginner_course.html"
+      - "beginner_checkpoints.py"
+      - "beginner_notebooks/**"
+      - "beginner_projects/**"
+      - "test_beginner_course.py"
+      - "verify_beginner_course.py"
+      - "install_torch.py"
+      - "requirements.txt"
+      - "初学者学习说明.md"
       - "tray_launcher.py"
       - "人工智能训练师三级素材/人工智能训练师三级上网素材/**/*.ipynb"
       - ".github/workflows/competition-training-ci.yml"
@@ -167,3 +179,28 @@ jobs:
           node --check /tmp/practice-inline.js
           node -e "global.window={};require('./competition_guidance.js');const g=window.COMPETITION_GUIDANCE;if(Object.keys(g.modules).length!==5)process.exit(1);if(Object.values(g.modules).reduce((n,m)=>n+m.must.length+m.strengthen.length,0)!==27)process.exit(1);"
           node -e "global.window={};require('./competition_theory_bank.js');const b=window.COMPETITION_THEORY_BANK;if(!b||b.counts.total!==456||b.counts.single!==304||b.counts.multi!==137||b.counts.fill!==15)process.exit(1);if(b.questions.length!==456)process.exit(1);"
+
+  beginner-course:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install supported beginner dependencies and pinned CPU PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "numpy>=1.26,<3" "pandas>=2.2,<3" "scikit-learn>=1.4,<2" "matplotlib>=3.8,<4" "Pillow>=10,<12" "opencv-python-headless>=4.9,<5" "jieba>=0.42,<1" "nltk>=3.9,<4" "joblib>=1.3,<2"
+          python install_torch.py --cpu
+      - name: Validate beginner UI JavaScript and backend Python syntax
+        run: |
+          node --check beginner_course_app.js
+          node --check beginner_course_data.js
+          node --check beginner_course_extras.js
+          python -m py_compile beginner_checkpoints.py install_torch.py serve_practice.py
+      - name: Run syntax and course structure tests
+        run: python verify_beginner_course.py
+      - name: Execute all 30 lesson examples
+        run: python verify_beginner_course.py --run
+      - name: Execute five comprehensive project solutions
+        run: python verify_beginner_course.py --run-projects

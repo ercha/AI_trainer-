@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parent
 SOURCE_ROOT = ROOT / "人工智能训练师三级素材" / "人工智能训练师三级上网素材"
 EXAM_ROOT = ROOT / "_exam_workspace"
 HISTORY_ROOT = ROOT / "_exam_history"
+BEGINNER_GRADE_ROOT = ROOT / "_beginner_grades"
 JUPYTER_PORT = 7001
 
 QUESTION_PROFILES = {qid: {"duration": grading.duration_minutes(qid), "checker": "reference_and_result"} for qid in grading.QIDS}
@@ -769,6 +770,19 @@ class PracticalHandler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         try:
+            if path == "/api/beginner/grades":
+                grades = {}
+                if BEGINNER_GRADE_ROOT.is_dir():
+                    for record in BEGINNER_GRADE_ROOT.glob("*.json"):
+                        if not re.fullmatch(r"[A-E][1-6]", record.stem):
+                            continue
+                        data = _read_json(record)
+                        if data.get("lesson_id") == record.stem and data.get("passed") is True:
+                            grades[record.stem] = {
+                                "passed": True, "checked_at": data.get("checked_at", "")
+                            }
+                self._send_json(200, {"ok": True, "grades": grades})
+                return
             if path == "/api/answer":
                 qid = (parse_qs(parsed.query).get("qid") or [""])[0]
                 try:
