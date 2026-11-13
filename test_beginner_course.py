@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -82,7 +83,7 @@ class BeginnerCourseTests(unittest.TestCase):
             path = ROOT / "beginner_notebooks" / lesson_id[0] / f"{lesson_id}.ipynb"
             notebook = json.loads(path.read_text(encoding="utf-8"))
             source = "\n".join("".join(cell["source"]) for cell in notebook["cells"])
-            self.assertIn(f'check_lesson("{lesson_id}", globals())', source)
+            self.assertRegex(source, rf'check_lesson\("{lesson_id}",\s*globals\(\)\)')
             self.assertIn("answer_" + lesson_id.lower(), source)
             with self.assertRaises(AssertionError):
                 check_lesson(lesson_id, {}, save=False)
